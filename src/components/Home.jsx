@@ -1,9 +1,13 @@
-import React from 'react'
+import React from 'react';
+import Footer from './Footer';
 
 const Home = () => {
   return (
-    <div>Home</div>
-  )
-}
+    <div>
+      Home
+      <Footer />
+    </div>
+  );
+};
 
-export default Home
+export default Home;
