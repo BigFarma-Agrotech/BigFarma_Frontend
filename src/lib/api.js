@@ -1,38 +1,55 @@
-// import { demoMarketplaceProducts } from "./demoMarketplaceProducts";
+const baseURL = import.meta.env.VITE_SERVER_URL || 'https://jellyfish-app-2-i2mfu.ondigitalocean.app/api/v1';
 
 export async function fetchProducts() {
-    // return new Promise((resolve) => {
-    //     setTimeout(() => {
-    //         resolve(demoMarketplaceProducts);
-    //     }, 300);
-    // });
-
-    const res = await fetch(
-        "https://bigfarma-backend.onrender.com/api/v1/marketplace/products?skip=0&limit=100"
-    );
-    if (!res.ok) throw new Error("Failed to fetch products");
-    const data = await res.json();
-    return data;
+    console.log("Fetching products from:", `${baseURL}/marketplace/products?skip=0&limit=100`);
+    
+    try {
+        const res = await fetch(
+            `${baseURL}/marketplace/products?skip=0&limit=100`,
+            {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+        
+        if (!res.ok) {
+            throw new Error(`Failed to fetch products: ${res.status} ${res.statusText}`);
+        }
+        
+        const data = await res.json();
+        console.log("Products API response:", data);
+        return data; // Return the full response object
+    } catch (error) {
+        console.error("Error in fetchProducts:", error);
+        throw error;
+    }
 }
 
 export async function fetchProductById(id) {
+    console.log("Fetching product:", id, "from:", `${baseURL}/marketplace/products/${id}`);
+    
+    try {
+        const res = await fetch(
+            `${baseURL}/marketplace/products/${id}`,
+            {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
 
-    const res = await fetch(
-        `https://bigfarma-backend.onrender.com/api/v1/marketplace/products/${id}`
-    );
+        if (!res.ok) {
+            throw new Error(`Failed to fetch product: ${res.status} ${res.statusText}`);
+        }
 
-    if (!res.ok) {
-        throw new Error(`Failed to fetch product with ID`);
+        const data = await res.json();
+        console.log("Product detail API response:", data);
+        return data; // Return the product object directly
+    } catch (error) {
+        console.error(`Error in fetchProductById for ID ${id}:`, error);
+        throw error;
     }
-
-    const data = await res.json();
-    return data; // Adjust this if your API response shape differs
-    // return new Promise((resolve, reject) => {
-    //     const product = demoMarketplaceProducts.find((p) => p.id === Number(id));
-    //     if (product) {
-    //         resolve(product);
-    //     } else {
-    //         reject(new Error("Product not found"));
-    //     }
-    // });
 }
