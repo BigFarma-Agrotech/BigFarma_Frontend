@@ -1,3 +1,5 @@
+// lib/api.jsx
+
 const baseURL = import.meta.env.VITE_SERVER_URL || 'https://jellyfish-app-2-i2mfu.ondigitalocean.app/api/v1';
 
 export async function fetchProducts() {
@@ -20,7 +22,16 @@ export async function fetchProducts() {
         
         const data = await res.json();
         console.log("Products API response:", data);
-        return data; // Return the full response object
+        
+        // Ensure we always return an object with a products array
+        return {
+            products: data.products || [],
+            total_count: data.total_count || 0,
+            page: data.page || 1,
+            page_size: data.page_size || 100,
+            has_next: data.has_next || false,
+            has_previous: data.has_previous || false
+        };
     } catch (error) {
         console.error("Error in fetchProducts:", error);
         throw error;
@@ -47,7 +58,7 @@ export async function fetchProductById(id) {
 
         const data = await res.json();
         console.log("Product detail API response:", data);
-        return data; // Return the product object directly
+        return data;
     } catch (error) {
         console.error(`Error in fetchProductById for ID ${id}:`, error);
         throw error;
