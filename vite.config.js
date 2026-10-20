@@ -10,6 +10,8 @@ const __dirname = path.dirname(__filename);
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Expose SERVER_URL to client code alongside the default VITE_ vars
+  envPrefix: ["VITE_", "SERVER_URL"],
   build: {
     outDir: 'dist',
   },

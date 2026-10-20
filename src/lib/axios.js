@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const baseURL = import.meta.env.VITE_SERVER_URL;
+const baseURL = import.meta.env.SERVER_URL;
 const refreshEndpoint = '/auth/refresh-token';
 
 let isRefreshing = false;

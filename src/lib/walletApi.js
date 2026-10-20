@@ -3,7 +3,7 @@ import Cookies from "js-cookie";
 // import { transactions } from "./Transaction";
 
 
-const BASE_URL = import.meta.env.VITE_SERVER_URL;
+const BASE_URL = import.meta.env.SERVER_URL;
 
 export const walletApi = async () => {
   try {
