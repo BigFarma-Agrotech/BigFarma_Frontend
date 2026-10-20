@@ -3,7 +3,7 @@ import Cookies from "js-cookie";
 // import { transactions } from "./Transaction";
 
 
-const BASE_URL = "https://bigfarma-backend.onrender.com/api/v1";
+const BASE_URL = import.meta.env.VITE_SERVER_URL;
 
 export const groupDetails = async (groupId) => {
   try {

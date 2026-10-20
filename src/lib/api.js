@@ -1,6 +1,6 @@
 // lib/api.jsx
 
-const baseURL = import.meta.env.VITE_SERVER_URL || 'https://jellyfish-app-2-i2mfu.ondigitalocean.app/api/v1';
+const baseURL = import.meta.env.VITE_SERVER_URL;
 
 export async function fetchProducts() {
     console.log("Fetching products from:", `${baseURL}/marketplace/products?skip=0&limit=100`);
