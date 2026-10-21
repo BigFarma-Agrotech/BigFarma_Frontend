@@ -1,23 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FocusContext } from "./FocusContext";
 import Cookies from "js-cookie";
+import { getRole, ROLE_KEY } from "@/lib/auth";
 
 // Provider
 export const FocusProvider = ({ children }) => {
   const [focused, setFocused] = useState(false);
-  const [role, setRole] = useState(null);
+  // Role comes from the session cookie, or from role selection before sign-up
+  const [role, setRole] = useState(getRole);
 
-  // Load role from localStorage on mount
-  useEffect(() => {
-    const storedRole = Cookies.get("BIGFARMA_ROLE");
-    if (storedRole) setRole(storedRole);
-  }, []);
-
-  // Always update both state and localStorage
+  // Keep the cookie in sync so the role survives a page refresh. Skip the write
+  // when it already matches so the expiry set at sign-in is preserved.
   const updateRole = (newRole) => {
     setRole(newRole);
-    Cookies.set("BIGFARMA_ROLE", newRole, { expires: 7 });
-    localStorage.setItem("selectedRole", newRole);
+    if (!newRole) {
+      Cookies.remove(ROLE_KEY);
+    } else if (getRole() !== newRole) {
+      Cookies.set(ROLE_KEY, newRole, { sameSite: "lax" });
+    }
   };
 
   return (
