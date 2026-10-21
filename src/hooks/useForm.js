@@ -57,7 +57,7 @@ const useForm = () => {
       newErrors.username = "Email or phone number is required";
     } else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
+      const phoneRegex = /^\+?\d{7,15}$/;
 
       const isEmail = emailRegex.test(loginData.username.trim());
       const isPhone = phoneRegex.test(
@@ -95,6 +95,11 @@ const useForm = () => {
     }
   };
 
+  // Show errors returned by the server, e.g. { username: "Invalid email" }
+  const setFieldErrors = (fieldErrors) => {
+    setErrors((prev) => ({ ...prev, ...fieldErrors }));
+  };
+
   // Get form data
   const getFormData = () => loginData;
 
@@ -113,6 +118,7 @@ const useForm = () => {
     updateCountry,
     resetForm,
     handleSubmit,
+    setFieldErrors,
     getFormData,
     isValid,
   };

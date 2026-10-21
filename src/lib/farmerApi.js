@@ -1,49 +1,30 @@
 // src/services/farmerApi.js
 import { axios } from '../lib/axios';
 import { endpoints } from '../components/config/endpoints';
-import Cookies from 'js-cookie';
-import axiosDefault from 'axios';
 
-const token = Cookies.get('BIGFARMA_ACCESS_TOKEN');
+// The shared axios instance attaches the current access token to every request.
 
 export const farmerApi = {
   // Orders (your existing endpoints)
   getOrders: () =>
-    axios.get(endpoints().farmerOrders.orders, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }),
+    axios.get(endpoints().farmerOrders.orders),
 
   getProductOrders: (productId) =>
-    axios.get(`${endpoints().farmerOrders.orders}/${productId}`, {
-      headers: {
-        Autorization: `Bearer ${token}`,
-      },
-    }),
+    axios.get(`${endpoints().farmerOrders.orders}/${productId}`),
 
   getOrder: (orderId) =>
-    axios.get(`${endpoints().farmerOrders.orders}/${orderId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }),
+    axios.get(`${endpoints().farmerOrders.orders}/${orderId}`),
 
   updateOrderStatus: (orderId, statusData) =>
     axios.patch(`${endpoints().farmerOrders}/${orderId}/status`, statusData, {
       headers: {
         'content-type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
     }),
 
   // Products endpoints (new)
   getProducts: () =>
-    axios.get(endpoints().farmerProducts.get_product, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }),
+    axios.get(endpoints().farmerProducts.get_product),
 
   // getProduct: (productId) => axios.get(`${BASE_URL}/products/${productId}/`),
   createProduct: (productData) => {
@@ -66,7 +47,6 @@ export const farmerApi = {
     return axios.post(endpoints().farmerProducts.create_product, formData, {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
     });
   },
@@ -91,43 +71,25 @@ export const farmerApi = {
       {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
       }
     );
   },
   deleteProduct: (productId) => {
-    return (
-      axios.delete(`${endpoints().farmerProducts.delete_product}/${productId}`),
-      {
-        Authorization: `Bearer ${token}`,
-      }
-    );
+    return axios.delete(`${endpoints().farmerProducts.delete_product}/${productId}`);
   },
 
   restockProduct: (productId, quantityData) => {
-    return (
-      axios.put(
-        `${endpoints().farmerProducts.update_product}/${productId}`,
-        quantityData
-      ),
-      {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      }
+    return axios.put(
+      `${endpoints().farmerProducts.update_product}/${productId}`,
+      quantityData
     );
   },
 
   updateProductStatus: (productId, statusData) => {
-    return (
-      axios.put(
-        `${endpoints().farmerProducts.update_product}/${productId}`,
-        statusData
-      ),
-      {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      }
+    return axios.put(
+      `${endpoints().farmerProducts.update_product}/${productId}`,
+      statusData
     );
   },
 };

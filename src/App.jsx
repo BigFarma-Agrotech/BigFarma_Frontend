@@ -9,6 +9,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import InputOtp from './pages/InputOtp';
 import ResetPassword from './pages/ResetPassword';
 import RoleSelection from './pages/RoleSelection';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 import {
   DashboardPage,
@@ -55,175 +56,176 @@ const App = () => {
 				<Route path="/success" element={<Success />} />
 
 				{/* Dashboard */}
-				<Route
-					path="/dashboard"
-					element={
-						<DashboardLayout>
-							<DashboardPage />
-						</DashboardLayout>
-					}
-				/>
-				<Route
-					path="/orders"
-					element={
-						<DashboardLayout>
-							<ConsumerOrderPage />
-						</DashboardLayout>
-					}
-				/>
-				<Route
-					path="/marketplace"
-					element={
-						<DashboardLayout>
-							<MarketplacePage />
-						</DashboardLayout>
-					}
-				/>
-				<Route
-					path="/group-buy"
-					element={
-						<DashboardLayout>
-							<GroupBuyPage />
-						</DashboardLayout>
-					}
-				/>
-				<Route
-					path="/group-buy/create"
-					element={
-						<DashboardLayout>
-							<CreateGroupModal />
-						</DashboardLayout>
-					}
-				/>
-				<Route
-					path="/marketplace/products/:id"
-					element={
-						<DashboardLayout>
-							<ProductDetail />
-						</DashboardLayout>
-					}
-				/>
-				<Route
-					path="/cart"
-					element={
-						<DashboardLayout>
-							<CartPage />
-						</DashboardLayout>
-					}
-				/>
-				<Route
-					path="/checkout"
-					element={
-						<DashboardLayout>
-							<CheckoutPage />
-						</DashboardLayout>
-					}
-				/>
-				<Route
-					path="/payment-processing"
-					element={
-						<DashboardLayout>
-							<PaymentProcessingPage />
-						</DashboardLayout>
-					}
-				/>
-				<Route
-					path="/order-confirmation"
-					element={
-						<DashboardLayout>
-							<OrderConfirmationPage />
-						</DashboardLayout>
-					}
-				/>
-				<Route
-					path="/payment"
-					element={
-						<DashboardLayout>
-							<PaymentSetup />
-						</DashboardLayout>
-					}
-				/>
+				<Route element={<ProtectedRoute />}>
+					<Route
+						path="/dashboard"
+						element={
+							<DashboardLayout>
+								<DashboardPage />
+							</DashboardLayout>
+						}
+					/>
+					<Route
+						path="/orders"
+						element={
+							<DashboardLayout>
+								<ConsumerOrderPage />
+							</DashboardLayout>
+						}
+					/>
+					<Route
+						path="/marketplace"
+						element={
+							<DashboardLayout>
+								<MarketplacePage />
+							</DashboardLayout>
+						}
+					/>
+					<Route
+						path="/group-buy"
+						element={
+							<DashboardLayout>
+								<GroupBuyPage />
+							</DashboardLayout>
+						}
+					/>
+					<Route
+						path="/group-buy/create"
+						element={
+							<DashboardLayout>
+								<CreateGroupModal />
+							</DashboardLayout>
+						}
+					/>
+					<Route
+						path="/marketplace/products/:id"
+						element={
+							<DashboardLayout>
+								<ProductDetail />
+							</DashboardLayout>
+						}
+					/>
+					<Route
+						path="/cart"
+						element={
+							<DashboardLayout>
+								<CartPage />
+							</DashboardLayout>
+						}
+					/>
+					<Route
+						path="/checkout"
+						element={
+							<DashboardLayout>
+								<CheckoutPage />
+							</DashboardLayout>
+						}
+					/>
+					<Route
+						path="/payment-processing"
+						element={
+							<DashboardLayout>
+								<PaymentProcessingPage />
+							</DashboardLayout>
+						}
+					/>
+					<Route
+						path="/order-confirmation"
+						element={
+							<DashboardLayout>
+								<OrderConfirmationPage />
+							</DashboardLayout>
+						}
+					/>
+					<Route
+						path="/payment"
+						element={
+							<DashboardLayout>
+								<PaymentSetup />
+							</DashboardLayout>
+						}
+					/>
 
-				<Route
-					path="/farmer-orders"
-					element={
-						<DashboardLayout>
-							<FarmerOrderPage />
-						</DashboardLayout>
-					}
-				/>
+					<Route
+						path="/farmer-orders"
+						element={
+							<DashboardLayout>
+								<FarmerOrderPage />
+							</DashboardLayout>
+						}
+					/>
 
-				<Route
-					path="/farmer-orders/:productId"
-					element={
-						<DashboardLayout>
-							<ProductOrdersPage />
-						</DashboardLayout>
-					}
-				/>
+					<Route
+						path="/farmer-orders/:productId"
+						element={
+							<DashboardLayout>
+								<ProductOrdersPage />
+							</DashboardLayout>
+						}
+					/>
 
-				<Route
-					path="/farmer-orders/:productId/:orderId"
-					element={
-						<DashboardLayout>
-							<SingleOrderPage />
-						</DashboardLayout>
-					}
-				/>
-				<Route
-					path="/group-buy/:groupId"
-					element={
-						<DashboardLayout>
-							<GroupDetailsPage />
-						</DashboardLayout>
-					}
-				/>
+					<Route
+						path="/farmer-orders/:productId/:orderId"
+						element={
+							<DashboardLayout>
+								<SingleOrderPage />
+							</DashboardLayout>
+						}
+					/>
+					<Route
+						path="/group-buy/:groupId"
+						element={
+							<DashboardLayout>
+								<GroupDetailsPage />
+							</DashboardLayout>
+						}
+					/>
 
-				<Route
-					path="/investment"
-					element={
-						<DashboardLayout>
-							<InvestmentPage />
-						</DashboardLayout>
-					}
-				/>
+					<Route
+						path="/investment"
+						element={
+							<DashboardLayout>
+								<InvestmentPage />
+							</DashboardLayout>
+						}
+					/>
 
-				<Route
-					path="/wallet"
-					element={
-						<DashboardLayout>
-							<WalletPage />
-						</DashboardLayout>
-					}
-					d
-				/>
+					<Route
+						path="/wallet"
+						element={
+							<DashboardLayout>
+								<WalletPage />
+							</DashboardLayout>
+						}
+					/>
 
-				<Route
-					path="/transactions"
-					element={
-						<DashboardLayout>
-							<TransactionsPage />
-						</DashboardLayout>
-					}
-				/>
+					<Route
+						path="/transactions"
+						element={
+							<DashboardLayout>
+								<TransactionsPage />
+							</DashboardLayout>
+						}
+					/>
 
-				<Route
-					path="/my-products"
-					element={
-						<DashboardLayout>
-							<MyProductsPage />
-						</DashboardLayout>
-					}
-				/>
+					<Route
+						path="/my-products"
+						element={
+							<DashboardLayout>
+								<MyProductsPage />
+							</DashboardLayout>
+						}
+					/>
 
-				<Route
-					path="/settings"
-					element={
-						<DashboardLayout>
-							<SettingsPage />
-						</DashboardLayout>
-					}
-				/>
+					<Route
+						path="/settings"
+						element={
+							<DashboardLayout>
+								<SettingsPage />
+							</DashboardLayout>
+						}
+					/>
+				</Route>
 			</Routes>
 		</>
 	);
