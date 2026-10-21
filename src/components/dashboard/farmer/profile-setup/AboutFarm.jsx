@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import fileIcon from "@/assets/icons/fileIcon.png";
 import { endpoints } from "../../../config/endpoints";
 import { axios } from "../../../../lib/axios";
+import { parseApiError } from "@/lib/apiError";
 
 const AboutFarm = ({ onNext }) => {
   const [formData, setFormData] = useState({
@@ -93,6 +94,11 @@ const AboutFarm = ({ onNext }) => {
       toast.error(`Please fill in: ${missing.join(", ")}.`);
       return;
     }
+    // Backend limits (FarmerProfileUpdate): farm_location >= 5 chars
+    if (formData.location.trim().length < 5) {
+      toast.error("Farm location must be at least 5 characters.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -124,14 +130,8 @@ const AboutFarm = ({ onNext }) => {
       }
     } catch (error) {
       console.error("Error:", error);
-      if (axiosDefault.isAxiosError(error) && error.response) {
-        toast.error(
-          error.response.data?.detail ||
-            error.response.data?.message ||
-            "Profile setup failed",
-        );
-      } else if (axiosDefault.isAxiosError(error)) {
-        toast.error("Unable to connect to the server");
+      if (axiosDefault.isAxiosError(error)) {
+        toast.error(parseApiError(error, "Profile setup failed").message);
       } else {
         toast.error("Couldn't read the selected photo. Please try another.");
       }

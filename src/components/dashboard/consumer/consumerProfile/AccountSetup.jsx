@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import { toast } from "react-toastify";
 import Cookies from "js-cookie";
-import axiosDefault from "axios";
 import Button from "@/components/shared/Button";
 import Dropdown from "@/components/shared/Dropdown";
 import { FormField } from "@/components/auth/AuthUI";
@@ -20,6 +19,7 @@ import joy from "@/assets/images/review-joy.jpg";
 import { countries } from "../../../../lib/countries";
 import { endpoints } from "../../../config/endpoints";
 import { axios } from "../../../../lib/axios";
+import { parseApiError } from "@/lib/apiError";
 
 const genderOptions = [
   { value: "male", label: "Male" },
@@ -84,22 +84,39 @@ export default function AccountSetup({ onSkip, onNext }) {
     e.preventDefault();
     if (loading) return;
 
-    if (!(form.firstName && form.lastName && form.phone && form.email)) {
+    if (
+      !(
+        form.firstName.trim() &&
+        form.lastName.trim() &&
+        form.phone.trim() &&
+        form.email.trim() &&
+        form.address.trim()
+      )
+    ) {
       toast.error(
-        "Please fill in your first name, last name, email and phone number.",
+        "Please fill in your first name, last name, email, phone number and address.",
       );
+      return;
+    }
+    // Backend limits (ConsumerProfileCreate): names >= 2 chars, address >= 5 chars
+    if (form.firstName.trim().length < 2 || form.lastName.trim().length < 2) {
+      toast.error("First and last name must be at least 2 characters.");
+      return;
+    }
+    if (form.address.trim().length < 5) {
+      toast.error("Address must be at least 5 characters.");
       return;
     }
 
     // Prepare data to send
     const dataToSend = {
-      first_name: form.firstName,
-      last_name: form.lastName,
-      address: form.address,
+      first_name: form.firstName.trim(),
+      last_name: form.lastName.trim(),
+      address: form.address.trim(),
       profile_picture: profileImage || null,
       crop_preferences: ["vegetables"],
-      email: form.email,
-      phone: form.phone,
+      email: form.email.trim(),
+      phone: form.phone.trim(),
     };
 
     setLoading(true);
@@ -124,15 +141,7 @@ export default function AccountSetup({ onSkip, onNext }) {
       }
     } catch (error) {
       console.error("Error:", error);
-      if (axiosDefault.isAxiosError(error) && error.response) {
-        toast.error(
-          error.response.data?.detail ||
-            error.response.data?.message ||
-            "Profile setup failed",
-        );
-      } else {
-        toast.error("Unable to connect to the server");
-      }
+      toast.error(parseApiError(error, "Profile setup failed").message);
     } finally {
       setLoading(false);
     }
@@ -258,10 +267,11 @@ export default function AccountSetup({ onSkip, onNext }) {
           </fieldset>
 
           {/* Address */}
-          <FormField label="Address" htmlFor="address">
+          <FormField label="Address" htmlFor="address" required>
             <textarea
               id="address"
               name="address"
+              required
               autoComplete="street-address"
               value={form.address}
               onChange={handleChange}

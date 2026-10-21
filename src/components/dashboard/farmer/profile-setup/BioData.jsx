@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import { toast } from "react-toastify";
-import axiosDefault from "axios";
 import Button from "@/components/shared/Button";
 import { FormField } from "@/components/auth/AuthUI";
 import {
@@ -16,6 +15,7 @@ import {
 import customerPhoto from "@/assets/images/Customer-photo.png";
 import { endpoints } from "../../../config/endpoints";
 import { axios } from "../../../../lib/axios";
+import { parseApiError } from "@/lib/apiError";
 
 const genderOptions = [
   { value: "male", label: "Male" },
@@ -59,18 +59,25 @@ const ProfileForm = ({ onNext }) => {
       !formData.lastName.trim() && "last name",
       !formData.email.trim() && "email",
       !formData.phone.trim() && "phone number",
+      !formData.address.trim() && "address",
     ].filter(Boolean);
     if (missing.length) {
       toast.error(`Please fill in: ${missing.join(", ")}.`);
       return;
     }
+    // Backend limit (FarmerProfileCreate): home_address >= 5 chars
+    const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`;
+    if (formData.address.trim().length < 5) {
+      toast.error("Address must be at least 5 characters.");
+      return;
+    }
 
     setIsSubmitting(true);
     const payload = {
-      full_name: `${formData.firstName} ${formData.lastName}`,
-      home_address: formData.address,
-      email: formData.email,
-      phone: formData.phone,
+      full_name: fullName,
+      home_address: formData.address.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
       profile_picture: image || null,
       id_document: "string",
       farm_name: "string",
@@ -97,11 +104,7 @@ const ProfileForm = ({ onNext }) => {
       }
     } catch (error) {
       console.error("Error:", error);
-      if (axiosDefault.isAxiosError(error) && error.response) {
-        toast.error(error.response.data?.message || "Profile setup failed");
-      } else {
-        toast.error("Unable to connect to the server");
-      }
+      toast.error(parseApiError(error, "Profile setup failed").message);
     } finally {
       setIsSubmitting(false);
     }
