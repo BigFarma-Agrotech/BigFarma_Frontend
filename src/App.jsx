@@ -1,42 +1,53 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Home from "./components/landing-page-sections/Home";
-// Auth pages
-import SignIn from "./pages/SignIn";
-import SignUp from "./pages/Signup";
-import ForgotPassword from "./pages/ForgotPassword";
-import InputOtp from "./pages/InputOtp";
-import ResetPassword from "./pages/ResetPassword";
-import RoleSelection from "./pages/RoleSelection";
-import VerifyOtp from "./pages/VerifyOtp";
-import Success from "./pages/Success";
-import SupportPage from "./pages/SupportPage";
 
-import {
-  DashboardPage,
-  ConsumerOrderPage,
-  CartPage,
-  CheckoutPage,
-  PaymentProcessingPage,
-  OrderConfirmationPage,
-  FarmerOrderPage,
-  ProductOrdersPage,
-  SingleOrderPage,
-} from "./pages";
-import PaymentSetup from "./pages/PaymentSetupModal";
-import MarketplacePage from "./components/dashboard/marketplace";
-import ProductDetail from "./components/dashboard/marketplace/product-detail";
-import DashboardLayout from "./components/dashboard/dashboard-layout";
-import GroupBuyPage from "./pages/GroupBuyPage";
-import CreateGroupModal from "./components/dashboard/GroupBuy/CreateGroupModal";
-import GroupDetailsPage from "./pages/GroupDetailsPage";
-import InvestmentPage from "./pages/InvestmentPage";
-import WalletPage from "./pages/WalletPage";
-import TransactionsPage from "./pages/TransactionsPage";
-import MyProductsPage from "./pages/MyProductsPage";
-import SettingsPage from "./pages/SettingsPage";
+// Everything except the landing page is loaded on demand, so the first visit
+// only downloads the code it needs.
+// Auth pages
+const SignIn = lazy(() => import("./pages/SignIn"));
+const SignUp = lazy(() => import("./pages/Signup"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const InputOtp = lazy(() => import("./pages/InputOtp"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const RoleSelection = lazy(() => import("./pages/RoleSelection"));
+const VerifyOtp = lazy(() => import("./pages/VerifyOtp"));
+const Success = lazy(() => import("./pages/Success"));
+const SupportPage = lazy(() => import("./pages/SupportPage"));
+
+// Dashboard pages
+const DashboardLayout = lazy(() => import("./components/dashboard/dashboard-layout"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const ConsumerOrderPage = lazy(() => import("./pages/ConsumerOrderPage"));
+const CartPage = lazy(() => import("./pages/CartPage"));
+const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
+const PaymentProcessingPage = lazy(() => import("./pages/PaymentProcessingPage"));
+const OrderConfirmationPage = lazy(() => import("./pages/OrderConfirmationPage"));
+const FarmerOrderPage = lazy(() => import("./pages/FarmerOrderPage"));
+const ProductOrdersPage = lazy(() => import("./pages/ProductOrdersPage"));
+const SingleOrderPage = lazy(() => import("./pages/SingleOrderPage"));
+const PaymentSetup = lazy(() => import("./pages/PaymentSetupModal"));
+const MarketplacePage = lazy(() => import("./components/dashboard/marketplace"));
+const ProductDetail = lazy(() => import("./components/dashboard/marketplace/product-detail"));
+const GroupBuyPage = lazy(() => import("./pages/GroupBuyPage"));
+const CreateGroupModal = lazy(() => import("./components/dashboard/GroupBuy/CreateGroupModal"));
+const GroupDetailsPage = lazy(() => import("./pages/GroupDetailsPage"));
+const InvestmentPage = lazy(() => import("./pages/InvestmentPage"));
+const WalletPage = lazy(() => import("./pages/WalletPage"));
+const TransactionsPage = lazy(() => import("./pages/TransactionsPage"));
+const MyProductsPage = lazy(() => import("./pages/MyProductsPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+
+// Plain CSS spinner so the fallback doesn't pull animation libraries into the
+// initial bundle
+const PageLoader = () => (
+  <div className="flex min-h-[50vh] w-full items-center justify-center">
+    <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-300 border-t-primary-light" />
+  </div>
+);
 
 const authRoutes = [
   { path: "/sign-in", element: <SignIn /> },
@@ -78,6 +89,7 @@ const App = () => {
     <>
       <ToastContainer position="top-right" autoClose={3000} />
       <ErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<Home />} />
 
@@ -91,11 +103,17 @@ const App = () => {
               <Route
                 key={path}
                 path={path}
-                element={<DashboardLayout>{element}</DashboardLayout>}
+                element={
+                  <DashboardLayout>
+                    {/* Inner boundary keeps the sidebar visible while a page loads */}
+                    <Suspense fallback={<PageLoader />}>{element}</Suspense>
+                  </DashboardLayout>
+                }
               />
             ))}
           </Route>
         </Routes>
+        </Suspense>
       </ErrorBoundary>
     </>
   );

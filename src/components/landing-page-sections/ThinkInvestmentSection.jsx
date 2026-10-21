@@ -8,6 +8,8 @@ export default function ThinkInvestment() {
         <div className="relative overflow-hidden bg-primary">
           <img
             src={bgImage}
+            loading="lazy"
+            decoding="async"
             alt=""
             aria-hidden="true"
             className="absolute inset-0 h-full w-full object-cover"

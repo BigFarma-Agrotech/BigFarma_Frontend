@@ -121,6 +121,7 @@ const Testimonials = () => {
                 <div className="mx-auto flex h-full w-full flex-col items-center justify-start gap-5 rounded-xl bg-white px-4 pt-4 pb-8">
                   <img
                     src={reviewer.profileImage}
+                    loading="lazy"
                     alt={`Photo of ${reviewer.name}`}
                     className="h-24 w-24 rounded-full object-cover shadow-2xl"
                   />

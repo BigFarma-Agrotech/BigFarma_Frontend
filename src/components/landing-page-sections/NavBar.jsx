@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import { Link } from "react-scroll";
 import { HiMenu, HiX } from "react-icons/hi";
 import { motion, AnimatePresence } from "framer-motion";
-import brandLogo from "../../assets/images/brand-logo.png";
+import brandLogo from "../../assets/images/brand-logo.webp";
 
 const NAV_LINKS = [
   { id: "home", label: "Home" },

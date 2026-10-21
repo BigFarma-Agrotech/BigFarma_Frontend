@@ -2,7 +2,7 @@ import { Link } from "react-scroll";
 import { NavLink } from "react-router-dom";
 import { ArrowDown } from "lucide-react";
 import bgFront from "../../assets/images/bigfarma-brandimage.webp";
-import bgBack from "../../assets/images/bg-image-back.png";
+import bgBack from "../../assets/images/bg-image-back.webp";
 
 const Hero = () => {
   return (

@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
+import process from "process";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -31,6 +32,20 @@ export default defineConfig(({ mode }) => {
     preview: { proxy },
     build: {
       outDir: "dist",
+      rollupOptions: {
+        output: {
+          // Split big libraries into their own files so they're cached across
+          // deploys and only downloaded by the pages that use them
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return;
+            if (/[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom)[\\/]/.test(id)) return "react";
+            if (/[\\/]node_modules[\\/](@tanstack|axios)[\\/]/.test(id)) return "query";
+            if (/[\\/]node_modules[\\/](chart\.js|react-chartjs-2)[\\/]/.test(id)) return "charts";
+            if (/[\\/]node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) return "motion";
+            if (/[\\/]node_modules[\\/]swiper[\\/]/.test(id)) return "swiper";
+          },
+        },
+      },
     },
 
     resolve: {

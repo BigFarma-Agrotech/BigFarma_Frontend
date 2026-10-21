@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { clearSession, getAccessToken, getRole } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
 import { FocusContext } from "@/context/FocusContext";
-import brandLogo from "../../assets/images/brand-logo.png";
+import brandLogo from "../../assets/images/brand-logo.webp";
 import { axios } from "../../lib/axios";
 import { endpoints } from "../config/endpoints";
 import { Skeleton } from "../shared";

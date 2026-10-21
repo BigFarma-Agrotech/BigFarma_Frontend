@@ -7,6 +7,8 @@ export default function AboutUsSection() {
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <img
             src={aboutUsImage}
+            loading="lazy"
+            decoding="async"
             alt="Farmers with fresh produce"
             className="order-2 mx-auto h-auto w-full max-w-md lg:order-1 lg:max-w-none"
           />

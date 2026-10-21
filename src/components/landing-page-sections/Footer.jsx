@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 import { subscribeToNewsletter, FeatureUnavailableError } from "../../lib/pendingApi";
 import { NavLink } from "react-router-dom";
 import { Link } from "react-scroll";
-import brandLogo from "../../assets/images/brand-logo.png";
+import brandLogo from "../../assets/images/brand-logo.webp";
 import faceBook from "../../assets/images/Facebook.svg";
 import instagram from "../../assets/images/Instagram.svg";
 import x from "../../assets/images/X.svg";
@@ -54,6 +54,7 @@ const Footer = () => {
         <div className="max-w-sm">
           <img
             src={brandLogo}
+            loading="lazy"
             alt="BigFarma logo"
             className="mb-6 h-9 w-auto object-contain"
           />

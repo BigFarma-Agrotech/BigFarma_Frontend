@@ -5,7 +5,7 @@ import { ImagePlus, X } from "lucide-react";
 import { axios } from "../../../lib/axios";
 import { endpoints } from "../../config/endpoints";
 import Button from "@/components/shared/Button";
-import formHeader from "../../../assets/images/addProductHeader.png";
+import formHeader from "../../../assets/images/addProductHeader.webp";
 
 const initialFormData = {
   name: "",
