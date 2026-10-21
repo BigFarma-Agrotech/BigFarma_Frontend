@@ -1,29 +1,35 @@
 import { formatAmount } from "@/utils";
-import { ArrowUp, ArrowDown } from "lucide-react";
 
-const StatCard = ({ title, total, percentage }) => {
-  const isPositive = percentage >= 0;
-  const isCurrentProduct = title.toLowerCase() === "Total Revenue";
-  const isProdSold = title.includes("Product Sold");
-
+const StatCard = ({ title, value, format = "number", caption, isError, refetch }) => {
   return (
-    <div className="bg-white text-black py-5 px-6 border-2 border-grey-100 rounded-lg">
-      <p className="font-medium text-sm lg:text-base mb-3">{title}</p>
+    <div className="min-w-0 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+      <p className="mb-3 text-sm font-medium text-gray-600">{title}</p>
 
-      {isCurrentProduct ? (
-        <p className="font-bold text-2xl lg:text-3xl">{total} active</p>
+      {isError ? (
+        <div className="text-sm text-red-600">
+          <p>Couldn&apos;t load this figure.</p>
+          {refetch && (
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="mt-1 font-medium text-primary underline"
+            >
+              Try again
+            </button>
+          )}
+        </div>
       ) : (
-        <p className="font-bold text-2xl lg:text-3xl">{isProdSold ? total : `₦${formatAmount(total)}` }</p>
+        <>
+          <p className="break-words text-2xl font-bold text-gray-900 xl:text-3xl">
+            {format === "currency"
+              ? `₦${formatAmount(Number(value) || 0)}`
+              : (Number(value) || 0).toLocaleString()}
+          </p>
+          {caption && (
+            <p className="mt-2 text-xs font-medium text-gray-500">{caption}</p>
+          )}
+        </>
       )}
-
-      <div
-        className={`mt-2 flex items-center text-xs font-medium ${
-          isPositive ? "text-[#016130]" : "text-red-600"
-        }`}
-      >
-        {isPositive ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
-        <p className="ml-1">{percentage.toFixed(1)}% </p>
-      </div>
     </div>
   );
 };

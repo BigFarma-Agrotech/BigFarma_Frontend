@@ -1,54 +1,46 @@
 import { useState, useEffect } from "react";
-import Pending from "../../../../assets/icons/pending.png";
-import LoaderSpinner from "../../../../components/shared/Loader";
+import pendingIcon from "@/assets/icons/pending.png";
+import LoaderSpinner from "@/components/shared/Loader";
+import { StatusMessage } from "@/components/auth/AuthUI";
+import {
+  modalOverlayClass,
+  modalPanelClass,
+} from "@/components/auth/authStyles";
 
 const PendingVerification = ({ onNext }) => {
-	const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-	useEffect(() => {
-		// show pending first, then switch to loading
-		const loaderTimer = setTimeout(() => {
-			setLoading(true);
-		}, 1500);
+  useEffect(() => {
+    // show pending first, then switch to loading
+    const loaderTimer = setTimeout(() => {
+      setLoading(true);
+    }, 1500);
 
-		// after loading, redirect
-		const redirectTimer = setTimeout(() => {
-			onNext();
-			setLoading(false);
-		}, 3000);
+    // after loading, redirect
+    const redirectTimer = setTimeout(() => {
+      onNext();
+      setLoading(false);
+    }, 3000);
 
-		return () => {
-			clearTimeout(loaderTimer);
-			clearTimeout(redirectTimer);
-		};
-	}, [onNext]);
+    return () => {
+      clearTimeout(loaderTimer);
+      clearTimeout(redirectTimer);
+    };
+  }, [onNext]);
 
-	return (
-		<>
-			{!loading && (
-				<div className="fixed inset-0 w-full min-h-screen bg-black/50  z-50 flex items-center justify-center">
-					<div className="flex flex-col items-center justify-center h-auto bg-white p-6 rounded-lg shadow-lg">
-						<img
-							src={Pending}
-							alt="Pending"
-							className="w-15 h-15 md:w-25 md:h-25"
-						/>
-						<div className="text-center mt-6">
-							<span className="text-[32px] font-bold leading-tight">
-								Your account is almost ready!
-							</span>
-							<p className="text-[18px] max-w-2xl font-normal pt-5 text-black">
-								We're verifying your details. Please check your email or SMS for
-								a verification message. Once confirmed, you'll be able to add
-								your products to the marketplace.
-							</p>
-						</div>
-					</div>
-				</div>
-			)}
-			{loading && <LoaderSpinner />}
-		</>
-	);
+  if (loading) return <LoaderSpinner />;
+
+  return (
+    <div className={modalOverlayClass}>
+      <div className={modalPanelClass}>
+        <StatusMessage
+          icon={pendingIcon}
+          title="Your account is almost ready!"
+          message="We're verifying your details. Please check your email or SMS for a verification message. Once confirmed, you'll be able to add your products to the marketplace."
+        />
+      </div>
+    </div>
+  );
 };
 
 export default PendingVerification;

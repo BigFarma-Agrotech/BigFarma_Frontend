@@ -1,99 +1,113 @@
-import { preferences as preferenceOptions } from "../../../../lib/consumerPreference";
-import React, { useState } from "react";
+import { useState } from "react";
 import { toast } from "react-toastify";
-import { axios } from "../../../../lib/axios";
 import Cookies from "js-cookie";
-import { endpoints } from "../../../config/endpoints";
 import axiosDefault from "axios";
+import Button from "@/components/shared/Button";
+import {
+  modalOverlayClass,
+  modalPanelClass,
+  primaryButtonClass,
+  titleClass,
+} from "@/components/auth/authStyles";
+import { cn } from "@/lib/utils";
+import { preferences as preferenceOptions } from "../../../../lib/consumerPreference";
+import { axios } from "../../../../lib/axios";
+import { endpoints } from "../../../config/endpoints";
 
 const ConsumerPreferences = ({ onNext }) => {
-	const [selectedPreferences, setSelectedPreferences] = useState([]);
+  const [selectedPreferences, setSelectedPreferences] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-	const togglePreference = (id) => {
-		setSelectedPreferences((prev) =>
-			prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
-		);
-	};
+  const togglePreference = (id) => {
+    setSelectedPreferences((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
+    );
+  };
 
-	const handlePreferenceSubmit = async () => {
-		const preferencesToSend = selectedPreferences.map(
-			(id) => preferenceOptions.find((p) => p.id === id)?.label
-		);
-		const dataToSend = {
-			crop_preferences: preferencesToSend.length > 0 ? preferencesToSend : ["Vegetables"],
-		};
-		try {
-			
+  const handlePreferenceSubmit = async () => {
+    if (loading) return;
+    const preferencesToSend = selectedPreferences.map(
+      (id) => preferenceOptions.find((p) => p.id === id)?.label,
+    );
+    const dataToSend = {
+      crop_preferences:
+        preferencesToSend.length > 0 ? preferencesToSend : ["Vegetables"],
+    };
+    setLoading(true);
+    try {
+      const res = await axios.put(
+        endpoints().users.update_consumer_profile,
+        dataToSend,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Cookies.get("BIGFARMA_ACCESS_TOKEN")}`,
+          },
+        },
+      );
+      const data = await res.data;
+      if (res.status === 200 || res.status === 201) {
+        toast.success(data.message || "Saved successfully!");
+        onNext(data);
+      } else {
+        toast.error(data.message || "Network error. Please try again.");
+      }
+    } catch (error) {
+      // Stay on this step so the user can retry.
+      if (axiosDefault.isAxiosError(error) && error.response) {
+        toast.error(
+          error.response.data?.detail ||
+            error.response.data?.message ||
+            "Failed to save your preferences",
+        );
+      } else {
+        toast.error("Unable to connect to the server");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-			const res = await axios.put(
-				endpoints().users.update_consumer_profile,
-				dataToSend,
-				{
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${Cookies.get("BIGFARMA_ACCESS_TOKEN")}`,
-					},
-				}
-			);
-			const data = await res.data;
-			if (res.status === 200 || res.status === 201) {
-				toast.success(data.message || "Saved successfully!");
-				onNext(data);
-			} else {
-				toast.error(data.message || "Network error. Please try again.");
-			}
-		} catch (error) {
-			console.error("Error updating preferences:", error);
-			if (axiosDefault.isAxiosError(error) && error.response) {
-				return {
-					isSuccess: false,
-					statusCode: error.response.status.toString(),
-					message:
-						(error.response.data &&
-							(error.response.data.detail || error.response.data.message)) ||
-						"Profile setup failed",
-					data: null,
-				};
-			}
-			return {
-				isSuccess: false,
-				statusCode: "500",
-				message: "unable to connect to the server",
-				data: null,
-			};
-		}
-	};
-
-	return (
-		<div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-			<div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md w-full">
-				<h2 className="text-xl font-semibold mb-6">
-					Choose your favorite product categories
-				</h2>
-				<div className="grid grid-cols-2 gap-4 mb-6">
-					{preferenceOptions.map((cat) => (
-						<button
-							key={cat.id}
-							type="button"
-							onClick={() => togglePreference(cat.id)}
-							className={`border rounded-lg p-4 flex items-center justify-center space-x-2 transition ${
-								selectedPreferences.includes(cat.id)
-									? "bg-green-100 border-green-600"
-									: "bg-white hover:border-gray-400"
-							}`}>
-							<img src={cat.profileImage} alt={cat.label} />
-							<span>{cat.label}</span>
-						</button>
-					))}
-				</div>
-				<button
-					onClick={handlePreferenceSubmit}
-					className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
-					Continue
-				</button>
-			</div>
-		</div>
-	);
+  return (
+    <div className={modalOverlayClass}>
+      <div className={cn(modalPanelClass, "max-w-md text-center")}>
+        <h2 className={titleClass}>Choose your favorite product categories</h2>
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
+          {preferenceOptions.map((cat) => {
+            const selected = selectedPreferences.includes(cat.id);
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => togglePreference(cat.id)}
+                className={cn(
+                  "flex min-h-24 flex-col items-center justify-center gap-2 rounded-lg border p-3 text-sm font-medium capitalize transition-colors sm:p-4 sm:text-base",
+                  selected
+                    ? "border-primary bg-primary-subtle text-primary-dark"
+                    : "border-grey-100 bg-white hover:border-primary",
+                )}
+              >
+                <img
+                  src={cat.profileImage}
+                  alt=""
+                  className="h-10 w-10 object-contain"
+                />
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        <Button
+          onClick={handlePreferenceSubmit}
+          className={cn(primaryButtonClass, "mt-8")}
+          disabled={loading}
+        >
+          {loading ? "Saving..." : "Continue"}
+        </Button>
+      </div>
+    </div>
+  );
 };
 
 export default ConsumerPreferences;

@@ -1,9 +1,7 @@
 import GroupCreation from "./GroupCreation";
 
 const GroupBuy = () => {
-  return (
-      <GroupCreation />
-  );
+  return <GroupCreation />;
 };
 
 export default GroupBuy;

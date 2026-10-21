@@ -2,29 +2,41 @@ import { onions, pepper, plantain, tomato } from "@/assets";
 import { TriangleAlert, Clock, CheckCircle2 } from "lucide-react";
 
 export const ORDER_STATUS = {
+  PLACED: {
+    label: "Placed",
+    icon: Clock,
+    textColor: "#6b4610",
+    bgColor: "#fff6e9",
+  },
   SHIPPING: {
     label: "Shipping In Progress",
     icon: Clock,
-    textColor: "#2563EB",
-    bgColor: "#D3DFF9",
+    textColor: "#2563eb",
+    bgColor: "#d3dff9",
   },
   AWAITING: {
     label: "Awaiting Confirmation",
     icon: Clock,
-    textColor: "#2563EB",
-    bgColor: "#D3DFF9",
+    textColor: "#2563eb",
+    bgColor: "#d3dff9",
   },
   ISSUE: {
     label: "Delivery Issue - Pending Review",
     icon: TriangleAlert,
-    textColor: "#E02424",
-    bgColor: "#F5BBBB",
+    textColor: "#e02424",
+    bgColor: "#f5bbbb",
   },
   DELIVERED: {
     label: "Delivered",
     icon: CheckCircle2,
     textColor: "#016130",
-    bgColor: "#ECFDF3",
+    bgColor: "#ecfdf3",
+  },
+  CANCELLED: {
+    label: "Cancelled",
+    icon: TriangleAlert,
+    textColor: "#4b5563",
+    bgColor: "#f3f4f6",
   },
 };
 

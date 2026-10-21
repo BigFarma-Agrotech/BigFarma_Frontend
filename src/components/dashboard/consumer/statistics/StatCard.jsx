@@ -6,22 +6,20 @@ const StatCard = ({ title, total, percentage }) => {
   const isCurrentOrders = title.toLowerCase() === "current orders";
 
   return (
-    <div className="bg-white text-black py-5 px-6 border-2 border-grey-100 rounded-lg">
-      <p className="font-medium text-sm lg:text-base mb-3">{title}</p>
+    <div className="min-w-0 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+      <p className="mb-2 text-sm font-medium text-gray-600">{title}</p>
 
-      {isCurrentOrders ? (
-        <p className="font-bold text-2xl lg:text-3xl">{total} active</p>
-      ) : (
-        <p className="font-bold text-2xl lg:text-3xl">₦{formatAmount(total)}</p>
-      )}
+      <p className="break-words text-2xl font-bold text-gray-900 lg:text-3xl">
+        {isCurrentOrders ? `${total} active` : `₦${formatAmount(total)}`}
+      </p>
 
       <div
-        className={`mt-2 flex items-center text-xs font-medium ${
+        className={`mt-2 flex items-center gap-1 text-xs font-medium ${
           isPositive ? "text-green-600" : "text-red-600"
         }`}
       >
         {isPositive ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
-        <p className="ml-1">{percentage}% growth</p>
+        <span>{percentage}% growth</span>
       </div>
     </div>
   );

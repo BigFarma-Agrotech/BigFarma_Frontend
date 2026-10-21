@@ -1,9 +1,7 @@
-import Transactions from "../components/dashboard/transactions/Transactions"
+import Transactions from "../components/dashboard/transactions/Transactions";
 
 const TransactionsPage = () => {
-    return <>
-        <Transactions/>
-    </>
-}
+  return <Transactions />;
+};
 
 export default TransactionsPage;

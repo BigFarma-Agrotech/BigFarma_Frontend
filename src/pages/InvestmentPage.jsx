@@ -1,9 +1,7 @@
-import Investment from "../components/dashboard/investment/Investment"
+import Investment from "../components/dashboard/investment/Investment";
 
 const InvestmentPage = () => {
-    return <>
-    <Investment/>
-    </>
-}
+  return <Investment />;
+};
 
 export default InvestmentPage;

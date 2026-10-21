@@ -1,2 +1,92 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
 @import "tailwindcss";
 
+@theme {
+  /* Typography */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-inter: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Primary colors */
+  --color-primary-dark: #003f1f;
+  --color-primary: #016130;
+  --color-primary-light: #01ae56;
+  --color-primary-transparent: #01ae5633;
+  --color-primary-subtle: #c9f4de;
+
+  /* Secondary colors */
+  --color-secondary-dark: #382100;
+  --color-secondary: #ffa725;
+  --color-secondary-light: #fff5e7;
+  --color-secondary-transparent: #ffa72580;
+
+  /* Neutral colors */
+  --color-neutral-dark: #000000;
+  --color-neutral: #3c3c3c;
+  --color-neutral-light: #ffffff;
+  --color-text-neutral: #2f2e38;
+
+  --color-grey-100: #ddd5dd;
+  --color-grey-200: #98a2b3;
+  --color-grey-300: #545454;
+
+  /* Animations */
+  --animate-shimmer: shimmer 1.5s linear infinite;
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-white font-sans text-text-neutral antialiased;
+    overflow-x: hidden;
+  }
+
+  img,
+  video,
+  svg {
+    max-width: 100%;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .navlink a {
+    color: var(--color-neutral-dark);
+    transition: color 0.3s ease;
+  }
+  .navlink a:hover {
+    color: var(--color-primary);
+  }
+}
+
+@utility scroll-hide {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

@@ -1,11 +1,7 @@
-import MyProducts from "../components/dashboard/MyProducts/MyProducts"
+import MyProducts from "../components/dashboard/MyProducts/MyProducts";
 
 const MyProductsPage = () => {
-	return (
-		<>
-			<MyProducts />
-		</>
-	);
+  return <MyProducts />;
 };
 
 export default MyProductsPage;

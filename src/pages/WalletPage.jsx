@@ -1,9 +1,7 @@
-import WalletIndex from "../components/dashboard/wallet/Index"
+import WalletIndex from "../components/dashboard/wallet/Index";
 
 const WalletPage = () => {
-    return <>
-    <WalletIndex/>    
-    </>
-}
+  return <WalletIndex />;
+};
 
 export default WalletPage;

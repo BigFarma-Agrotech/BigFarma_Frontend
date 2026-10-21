@@ -1,148 +1,157 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { Search, ShoppingCart, Bell, Menu } from 'lucide-react';
-import Input from '../shared/Input';
-import Avatar from '../../assets/images/JohnDoe-avatar.jpg';
-import { useCart } from '../../hooks';
-import Cookies from 'js-cookie';
-import { endpoints } from '../config/endpoints';
-import { axios } from '../../lib/axios';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { Search, ShoppingCart, Bell, Menu } from "lucide-react";
+import Input from "../shared/Input";
+import Avatar from "../../assets/images/JohnDoe-avatar.jpg";
+import { useCart } from "../../hooks";
+import Cookies from "js-cookie";
+import { endpoints } from "../config/endpoints";
+import { axios } from "../../lib/axios";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function DashboardHeader({ onMenuClick }) {
-  const role = Cookies.get('BIGFARMA_ROLE');
+  const role = Cookies.get("BIGFARMA_ROLE");
   const { getCartCount } = useCart();
   const [profile, setProfile] = useState(null);
-  const token = Cookies.get('BIGFARMA_ACCESS_TOKEN');
+  const token = Cookies.get("BIGFARMA_ACCESS_TOKEN");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const searchTarget = role === "farmer" ? "/my-products" : "/marketplace";
+  // Prefill with the current ?q= when the header mounts on the search page
+  const [searchTerm, setSearchTerm] = useState(() =>
+    location.pathname === searchTarget
+      ? new URLSearchParams(location.search).get("q") || ""
+      : ""
+  );
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const term = searchTerm.trim();
+    navigate(term ? `${searchTarget}?q=${encodeURIComponent(term)}` : searchTarget);
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (token) {
-        try {
-          let response;
-          if (role === 'farmer') {
-            response = await axios.get(endpoints().users.get_farmer_profile, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-            const data = await response.data;
-            setProfile(data);
-          } else if (role === 'consumer') {
-            response = await axios.get(endpoints().users.get_consumer_profile, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-            const data = await response.data;
-            setProfile(data);
-          }
-        } catch (error) {
-          console.error('Error fetching profile:', error);
-          setProfile(null);
-        }
-      } else {
+      const url =
+        role === "farmer"
+          ? endpoints().users.get_farmer_profile
+          : role === "consumer"
+            ? endpoints().users.get_consumer_profile
+            : null;
+
+      if (!token || !url) {
+        setProfile(null);
+        return;
+      }
+
+      try {
+        const response = await axios.get(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setProfile(response.data);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
         setProfile(null);
       }
     };
     fetchProfile();
-  }, [role, token, setProfile]);
+  }, [role, token]);
 
-  console.log('Header profile:', profile?.first_name, profile?.full_name);
-  console.log('Header profile2:', profile);
+  const firstName =
+    profile?.full_name?.split(" ")[0] || profile?.first_name || "User";
+  const cartCount = getCartCount();
 
   return (
-		<>
-			<header className="fixed top-0 right-0 left-0 lg:left-64 z-30 bg-white border-b border-gray-200 h-20">
-				<div className="flex items-center justify-between h-full px-4 lg:px-10">
-					<div className="flex items-center gap-4">
-						<button
-							className="lg:hidden focus:outline-none focus:ring-0"
-							onClick={onMenuClick}>
-							<Menu className="h-5 w-5" />
-						</button>
+    <header className="fixed left-0 right-0 top-0 z-30 h-16 border-b border-gray-200 bg-white sm:h-20 lg:left-64">
+      <div className="flex h-full items-center justify-between gap-3 px-4 sm:px-6 lg:px-10">
+        <div className="flex shrink-0 items-center gap-3">
+          <button
+            type="button"
+            className="-ml-2 rounded-lg p-2 text-neutral hover:bg-gray-100 focus:outline-none lg:hidden"
+            onClick={onMenuClick}
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
 
-						<div className="hidden sm:block">
-							<h1 className="text-lg font-medium text-gray-900">
-								Hello,{" "}
-								{profile?.full_name?.split(" ")[0] ||
-									profile?.first_name ||
-									"Hi User"}{" "}
-								<span className="text-red-500">👋</span>
-							</h1>
-							{role && (
-								<p className="text-sm text-gray-600 capitalize">
-									{role === "farmer" ? "🌱Farmer" : "🛒 Consumer"}
-								</p>
-							)}
-						</div>
-					</div>
+          <div className="hidden md:block">
+            <h1 className="text-lg font-medium text-gray-900">
+              Hello, {firstName} <span aria-hidden="true">👋</span>
+            </h1>
+            {role && (
+              <p className="text-sm text-gray-600">
+                {role === "farmer" ? "🌱 Farmer" : "🛒 Consumer"}
+              </p>
+            )}
+          </div>
+        </div>
 
-					<div className="flex justify-between items-center gap-3">
-						<div className="flex-1 w-xs mx-3">
-							<div className="relative">
-								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-								<Input
-									type="text"
-									placeholder={
-										role === "farmer" ? "search..." : "search farm produce"
-									}
-									className={`pl-8 bg-gray-50 border-gray-200 focus:bg-white ${
-										role === "farmer"
-											? "placeholder:font-bold placeholder:text-base"
-											: "placeholder:font-normal placeholder:text-base text-[#98A2B3]"
-									}`}
-								/>
-							</div>
-						</div>
-						<div className="flex items-center gap-4">
-							{role === "consumer" && (
-								<Link
-									to="/cart"
-									className="relative focus:outline-none focus:ring-0">
-									<ShoppingCart className="h-5 w-5 text-[#8E8E93] border-none" />
-									{getCartCount() > 0 && (
-										<span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-											{getCartCount()}
-										</span>
-									)}
-								</Link>
-							)}
-							<button className="relative focus:outline-none focus:ring-0">
-								<Bell className="h-5 w-5 text-[#8E8E93]" />
-								<span
-									className={`absolute top-0.5 right-0.5 h-2 w-2 ${
-										role === "farmer" ? "bg-[#FFA725]" : "bg-green-500"
-									} rounded-full`}></span>
-							</button>
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-3 sm:gap-4">
+          <form
+            role="search"
+            onSubmit={handleSearch}
+            className="relative w-full min-w-0 max-w-xs"
+          >
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+            />
+            <Input
+              type="search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label={role === "farmer" ? "Search my products" : "Search produce"}
+              placeholder={role === "farmer" ? "Search products..." : "Search produce"}
+              className="h-10 border bg-gray-50 py-0 pl-9 text-sm placeholder:text-grey-200 focus:bg-white sm:text-base"
+            />
+          </form>
 
-							<div className="flex items-center gap-2 ml-2">
-								<div className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center text-gray-500 font-bold text-sm">
-									<img
-										src={profile?.profile_picture || Avatar}
-										alt="Avatar"
-										className="h-full w-full rounded-full object-cover"
-									/>
-								</div>
+          {role === "consumer" && (
+            <Link
+              to="/cart"
+              className="relative shrink-0 p-1 focus:outline-none"
+              aria-label="Cart"
+            >
+              <ShoppingCart className="h-5 w-5 text-[#8e8e93]" />
+              {cartCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs text-white">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          )}
 
-								<div className="hidden md:block">
-									<span className="text-sm font-bold text-gray-900 block">
-										{profile?.full_name?.split(" ")[0] ||
-											profile?.first_name ||
-											"Hi User"}
-									</span>
-									{role && (
-										<span className="text-xs text-gray-500 capitalize">
-											{role === "farmer" ? "Farmer" : "Consumer"}
-										</span>
-									)}
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</header>
-		</>
-	);
+          <button
+            type="button"
+            className="relative shrink-0 p-1 focus:outline-none"
+            aria-label="Notifications"
+          >
+            <Bell className="h-5 w-5 text-[#8e8e93]" />
+            <span
+              className={`absolute right-1 top-1 h-2 w-2 rounded-full ${
+                role === "farmer" ? "bg-secondary" : "bg-primary-light"
+              }`}
+            ></span>
+          </button>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <img
+              src={profile?.profile_picture || Avatar}
+              alt="Avatar"
+              className="h-9 w-9 rounded-full bg-gray-100 object-cover sm:h-10 sm:w-10"
+            />
+            <div className="hidden lg:block">
+              <span className="block text-sm font-bold text-gray-900">
+                {firstName}
+              </span>
+              {role && (
+                <span className="text-xs capitalize text-gray-500">{role}</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
 }

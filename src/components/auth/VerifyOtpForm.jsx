@@ -1,12 +1,12 @@
-"use client";
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft } from "lucide-react";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
+import { toast } from "react-toastify";
 import Button from "@/components/shared/Button";
 import OtpInput from "@/components/shared/OtpInput";
-import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { verifyOtp } from "@/components/queries/auth/verifyOtp";
 import { requestOtp } from "@/components/queries/auth/register";
-import { toast } from "react-toastify";
+import { AuthHeader, AuthPage, BackLink } from "./AuthUI";
+import { linkClass, primaryButtonClass } from "./authStyles";
 
 function VerifyOtpForm(props) {
   const location = useLocation();
@@ -32,7 +32,7 @@ function VerifyOtpForm(props) {
   }
 
   const handleVerify = async () => {
-    if (value.length !== 6) return;
+    if (value.length !== 6 || loading) return;
     setLoading(true);
     const result = await verifyOtp({
       identifier,
@@ -64,63 +64,52 @@ function VerifyOtpForm(props) {
     }
   };
 
-  const handleBack = () => {
-    navigate("/forgot-password");
-  };
-
   return (
-    <div className="min-h-screen mx-auto flex items-center justify-center p-4">
-      <div className="w-full max-w-[650px]">
-        <div className="space-y-8 p-5 md:p-8">
-          <Button
-            variant="ghost"
-            onClick={handleBack}
-            className="flex items-center gap-1 p-0 h-auto focus:outline-none focus:ring-0"
+    <AuthPage>
+      <BackLink fallback="/forgot-password" />
+
+      <AuthHeader
+        className="mt-6"
+        title="Enter the verification code"
+        subtitle={
+          <>
+            We sent a 6 digit code to{" "}
+            <span className="break-all font-medium text-text-neutral">
+              {identifier}
+            </span>
+            . Please enter it to continue.
+          </>
+        }
+      />
+
+      <div className="mt-8 space-y-6">
+        <OtpInput length={6} value={value} onChange={setValue} />
+
+        <Button
+          onClick={handleVerify}
+          className={primaryButtonClass}
+          disabled={value.length !== 6 || loading}
+        >
+          {loading ? "Verifying..." : "Verify Code"}
+        </Button>
+
+        <p className="text-center text-base text-text-neutral">
+          Haven&apos;t gotten the code yet?{" "}
+          <button
+            type="button"
+            onClick={handleResendCode}
+            className={`${linkClass} disabled:cursor-not-allowed disabled:opacity-60`}
+            disabled={isResending || timer > 0}
           >
-            <ChevronLeft className="w-5 h-5" />
-            Back
-          </Button>
-          <div className="space-y-8">
-            <div className="space-y-2">
-              <h1 className="text-xl md:text-[32px] font-bold">
-                Enter the verification code
-              </h1>
-              <p className="text-lg">
-                We sent a 6 digit code to{" "}
-                <span className="font-medium">{identifier}</span>. Please enter it to
-                continue
-              </p>
-            </div>
-            <div className="flex justify-center">
-              <OtpInput length={6} value={value} onChange={setValue} />
-            </div>
-            <Button
-              onClick={handleVerify}
-              className="w-full"
-              variant="default"
-              disabled={value.length !== 6 || loading}
-            >
-              {loading ? "Verifying..." : "Verify Code"}
-            </Button>
-            <div className="text-center">
-              <span className="">{"Haven't gotten code yet? "}</span>
-              <button
-                variant="link"
-                onClick={handleResendCode}
-                className="text-[#ffa725] hover:text-[#ffa725] font-medium p-0 h-auto cursor-pointer"
-                disabled={isResending || timer > 0}
-              >
-                {isResending
-                  ? "Resending..."
-                  : timer > 0
-                  ? `Resend code in ${timer}s`
-                  : "Resend code"}
-              </button>
-            </div>
-          </div>
-        </div>
+            {isResending
+              ? "Resending..."
+              : timer > 0
+                ? `Resend code in ${timer}s`
+                : "Resend code"}
+          </button>
+        </p>
       </div>
-    </div>
+    </AuthPage>
   );
 }
 

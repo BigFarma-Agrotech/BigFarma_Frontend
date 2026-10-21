@@ -1,4 +1,3 @@
-// src/hooks/useFarmerOrders.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { farmerApi } from '../lib/farmerApi';
 
@@ -16,9 +15,7 @@ export const useFarmerOrder = (filters = {}) => {
   return useQuery({
     queryKey: farmerOrderKeys.list(filters),
     queryFn: async () => {
-      console.log('🔄 Fetching farmer orders...');
       const response = await farmerApi.getOrders();
-      console.log('✅ Farmer orders response:', response.data);
       return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -34,10 +31,10 @@ export const useUpdateOrderStatus = () => {
   return useMutation({
     mutationFn: ({ orderId, statusData }) =>
       farmerApi.updateOrderStatus(orderId, statusData),
-    onSuccess: (data, variables) => {
-      // Invalidate and refetch orders list
+    onSuccess: () => {
+      // Invalidate and refetch both the orders lists and any cached order details
       queryClient.invalidateQueries({
-        queryKey: farmerOrderKeys.lists(),
+        queryKey: farmerOrderKeys.all,
       });
     },
     onError: (error) => {

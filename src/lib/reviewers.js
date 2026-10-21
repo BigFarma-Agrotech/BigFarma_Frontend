@@ -8,7 +8,7 @@ export const reviewers = [
     {
         id: 1,
         name: "Bisi",
-        review: "With BigFarma’s investment support, I was able to grow my poultry business.I got funding without the stress of bank loans.",
+        review: "With BigFarma’s investment support, I was able to grow my poultry business. I got funding without the stress of bank loans.",
         additionalDetails: "Poultry Farmer, Osun",
         profileImage: bisi
     },
@@ -16,8 +16,8 @@ export const reviewers = [
     {
         id: 2,
         name: "Ifeanyi",
-        review: "Buying farm produce through BigFarma is fast and easy.I get good prices, and I know real farmers benefit directly from every order.",
-        additionalDetails: "Buyer, Portharcourt",
+        review: "Buying farm produce through BigFarma is fast and easy. I get good prices, and I know real farmers benefit directly from every order.",
+        additionalDetails: "Buyer, Port Harcourt",
         profileImage: ifeanyi
     },
 

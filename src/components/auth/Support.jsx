@@ -1,8 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-import { Link } from "react-router-dom";
-import "../../App.css";
-//==================== Support Icons ====================
+import { toast } from "react-toastify";
 import { FaRegCommentDots } from "react-icons/fa";
 import {
   MdOutlineLiveHelp,
@@ -10,80 +8,119 @@ import {
   MdOutlineEmail,
 } from "react-icons/md";
 
-const Support = ({ show, onClose }) => {
+const iconProps = { size: 22, className: "shrink-0", "aria-hidden": true };
+
+// Contact details mirror the landing page ContactUs section.
+const options = [
+  {
+    label: "FAQ / help center",
+    icon: <MdOutlineLiveHelp {...iconProps} />,
+    href: "/#faqs",
+  },
+  {
+    label: "In-app chat",
+    icon: <FaRegCommentDots {...iconProps} />,
+    onClick: () => toast.info("In-app chat is coming soon"),
+  },
+  {
+    label: "Email support",
+    icon: <MdOutlineEmail {...iconProps} />,
+    href: "mailto:hello@bigfarma.com",
+  },
+  {
+    label: "Phone hotline",
+    icon: <MdOutlinePhone {...iconProps} />,
+    href: "tel:+2349043120419",
+  },
+];
+
+const optionClass =
+  "flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-primary px-4 text-sm font-medium text-primary transition-colors hover:bg-primary-subtle";
+
+const SupportContent = ({ onClose }) => (
+  <>
+    {onClose && (
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close support options"
+        className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-grey-300 transition-colors hover:bg-gray-100 hover:text-neutral"
+      >
+        <X className="h-5 w-5" aria-hidden="true" />
+      </button>
+    )}
+
+    <div className="space-y-1 pb-6 text-center">
+      <h2 className="text-2xl font-bold text-text-neutral">Need help?</h2>
+      <p className="text-base text-neutral">
+        Explore the following support options
+      </p>
+    </div>
+
+    <div className="flex flex-col gap-3">
+      {options.map(({ label, icon, href, onClick }) =>
+        href ? (
+          // Plain <a>: mailto/tel need it, and a full load of "/#faqs" lets
+          // the browser scroll to the FAQ section on the landing page.
+          <a key={label} href={href} className={optionClass}>
+            {icon}
+            {label}
+          </a>
+        ) : (
+          <button
+            key={label}
+            type="button"
+            onClick={onClick}
+            className={optionClass}
+          >
+            {icon}
+            {label}
+          </button>
+        ),
+      )}
+    </div>
+  </>
+);
+
+/**
+ * Support options. By default renders as a modal / bottom sheet controlled by
+ * `show` + `onClose`. Pass `inline` to render the panel directly in the page.
+ */
+const Support = ({ show, onClose, inline = false }) => {
+  if (inline) {
+    return (
+      <div className="relative w-full max-w-sm rounded-xl bg-white p-6 shadow-sm sm:p-8">
+        <SupportContent />
+      </div>
+    );
+  }
+
   return (
     <AnimatePresence>
       {show && (
-        <div className="">
+        <motion.div
+          key="support-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
+          onClick={onClose}
+        >
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Support options"
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="bg-white rounded-xl p-6 shadow-xl px-4"
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="relative w-full max-w-sm rounded-xl bg-white p-6 shadow-xl sm:p-8"
+            onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={onClose}
-              className="absolute top-3 left-3 text-gray-500 hover:text-black"
-            >
-              <X />
-            </button>
-
-            <div className="text-center space-y-1 pb-5">
-              <h2 className="text-3xl font-semibold lg:text-2xl">Need help?</h2>
-              <p className="lg:text-md text-[var(--color-neutral)]">
-                Explore the following support options
-              </p>
-            </div>
-
-            <section className="w-fit flex justify-center items-center ">
-              <div className="flex flex-col gap-10 ">
-                <div className="capitalize font-medium text-xl flex flex-col gap-4 w-[350px]">
-                  <Link
-                    to={""}
-                    className="py-3 px-16  text-center text-sm text-[var(--color-primary)] border-1 border-[var(--color-primary)] rounded-md hover:bg-gray-100 transition duration-300 ease-in-out flex items-center justify-center"
-                  >
-                    <MdOutlineLiveHelp
-                      size={22}
-                      className="text-[var(--color-primary)] mr-2"
-                    />
-                    FAQ / help center
-                  </Link>
-                  <Link
-                    to={""}
-                    className="py-3 px-16  text-center text-sm text-[var(--color-primary)] border-1 border-[var(--color-primary)] rounded-md hover:bg-gray-100 transition duration-300 ease-in-out flex items-center justify-center"
-                  >
-                    <FaRegCommentDots
-                      size={22}
-                      className="text-[var(--color-primary)] mr-2"
-                    />
-                    In-App chat
-                  </Link>
-                  <Link
-                    to={""}
-                    className="py-3 px-16  text-center text-sm text-[var(--color-primary)] border-1 border-[var(--color-primary)] rounded-md hover:bg-gray-100 transition duration-300 ease-in-out flex items-center justify-center"
-                  >
-                    <MdOutlineEmail
-                      size={22}
-                      className="text-[var(--color-primary)] mr-2"
-                    />
-                    Email support
-                  </Link>
-                  <Link
-                    to={""}
-                    className="py-3 px-16  text-center text-sm text-[var(--color-primary)] border-1 border-[var(--color-primary)] rounded-md hover:bg-gray-100 transition duration-300 ease-in-out flex items-center justify-center"
-                  >
-                    <MdOutlinePhone
-                      size={22}
-                      className="text-[var(--color-primary)] mr-2"
-                    />
-                    Phone hotline
-                  </Link>
-                </div>
-              </div>
-            </section>
+            <SupportContent onClose={onClose} />
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

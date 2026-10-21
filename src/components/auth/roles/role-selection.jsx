@@ -1,21 +1,36 @@
-"use client";
-// import { useState } from "react";
 import { useContext } from "react";
-import { FocusContext } from "@/context/FocusContext";
 import { useNavigate } from "react-router-dom";
-import Button from "@/components/shared/Button";
-import FarmerIcon from "../../../assets/svgs/farmer.svg"
-import LightCart from "../../../assets/svgs/light-cart.svg"
-import Cart from "../../../assets/svgs/cart.svg"
-import LightFarmer from "../../../assets/svgs/light-farmer.svg"
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { FocusContext } from "@/context/FocusContext";
+import Button from "@/components/shared/Button";
+import { cn } from "@/lib/utils";
+import FarmerIcon from "@/assets/svgs/farmer.svg";
+import LightFarmer from "@/assets/svgs/light-farmer.svg";
+import Cart from "@/assets/svgs/cart.svg";
+import LightCart from "@/assets/svgs/light-cart.svg";
+import { AuthHeader, AuthPage } from "../AuthUI";
+import { primaryButtonClass } from "../authStyles";
 
+const roles = [
+  {
+    id: "farmer",
+    title: "I'm a Farmer",
+    description: "I want to list and manage my farm products",
+    icon: FarmerIcon,
+    activeIcon: LightFarmer,
+  },
+  {
+    id: "consumer",
+    title: "I'm a Consumer",
+    description: "I want to explore and purchase farm produce",
+    icon: Cart,
+    activeIcon: LightCart,
+  },
+];
 
 export function RoleSelectionForm() {
-  const {role, setRole } = useContext(FocusContext);
-    // const { role, setRole } = useFocus();
-  // const [selectedRole, setSelectedRole] = useState(null);
+  const { role, setRole } = useContext(FocusContext);
   const navigate = useNavigate();
 
   const handleRoleSelect = (newRole) => {
@@ -24,139 +39,83 @@ export function RoleSelectionForm() {
 
   const handleContinue = () => {
     if (role) {
-      // localStorage.setItem("selectedRole", selectedRole);
       navigate("/sign-up");
-      
-    }else{
-      toast.error("Please select a role first"); 
+    } else {
+      toast.error("Please select a role first");
     }
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto md:p-6">
-      <div className="text-center mb-10">
-        <h1 className="text-5xl font-bold text-[var(--color-primary)] mb-2">
-          Welcome to BigFarma
-        </h1>
-        <p className="text-custom-color text-lg w-full md:max-w-lg mx-auto">
-          Before we proceed, tell us who you are. This helps us personalize your
-          experience
-        </p>
+    <AuthPage wide card={false}>
+      <AuthHeader
+        center
+        title="Welcome to BigFarma"
+        subtitle="Before we proceed, tell us who you are. This helps us personalize your experience."
+        className="mx-auto max-w-lg"
+        titleClassName="text-primary"
+      />
+
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-2 sm:gap-6">
+        {roles.map(({ id, title, description, icon, activeIcon }) => {
+          const selected = role === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => handleRoleSelect(id)}
+              className={cn(
+                "relative flex min-h-52 w-full flex-col justify-center rounded-xl border p-6 text-left transition-colors sm:min-h-72 sm:p-8",
+                selected
+                  ? "border-primary bg-primary text-white"
+                  : "border-grey-100 bg-white hover:border-primary",
+              )}
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute right-4 top-4 flex h-4 w-4 items-center justify-center rounded-full border bg-white",
+                  selected ? "border-white" : "border-primary",
+                )}
+              >
+                {selected && <span className="h-2 w-2 rounded-full bg-primary" />}
+              </span>
+
+              <img
+                src={selected ? activeIcon : icon}
+                alt=""
+                className="mb-6 h-12 w-12 drop-shadow-xl"
+              />
+              <span
+                className={cn(
+                  "mb-2 text-2xl font-semibold sm:text-3xl",
+                  selected ? "text-white" : "text-primary",
+                )}
+              >
+                {title}
+              </span>
+              <span
+                className={cn(
+                  "text-base",
+                  selected ? "text-primary-subtle" : "text-grey-300",
+                )}
+              >
+                {description}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="flex flex-col md:flex-row  justify-between gap-6 mb-12 w-full">
-        {/* Farmer Card */}
-        <div
-          className={`relative cursor-pointer transition-all duration-200 w-full md:w-1/2 h-[350px] pt-8 ${
-            role === "farmer"
-              ? "bg-[var(--color-primary)] text-white"
-              : "bg-white"
-          }`}
-          onClick={() => handleRoleSelect("farmer")}
-        >
-          <div className="p-6 flex flex-col justify-center">
-            <div className="absolute top-4 right-4">
-              <div className="w-3 h-3 rounded-full border border-[var(--color-primary)] bg-white"></div>
-            </div>
-            <div className="mb-6">
-              <div
-                className={`w-16 h-16 rounded-full flex items-center justify-center drop-shadow-xl `}
-              >
-                <img
-                  src={role === "farmer" ? LightFarmer : FarmerIcon}
-                  alt="Farmer Icon"
-                  className={`w-12 h-12 ${
-                    role === "farmer" ? "text-white" : "text-white"
-                  }`}
-                />
-              </div>
-            </div>
-
-            <h3
-              className={`text-3xl font-semibold mb-3 ${
-                role === "farmer"
-                  ? "text-white"
-                  : "text-[var(--color-primary)]"
-              }`}
-            >
-              I'm a Farmer
-            </h3>
-            <p
-              className={`text-base ${
-                role === "farmer"
-                  ? "text-green-100"
-                  : "text-[var(--color-primary)]"
-              }`}
-            >
-              I want to list and manage my farm products
-            </p>
-          </div>
-        </div>
-
-        {/* Consumer Card */}
-        <div
-          className={`relative cursor-pointer transition-all duration-200 w-full md:w-1/2 h-[350px] pt-8 ${
-            role === "consumer"
-              ? "bg-[var(--color-primary)] text-white"
-              : "bg-white"
-          }`}
-          onClick={() => handleRoleSelect("consumer")}
-        >
-          <div className="p-6 flex flex-col justify-center">
-            {/* Radio button indicator */}
-            <div className="absolute top-4 right-4">
-              <div className="w-3 h-3 rounded-full border border-[var(--color-primary)] bg-white"></div>
-            </div>
-
-            <div className="mb-6">
-              <div
-                className={`w-16 h-16 rounded-full flex items-center justify-center drop-shadow-xl `}
-              >
-                <img
-                  src={
-                    role === "consumer"
-                      ? LightCart
-                      : Cart
-                  }
-                  alt="Consumer Icon"
-                  className="w-12 h-12"
-                />
-              </div>
-            </div>
-
-            <h3
-              className={`text-3xl font-semibold mb-3 ${
-                role === "consumer"
-                  ? "text-white"
-                  : "text-[var(--color-primary)]"
-              }`}
-            >
-              I'm a Consumer
-            </h3>
-            <p
-              className={`text-base ${
-                role === "consumer" ? "text-green-100" : "text-gray-600"
-              }`}
-            >
-              I want to explore and purchase farm produce
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="text-center">
+      <div className="mt-8 flex justify-center sm:mt-10">
         <Button
           onClick={handleContinue}
           disabled={!role}
-          className={`w-[200px] py-3 text-lg font-medium rounded-lg transition-all duration-200 ${
-            role
-              ? "bg-[var(--color-primary)] text-white"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
+          className={cn(primaryButtonClass, "sm:max-w-xs")}
         >
           Continue
         </Button>
       </div>
-    </div>
+    </AuthPage>
   );
 }

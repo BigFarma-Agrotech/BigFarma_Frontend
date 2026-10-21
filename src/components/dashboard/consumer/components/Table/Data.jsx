@@ -6,27 +6,25 @@ const Data = ({ props, isChecked, onToggle }) => {
   return (
     <>
       <td>
-        <div className="flex items-center gap-2">
+        <label className="flex items-center gap-2">
           <input
-            checked={isChecked}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggle && onToggle();
-            }}
             type="checkbox"
-            className="accent-primary w-5 h-5"
+            checked={isChecked}
+            onChange={() => onToggle?.()}
+            className="h-4 w-4 accent-primary"
+            aria-label={`Select order #${id}`}
           />
-          <p>#{id}</p>
-        </div>
+          <span className="font-medium text-gray-900">#{id}</span>
+        </label>
       </td>
-      <td>{farmName}</td>
-      <td>{date}</td>
+      <td className="whitespace-nowrap">{farmName}</td>
+      <td className="whitespace-nowrap">{date}</td>
       <td>
-        <p
-          className={`py-2.5 px-4 rounded-md w-fit ${getStatusClasses(status)}`}
+        <span
+          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusClasses(status)}`}
         >
           {getStatusText(status)}
-        </p>
+        </span>
       </td>
     </>
   );

@@ -1,59 +1,40 @@
-const Data = ({ props, onViewDetails }) => {
-  const {
-    images,
-    product,
-    productID,
-    price,
-    quantity,
-    orders,
-    status,
-    action,
-    location,
-  } = props;
+import { Link } from "react-router-dom";
+import fallbackImage from "../../../../../assets/ProductImages/watermelon.png";
 
-  const statusClass =
-    status === 'Active'
-      ? 'bg-green-100 text-green-800'
-      : status === 'Out of stock'
-      ? 'bg-red-100 text-red-800'
-      : 'bg-gray-100 text-gray-800';
+const Data = ({ order }) => {
+  const { image, product, price, quantity, location, path, originalData } = order;
 
   return (
-		<>
-			<td>
-				<div className="flex items-center gap-2 text-base">
-					<img src={images} alt="" className="w-10 h-10 " />
-					<p>{product}</p>
-				</div>
-			</td>
-			<td>{quantity}</td>
-			<td>{`₦ ${price}`}</td>
-			<td>{location}</td>
-			{/* <td>
-				<span
-					className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}`}>
-					<span
-						className="inline-block w-2 h-2 rounded-full mr-1"
-						style={{
-							backgroundColor:
-								status === "Active"
-									? "#10B981"
-									: status === "Out of stock"
-									? "#EF4444"
-									: "#9CA3AF",
-						}}></span>
-					{status}
-				</span>
-			</td> */}
-			<td>
-				<button
-					className="p-2.5 px-6 rounded-lg bg-[#EFEFEF] text-[#000000] cursor-pointer"
-					onClick={onViewDetails}>
-					View Details
-				</button>
-			</td>
-		</>
-	);
+    <>
+      <td>
+        <div className="flex items-center gap-3">
+          <img
+            src={image || fallbackImage}
+            alt=""
+            className="h-10 w-10 shrink-0 rounded-lg object-cover"
+            onError={(e) => {
+              e.currentTarget.src = fallbackImage;
+            }}
+          />
+          <p className="font-medium text-gray-900">{product}</p>
+        </div>
+      </td>
+      <td>{quantity}</td>
+      <td>{price}</td>
+      <td className="max-w-[16rem] truncate" title={location}>
+        {location}
+      </td>
+      <td>
+        <Link
+          to={path}
+          state={{ order: originalData }}
+          className="inline-flex rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-200"
+        >
+          View Details
+        </Link>
+      </td>
+    </>
+  );
 };
 
 export default Data;

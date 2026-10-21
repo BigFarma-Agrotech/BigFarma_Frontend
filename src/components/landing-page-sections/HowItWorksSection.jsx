@@ -3,90 +3,62 @@ import investmentIcon from "../../assets/icons/investment.svg";
 import logisticsIcon from "../../assets/icons/logistics.svg";
 import insightsIcon from "../../assets/icons/insights.svg";
 
-function WorkCard({ title, description, image, bgColor, textColor = "text-white", descriptionColor }) {
-  const getBgColorStyle = (colorName) => {
-    const colorMap = {
-      'bg-primary': '#016130',
-      'bg-secondary-dark': '#FFA725',
-      'bg-primary-light': '#01AE56',
-      'bg-primary-dark': '#382100'
-    };
-    
-    return colorMap[colorName] || ' ';
-  };
-  
+function WorkCard({ title, description, image, bgColor, textColor }) {
   return (
-    <div 
-      className={`${textColor} h-[180px] md:h-[306px] shadow-sm`}
-      style={{ backgroundColor: getBgColorStyle(bgColor) }}
+    <div
+      className={`${bgColor} ${textColor} flex h-full min-h-44 flex-col justify-center p-6 shadow-sm md:min-h-72 md:p-8`}
     >
-      <div className="p-5 md:p-8 h-full flex flex-col justify-center">
-        <div className={`items-center justify-center mb-4 pl-1`}>
-          <img src={image} alt={title} className="w-12 h-12" />
-        </div>
-        <h3 className={`text-[21px] md:text-3xl font-semibold mb-2 ${descriptionColor}`}>{title}</h3>
-        <p className={` text-sm md:text-md ${descriptionColor}`}>{description}</p>
-      </div>
+      <img src={image} alt="" aria-hidden="true" className="mb-4 h-12 w-12" />
+      <h3 className="mb-2 text-xl font-semibold md:text-2xl">{title}</h3>
+      <p className="text-base md:text-lg">{description}</p>
     </div>
-  )
+  );
 }
 
 const workItems = [
-	{
-		title: "Marketplace",
-		image: marketplaceIcon ,
-		description: "Farmer list products, buyers order directly on the platform",
-		bgColor: "bg-primary",
-		iconBgColor: "bg-white",
-		descriptionColor: "text-white",
-	},
-	{
-		title: "Investment Hub",
-		image: investmentIcon,
-		description: "Individuals invest in farms with transparency",
-		bgColor: "bg-secondary-dark",
-		iconBgColor: "bg-yellow-800",
-		textColor: "text-secondary-dark",
-		descriptionColor: "text-gray-800",
-	},
-	{
-		title: "Logistics Integration",
-		image: logisticsIcon,
-		description: "Enjoy reliable farm-to-door delivery",
-		bgColor: "bg-primary-light",
-		iconBgColor: "bg-white",
-		descriptionColor: "text-white",
-	},
-	{
-		title: "Insights & Alerts",
-		image: insightsIcon,
-		description: "Stay ahead with weather, pest, and disease alerts",
-		bgColor: "bg-primary-dark",
-		iconBgColor: "bg-yellow-100",
-		descriptionColor: "text-secondary-light",
-	},
+  {
+    title: "Marketplace",
+    image: marketplaceIcon,
+    description: "Farmers list products, buyers order directly on the platform.",
+    bgColor: "bg-primary",
+    textColor: "text-white",
+  },
+  {
+    title: "Investment Hub",
+    image: investmentIcon,
+    description: "Individuals invest in farms with transparency.",
+    bgColor: "bg-secondary",
+    textColor: "text-secondary-dark",
+  },
+  {
+    title: "Logistics Integration",
+    image: logisticsIcon,
+    description: "Enjoy reliable farm-to-door delivery.",
+    bgColor: "bg-primary-light",
+    textColor: "text-white",
+  },
+  {
+    title: "Insights & Alerts",
+    image: insightsIcon,
+    description: "Stay ahead with weather, pest, and disease alerts.",
+    bgColor: "bg-secondary-dark",
+    textColor: "text-secondary-light",
+  },
 ];
 
 export default function HowItWorksSection() {
   return (
-    <section className="pt-16 px-4 md:px-8 lg:px-16">
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-[28px] md:text-5xl font-semibold text-center mb-5 lg:mb-8">How BigFarma Works</h2>
-        <div className="grid md:grid-cols-2 gap-6">
-          {workItems.map((item, index) => (
-            <WorkCard
-              key={index}
-              title={item.title}
-              description={item.description}
-              image={item.image}
-              bgColor={item.bgColor}
-              iconBgColor={item.iconBgColor}
-              textColor={item.textColor}
-              descriptionColor={item.descriptionColor}
-            />
+    <section className="py-16 md:py-24">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h2 className="mb-8 text-center text-2xl font-bold sm:text-3xl md:mb-12 lg:text-4xl">
+          How BigFarma Works
+        </h2>
+        <div className="grid gap-6 md:grid-cols-2">
+          {workItems.map((item) => (
+            <WorkCard key={item.title} {...item} />
           ))}
         </div>
       </div>
     </section>
-  )
+  );
 }

@@ -23,7 +23,7 @@ const Statistics = () => {
   }, []);
 
   return (
-    <div className="grid grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3">
       {isLoading
         ? [...Array(3)].map((_, index) => <CardSkeleton key={index} />)
         : statisticsData.statisticsArray.map(({ title, total, percentage }) => (
