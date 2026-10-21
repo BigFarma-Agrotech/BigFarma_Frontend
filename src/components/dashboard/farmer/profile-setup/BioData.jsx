@@ -16,6 +16,7 @@ import customerPhoto from "@/assets/images/Customer-photo.png";
 import { endpoints } from "../../../config/endpoints";
 import { axios } from "../../../../lib/axios";
 import { parseApiError } from "@/lib/apiError";
+import { useAccountContact } from "@/hooks/useAccountContact";
 
 const genderOptions = [
   { value: "male", label: "Male" },
@@ -34,6 +35,12 @@ const ProfileForm = ({ onNext }) => {
   });
   const fileInputRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Email/phone already on the account are shown and locked; only the
+  // missing one can be typed in
+  const account = useAccountContact();
+  const email = account.email || formData.email;
+  const phone = account.phone || formData.phone;
 
   const handleImageUpload = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -57,8 +64,8 @@ const ProfileForm = ({ onNext }) => {
     const missing = [
       !formData.firstName.trim() && "first name",
       !formData.lastName.trim() && "last name",
-      !formData.email.trim() && "email",
-      !formData.phone.trim() && "phone number",
+      !email.trim() && "email",
+      !phone.trim() && "phone number",
       !formData.address.trim() && "address",
     ].filter(Boolean);
     if (missing.length) {
@@ -76,8 +83,8 @@ const ProfileForm = ({ onNext }) => {
     const payload = {
       full_name: fullName,
       home_address: formData.address.trim(),
-      email: formData.email.trim(),
-      phone: formData.phone.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
       profile_picture: image || null,
       id_document: "string",
       farm_name: "string",
@@ -178,21 +185,25 @@ const ProfileForm = ({ onNext }) => {
 
           {/* Email & Phone */}
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
-            <FormField label="Email" htmlFor="farmer-email">
+            <FormField label="Email" htmlFor="farmer-email" required>
               <input
                 id="farmer-email"
                 type="email"
                 autoComplete="email"
                 placeholder="john@example.com"
                 className={inputClass}
-                value={formData.email}
+                value={email}
+                disabled={Boolean(account.email)}
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
               />
+              {account.email && (
+                <p className="mt-1.5 text-xs text-grey-300">From your account</p>
+              )}
             </FormField>
             <FormField label="Phone Number" htmlFor="farmer-phone" required>
-              <div className="flex h-12 w-full items-center rounded-lg border border-grey-100 bg-white transition-colors focus-within:border-primary">
+              <div className="flex h-12 w-full items-center rounded-lg border border-grey-100 bg-white transition-colors focus-within:border-primary has-[:disabled]:bg-gray-50">
                 <span
                   className="flex h-full items-center rounded-l-lg border-r border-grey-100 bg-gray-50 px-3 text-xl"
                   aria-hidden="true"
@@ -204,14 +215,18 @@ const ProfileForm = ({ onNext }) => {
                   type="tel"
                   autoComplete="tel"
                   placeholder="08022222222"
-                  className="h-full min-w-0 flex-1 rounded-r-lg bg-transparent px-4 text-base text-text-neutral placeholder:text-grey-200 focus:outline-none"
+                  className="h-full min-w-0 flex-1 rounded-r-lg bg-transparent px-4 text-base text-text-neutral placeholder:text-grey-200 focus:outline-none disabled:cursor-not-allowed disabled:text-grey-300"
                   required
-                  value={formData.phone}
+                  value={phone}
+                  disabled={Boolean(account.phone)}
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }
                 />
               </div>
+              {account.phone && (
+                <p className="mt-1.5 text-xs text-grey-300">From your account</p>
+              )}
             </FormField>
           </div>
 

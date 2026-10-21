@@ -42,6 +42,9 @@ export const parseApiError = (error, fallback = "Something went wrong. Please tr
     message = messages.filter(Boolean).join(" ") || fallback;
   } else if (detail && typeof detail === "object" && detail.msg) {
     message = cleanMessage(detail.msg);
+  } else if (status >= 500) {
+    // Unhandled backend exceptions come back as plain-text "Internal Server Error"
+    message = `${fallback} (server error ${status}). Please try again later.`;
   }
 
   return { status, message, fieldErrors };

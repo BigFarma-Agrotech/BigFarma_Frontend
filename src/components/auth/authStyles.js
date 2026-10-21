@@ -8,7 +8,7 @@ export const subtitleClass = "mt-2 text-base text-grey-300";
 export const labelClass = "mb-2 block text-sm font-semibold text-text-neutral";
 
 export const inputClass =
-  "h-12 w-full rounded-lg border border-grey-100 bg-white px-4 text-base text-text-neutral transition-colors placeholder:text-grey-200 focus:border-primary focus:outline-none";
+  "h-12 w-full rounded-lg border border-grey-100 bg-white px-4 text-base text-text-neutral transition-colors placeholder:text-grey-200 focus:border-primary focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-grey-300";
 
 export const textareaClass =
   "min-h-24 w-full rounded-lg border border-grey-100 bg-white px-4 py-3 text-base text-text-neutral transition-colors placeholder:text-grey-200 focus:border-primary focus:outline-none";

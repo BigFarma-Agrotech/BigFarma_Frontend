@@ -20,6 +20,7 @@ import { countries } from "../../../../lib/countries";
 import { endpoints } from "../../../config/endpoints";
 import { axios } from "../../../../lib/axios";
 import { parseApiError } from "@/lib/apiError";
+import { useAccountContact } from "@/hooks/useAccountContact";
 
 const genderOptions = [
   { value: "male", label: "Male" },
@@ -42,6 +43,12 @@ export default function AccountSetup({ onSkip, onNext }) {
   });
 
   const fileInputRef = useRef(null);
+
+  // Email/phone already on the account are shown and locked; only the
+  // missing one can be typed in
+  const account = useAccountContact();
+  const email = account.email || form.email;
+  const phone = account.phone || form.phone;
 
   // Update form fields
   const handleChange = (e) => {
@@ -88,8 +95,8 @@ export default function AccountSetup({ onSkip, onNext }) {
       !(
         form.firstName.trim() &&
         form.lastName.trim() &&
-        form.phone.trim() &&
-        form.email.trim() &&
+        phone.trim() &&
+        email.trim() &&
         form.address.trim()
       )
     ) {
@@ -115,8 +122,8 @@ export default function AccountSetup({ onSkip, onNext }) {
       address: form.address.trim(),
       profile_picture: profileImage || null,
       crop_preferences: ["vegetables"],
-      email: form.email.trim(),
-      phone: form.phone.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
     };
 
     setLoading(true);
@@ -213,15 +220,19 @@ export default function AccountSetup({ onSkip, onNext }) {
                 name="email"
                 type="email"
                 autoComplete="email"
-                value={form.email}
+                value={email}
+                disabled={Boolean(account.email)}
                 onChange={handleChange}
                 required
                 placeholder="john@example.com"
                 className={inputClass}
               />
+              {account.email && (
+                <p className="mt-1.5 text-xs text-grey-300">From your account</p>
+              )}
             </FormField>
             <FormField label="Phone Number" htmlFor="phone" required>
-              <div className="flex h-12 w-full items-center gap-2 rounded-lg border border-grey-100 bg-white pl-3 transition-colors focus-within:border-primary">
+              <div className="flex h-12 w-full items-center gap-2 rounded-lg border border-grey-100 bg-white pl-3 transition-colors focus-within:border-primary has-[:disabled]:bg-gray-50">
                 <Dropdown
                   countries={countries}
                   onSelect={updateCountry}
@@ -233,13 +244,17 @@ export default function AccountSetup({ onSkip, onNext }) {
                   name="phone"
                   type="tel"
                   autoComplete="tel"
-                  value={form.phone}
+                  value={phone}
+                  disabled={Boolean(account.phone)}
                   onChange={handleChange}
                   required
                   placeholder="08022222222"
-                  className="h-full min-w-0 flex-1 rounded-r-lg bg-transparent pr-4 text-base text-text-neutral placeholder:text-grey-200 focus:outline-none"
+                  className="h-full min-w-0 flex-1 rounded-r-lg bg-transparent pr-4 text-base text-text-neutral placeholder:text-grey-200 focus:outline-none disabled:cursor-not-allowed disabled:text-grey-300"
                 />
               </div>
+              {account.phone && (
+                <p className="mt-1.5 text-xs text-grey-300">From your account</p>
+              )}
             </FormField>
           </div>
 
