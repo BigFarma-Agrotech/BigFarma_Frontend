@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { cn } from "@/lib/utils";
+import { clearSession, getAccessToken, getRole } from "@/lib/auth";
+import { queryClient } from "@/lib/queryClient";
+import { FocusContext } from "@/context/FocusContext";
 import brandLogo from "../../assets/images/brand-logo.png";
-import Cookies from "js-cookie";
 import { axios } from "../../lib/axios";
 import { endpoints } from "../config/endpoints";
 import { Skeleton } from "../shared";
@@ -35,18 +37,12 @@ const ROLE_NAV = {
   ],
 };
 
-const AUTH_COOKIES = [
-  "BIGFARMA_ACCESS_TOKEN",
-  "BIGFARMA_REFRESH_TOKEN",
-  "BIGFARMA_USER_ID",
-  "BIGFARMA_ROLE",
-];
-
 export default function DashboardSidebar({ isOpen, onClose }) {
-  const [role, setRole] = useState(() => Cookies.get("BIGFARMA_ROLE") || null);
+  const [role, setRole] = useState(getRole);
+  const { setRole: setFocusRole } = useContext(FocusContext);
   const navigate = useNavigate();
   const location = useLocation();
-  const token = Cookies.get("BIGFARMA_ACCESS_TOKEN");
+  const token = getAccessToken();
 
   useEffect(() => {
     const fetchRole = async () => {
@@ -73,9 +69,11 @@ export default function DashboardSidebar({ isOpen, onClose }) {
     : [];
 
   const handleLogout = () => {
-    AUTH_COOKIES.forEach((name) => Cookies.remove(name));
+    clearSession();
+    setFocusRole(null);
+    queryClient.clear();
     onClose?.();
-    navigate("/sign-in");
+    navigate("/sign-in", { replace: true });
   };
 
   const isPathActive = (itemPath) => location.pathname.startsWith(itemPath);

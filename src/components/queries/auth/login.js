@@ -1,45 +1,33 @@
 import { endpoints } from '@/components/config/endpoints';
-import { axios } from '@/lib/axios';
-import axiosDefault from 'axios';
-import Cookies from 'js-cookie';
+import { setSession } from '@/lib/auth';
+import { authRequest } from './request';
 
-const login = async ({ login, password }) => {
-  try {
-    const response = await axios.post(
-      endpoints().auth.login,
-      { login, password }
-    );
-    if (response.data.access_token) {
-      Cookies.set('BIGFARMA_ACCESS_TOKEN', response.data.access_token);
-      Cookies.set('BIGFARMA_ROLE', response.data.user_category);
-    }
+// Response body is the API's Token schema:
+// { access_token, refresh_token, token_type, user_category, profile_setup }
+const login = async ({ login, password, remember = false }) => {
+  const result = await authRequest(
+    endpoints().auth.login,
+    { login: login.trim(), password },
+    { successMessage: 'Login successful!', errorMessage: 'Login failed. Please try again.' }
+  );
+
+  if (!result.isSuccess) return result;
+
+  if (!result.data?.access_token) {
     return {
-      isSuccess: response.status === 200 || response.status === 201,
-      statusCode: response.status.toString(),
-      message: response.data.message,
-      token: response.data.access_token,
-      user: response.data.user,
-      data: response.data.data,
-      role: response.data.user?.user_category || response.data.data?.user?.user_category || null, 
-      
-    };
-  } catch (error) {
-    if (axiosDefault.isAxiosError(error) && error.response) {
-      return {
-        isSuccess: false,
-        statusCode: error.response.status.toString(),
-        message: (error.response.data && (error.response.data.detail || error.response.data.message)) || "Login failed.",
-        data: null,
-      };
-    }
-    return {
+      ...result,
       isSuccess: false,
-      statusCode: "500",
-      message: "An error occurred while connecting to the server",
-      data: null,
-      
+      message: 'The server did not return an access token. Please try again.',
     };
   }
+
+  setSession(result.data, { remember });
+
+  return {
+    ...result,
+    role: result.data.user_category,
+    profileSetup: result.data.profile_setup,
+  };
 };
 
 export { login };

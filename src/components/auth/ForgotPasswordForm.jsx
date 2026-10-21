@@ -48,39 +48,25 @@ const ForgotPasswordForm = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-    } else {
-      let payload = {};
-      if (phoneNumber.includes("@")) {
-        payload = {
-          email: phoneNumber,
-          phone: "",
-          medium: "email",
-          otp_type: "password_reset",
-        };
-      } else {
-        payload = {
-          email: "",
-          phone: phoneNumber,
-          medium: "phone",
-          otp_type: "password_reset",
-        };
-      }
-      setErrors({});
-      setLoading(true);
-      try {
-        const result = await forgotPasswordRequest(payload);
-        if (result.isSuccess) {
-          toast.success(result.message || "Password reset code sent!");
-          navigate("/verify-otp", { state: { email: phoneNumber } });
-        } else {
-          toast.error(result.message || "Failed to send reset code.");
-        }
-      } catch (err) {
-        toast.error(err?.message || "Failed to send reset code.");
-      } finally {
-        setLoading(false);
-      }
+      return;
     }
+
+    const identifier = phoneNumber.trim();
+    setErrors({});
+    setLoading(true);
+    const result = await forgotPasswordRequest({ identifier });
+    setLoading(false);
+
+    if (!result.isSuccess) {
+      // Show the server's validation message under the input
+      const { email, phone } = result.fieldErrors;
+      if (email || phone) setErrors({ phone: email || phone });
+      toast.error(result.message);
+      return;
+    }
+
+    toast.success(result.message);
+    navigate("/verify-otp", { state: { identifier } });
   };
 
   const showError = touched.phone && errors.phone;

@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Home from "./components/landing-page-sections/Home";
 // Auth pages
 import SignIn from "./pages/SignIn";
@@ -84,13 +85,16 @@ const App = () => {
             <Route key={path} path={path} element={element} />
           ))}
 
-          {dashboardRoutes.map(({ path, element }) => (
-            <Route
-              key={path}
-              path={path}
-              element={<DashboardLayout>{element}</DashboardLayout>}
-            />
-          ))}
+          {/* Dashboard: requires a signed-in user */}
+          <Route element={<ProtectedRoute />}>
+            {dashboardRoutes.map(({ path, element }) => (
+              <Route
+                key={path}
+                path={path}
+                element={<DashboardLayout>{element}</DashboardLayout>}
+              />
+            ))}
+          </Route>
         </Routes>
       </ErrorBoundary>
     </>

@@ -8,7 +8,7 @@ const initialLoginData = {
 };
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
+const phoneRegex = /^\+?\d{7,15}$/;
 
 // Validation rules for each field. Returns an error message or "".
 const fieldValidators = {
@@ -90,6 +90,11 @@ const useForm = () => {
     return loginData;
   };
 
+  // Show errors returned by the server, e.g. { username: "Invalid email" }
+  const setFieldErrors = (fieldErrors) => {
+    setErrors((prev) => ({ ...prev, ...fieldErrors }));
+  };
+
   // Get form data
   const getFormData = () => loginData;
 
@@ -110,6 +115,7 @@ const useForm = () => {
     validateField,
     validateForm,
     handleSubmit,
+    setFieldErrors,
     getFormData,
     isValid,
   };

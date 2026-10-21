@@ -1,38 +1,12 @@
 import { endpoints } from '@/components/config/endpoints';
-import { axios } from '@/lib/axios';
-import axiosDefault from 'axios';
+import { authRequest, contactFields } from './request';
 
-const verifyOtp = async ({ email, phone = "", medium = "email", code, otp_type = "verification" }) => {
-  try {
-    const response = await axios.post(
-      endpoints().auth.verify_otp,
-      { email, phone, medium, code, otp_type }
-    );
-    return {
-      isSuccess: response.status === 201 || response.status === 200,
-      statusCode: response.status.toString(),
-      message: response.data.message,
-      metaData: response.data.metaData || null,
-      data: response.data.data,
-    };
-  } catch (error) {
-    if (axiosDefault.isAxiosError(error) && error.response) {
-      return {
-        isSuccess: false,
-        statusCode: error.response.status.toString(),
-        message: (error.response.data && (error.response.data.detail || error.response.data.message)) || "OTP verification failed",
-        metaData: null,
-        data: null,
-      };
-    }
-    return {
-      isSuccess: false,
-      statusCode: "500",
-      message: "An error occurred while connecting to the server",
-      metaData: null,
-      data: null,
-    };
-  }
-};
+// payload: { identifier, code, otp_type }
+const verifyOtp = ({ identifier, code, otp_type = 'verification' }) =>
+  authRequest(
+    endpoints().auth.verify_otp,
+    { ...contactFields(identifier), code, otp_type },
+    { successMessage: 'Code verified successfully!', errorMessage: 'Code verification failed.' }
+  );
 
 export { verifyOtp };

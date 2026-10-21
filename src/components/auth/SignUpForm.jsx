@@ -1,6 +1,5 @@
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
@@ -23,7 +22,7 @@ import { linkClass, primaryButtonClass } from "./authStyles";
 
 const SignUpForm = () => {
   const navigate = useNavigate();
-  const { role, setRole } = useContext(FocusContext);
+  const { role } = useContext(FocusContext);
 
   // --- STATE ---
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -32,6 +31,7 @@ const SignUpForm = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agree, setAgree] = useState(false);
   const [touched, setTouched] = useState({});
+  const [serverErrors, setServerErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   // --- HANDLE DROPDOWN ---
@@ -61,10 +61,17 @@ const SignUpForm = () => {
 
   // Errors are derived from the current values and only shown once the
   // corresponding field has been touched (blurred) or a submit was attempted.
+  // Server validation messages show until the user edits that field.
   const errors = validateForm();
   const markTouched = (field) =>
     setTouched((prev) => ({ ...prev, [field]: true }));
-  const fieldError = (field) => (touched[field] ? errors[field] : undefined);
+  const fieldError = (field) =>
+    (touched[field] ? errors[field] : undefined) || serverErrors[field];
+  const clearServerError = (field) => {
+    if (serverErrors[field]) {
+      setServerErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
 
   // --- SUBMIT ---
   const handleSubmit = async (e) => {
@@ -90,56 +97,40 @@ const SignUpForm = () => {
       return;
     }
 
+    const identifier = phoneNumber.trim();
     setLoading(true);
+    const result = await RegisterMutation({
+      identifier,
+      password,
+      category: role,
+    });
 
-    const payload = phoneNumber.includes("@")
-      ? { email: phoneNumber, password, category: role }
-      : { phone_number: phoneNumber, password, category: role };
-
-    try {
-      const result = await RegisterMutation(payload);
-      if (result.isSuccess) {
-        // RegisterMutation does not expose `token` at the top level, so also
-        // look for the token inside the response data.
-        const accessToken =
-          result.token?.access_token ||
-          result.data?.access_token ||
-          result.data?.token?.access_token;
-        if (accessToken) Cookies.set("BIGFARMA_ACCESS_TOKEN", accessToken);
-        const category = result.data?.user?.category || result.role;
-        if (category) setRole(category);
-
-        toast.success(result.message || "Registration successful!");
-
-        const userEmail =
-          result.data?.user?.email ||
-          (phoneNumber.includes("@") ? phoneNumber : undefined);
-        const userPhone =
-          result.data?.user?.phone_number ||
-          (!phoneNumber.includes("@") ? phoneNumber : undefined);
-
-        const otpPayload = {
-          email: userEmail || "",
-          phone: userPhone || "",
-          medium: userEmail ? "email" : "phone",
-          otp_type: "verification",
-        };
-
-        const otpResult = await requestOtp(otpPayload);
-        if (!otpResult.isSuccess)
-          toast.error(otpResult.message || "Failed to send OTP.");
-
-        navigate("/otp", { state: { email: userEmail || userPhone } });
-      } else {
-        toast.error(
-          result.message || `Registration failed (code: ${result.statusCode})`,
-        );
-      }
-    } catch (err) {
-      toast.error(err?.message || "Registration failed. Please try again.");
-    } finally {
+    if (!result.isSuccess) {
       setLoading(false);
+      // Show the server's validation messages under the matching inputs
+      const { email, phone_number, password: passwordError } =
+        result.fieldErrors;
+      setServerErrors({
+        ...((email || phone_number) && { phone: email || phone_number }),
+        ...(passwordError && { password: passwordError }),
+      });
+      toast.error(result.message);
+      return;
     }
+
+    toast.success(result.message);
+
+    // Send the code the user needs to verify their account
+    const otpResult = await requestOtp({
+      identifier,
+      otp_type: "verification",
+    });
+    setLoading(false);
+    if (!otpResult.isSuccess) {
+      toast.error(otpResult.message);
+    }
+
+    navigate("/otp", { state: { identifier } });
   };
 
   // --- UI ---
@@ -161,7 +152,10 @@ const SignUpForm = () => {
             name="username"
             autoComplete="username"
             value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
+            onChange={(e) => {
+              setPhoneNumber(e.target.value);
+              clearServerError("phone");
+            }}
             onBlur={() => markTouched("phone")}
             placeholder="Your phone number or email"
             dropdownOpen={dropdownOpen}
@@ -181,7 +175,10 @@ const SignUpForm = () => {
             name="password"
             autoComplete="new-password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              clearServerError("password");
+            }}
             onBlur={() => markTouched("password")}
             placeholder="Must be 8 characters"
             hasError={Boolean(fieldError("password"))}

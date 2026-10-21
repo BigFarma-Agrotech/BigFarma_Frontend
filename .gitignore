@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 
 pnpm-workspace.yaml
+# Environment variables
+.env

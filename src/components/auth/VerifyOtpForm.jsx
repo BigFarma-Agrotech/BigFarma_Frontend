@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import Button from "@/components/shared/Button";
 import OtpInput from "@/components/shared/OtpInput";
@@ -10,7 +10,8 @@ import { linkClass, primaryButtonClass } from "./authStyles";
 
 function VerifyOtpForm(props) {
   const location = useLocation();
-  const email = location.state?.email || props.email || "";
+  // Email or phone number the reset code was sent to
+  const identifier = location.state?.identifier || props.email || "";
   const [value, setValue] = useState("");
   const [isResending, setIsResending] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,44 +26,42 @@ function VerifyOtpForm(props) {
     return () => clearTimeout(timerRef.current);
   }, [timer]);
 
+  // Without an email/phone there is nothing to verify
+  if (!identifier) {
+    return <Navigate to="/forgot-password" replace />;
+  }
+
   const handleVerify = async () => {
     if (value.length !== 6 || loading) return;
     setLoading(true);
     const result = await verifyOtp({
-      email,
+      identifier,
       code: value,
-      medium: "email",
       otp_type: "password_reset",
     });
     setLoading(false);
-    if (result.isSuccess) {
-      toast.success(result.message || "OTP verified successfully!");
-      navigate("/reset-password", { state: { email, code: value } });
-    } else {
-      toast.error(result.message || "OTP verification failed.");
+
+    if (!result.isSuccess) {
+      toast.error(result.message);
+      return;
     }
+
+    toast.success(result.message);
+    // The reset endpoint doesn't take the code; the server tracks the verification
+    navigate("/reset-password", { state: { identifier, verified: true } });
   };
 
   const handleResendCode = async () => {
     setIsResending(true);
     setValue("");
-    try {
-      const otpPayload = {
-        email: email || "",
-        medium: "email",
-        otp_type: "password_reset",
-      };
-      const result = await requestOtp(otpPayload);
-      if (result.isSuccess) {
-        toast.success(result.message || "OTP resent successfully!");
-        setTimer(60);
-      } else {
-        toast.error(result.message || "Failed to resend OTP.");
-      }
-    } catch {
-      toast.error("Failed to resend OTP. Please try again.");
-    }
+    const result = await requestOtp({ identifier, otp_type: "password_reset" });
     setIsResending(false);
+    if (result.isSuccess) {
+      toast.success(result.message);
+      setTimer(60);
+    } else {
+      toast.error(result.message);
+    }
   };
 
   return (
@@ -76,7 +75,7 @@ function VerifyOtpForm(props) {
           <>
             We sent a 6 digit code to{" "}
             <span className="break-all font-medium text-text-neutral">
-              {email}
+              {identifier}
             </span>
             . Please enter it to continue.
           </>

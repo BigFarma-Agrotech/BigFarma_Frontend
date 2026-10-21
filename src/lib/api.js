@@ -1,6 +1,6 @@
 // lib/api.jsx
 
-const baseURL = import.meta.env.SERVER_URL;
+import { API_BASE_URL as baseURL } from "./config";
 
 export async function fetchProducts() {
     

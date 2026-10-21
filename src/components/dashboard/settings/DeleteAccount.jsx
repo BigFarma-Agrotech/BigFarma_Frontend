@@ -1,20 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import axiosDefault from "axios";
-import Cookies from "js-cookie";
+import { clearSession } from "@/lib/auth";
+import { queryClient } from "@/lib/queryClient";
 import { toast } from "react-toastify";
 import { endpoints } from "../../config/endpoints";
 import { axios } from "../../../lib/axios";
 import Button from "@/components/shared/Button";
 import DeleteAccountModal from "./DeleteAccountModal";
 import SuccessModal from "./Success";
-
-const AUTH_COOKIES = [
-  "BIGFARMA_ACCESS_TOKEN",
-  "BIGFARMA_REFRESH_TOKEN",
-  "BIGFARMA_USER_ID",
-  "BIGFARMA_ROLE",
-];
 
 const DeleteAccount = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -26,7 +20,8 @@ const DeleteAccount = () => {
     try {
       // axios rejects non-2xx responses, so reaching here means success (incl. 204)
       await axios.delete(endpoints().users.profile);
-      AUTH_COOKIES.forEach((name) => Cookies.remove(name));
+      clearSession();
+      queryClient.clear();
       toast.success("Account deleted successfully");
       setIsDeleteModalOpen(false);
       setIsSuccessModalOpen(true);

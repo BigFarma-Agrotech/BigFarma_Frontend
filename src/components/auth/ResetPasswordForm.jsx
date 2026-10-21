@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { passwordReset } from "@/components/queries/auth/passwordReset";
 import Button from "@/components/shared/Button";
@@ -15,16 +15,23 @@ import { primaryButtonClass } from "./authStyles";
 
 const ResetPasswordForm = () => {
   const location = useLocation();
-  const email = location.state?.email;
-  const code = location.state?.code;
+  // Set by VerifyOtpForm once the reset code has been verified
+  const identifier = location.state?.identifier;
+  const verified = location.state?.verified;
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [touched, setTouched] = useState({
     password: false,
     confirmPassword: false,
   });
+  const [serverErrors, setServerErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Only reachable after verifying a reset code
+  if (!identifier || !verified) {
+    return <Navigate to="/forgot-password" replace />;
+  }
 
   const validateForm = () => {
     const newErrors = {};
@@ -52,41 +59,29 @@ const ResetPasswordForm = () => {
     });
 
     if (loading) return;
-    if (Object.keys(validateForm()).length > 0) {
+    if (Object.keys(validateForm()).length > 0) return;
+
+    setServerErrors({});
+    setLoading(true);
+    const result = await passwordReset({ identifier, new_password: password });
+    setLoading(false);
+
+    if (!result.isSuccess) {
+      const { new_password } = result.fieldErrors;
+      if (new_password) setServerErrors({ password: new_password });
+      toast.error(result.message);
       return;
-    } else if (!email || !code) {
-      toast.error(
-        "Missing email or OTP code. Please restart the password reset process.",
-      );
-      navigate("/forgot-password");
-    } else {
-      setLoading(true);
-      const payload = {
-        email,
-        phone: "",
-        medium: "email",
-        code,
-        new_password: password,
-      };
-      try {
-        const result = await passwordReset(payload);
-        if (result.isSuccess) {
-          toast.success(result.message || "Password updated successfully!");
-          navigate("/success", { replace: true });
-        } else {
-          toast.error(result.message || "Failed to update password.");
-        }
-      } catch (err) {
-        toast.error(err?.message || "Failed to update password.");
-      } finally {
-        setLoading(false);
-      }
     }
+
+    toast.success(result.message);
+    navigate("/success", { replace: true });
   };
 
   // Derived from the current values; shown once a field is touched.
+  // A server message for the password shows until the user edits it.
   const errors = validateForm();
-  const passwordError = touched.password && errors.password;
+  const passwordError =
+    (touched.password && errors.password) || serverErrors.password;
   const confirmError = touched.confirmPassword && errors.confirmPassword;
 
   return (
@@ -107,7 +102,10 @@ const ResetPasswordForm = () => {
             autoComplete="new-password"
             value={password}
             placeholder="Must be 8 characters"
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (serverErrors.password) setServerErrors({});
+            }}
             onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
             hasError={Boolean(passwordError)}
           />
