@@ -1,12 +1,5 @@
-import React from 'react'
-import VerifyOtpForm from '../components/auth/VerifyOtpForm'
+import VerifyOtpForm from "../components/auth/VerifyOtpForm";
 
-const VerifyOtp = () => {
-  return (
-    <>
-        <VerifyOtpForm />
-    </>
-  )
-}
+const VerifyOtp = () => <VerifyOtpForm />;
 
-export default VerifyOtp
+export default VerifyOtp;

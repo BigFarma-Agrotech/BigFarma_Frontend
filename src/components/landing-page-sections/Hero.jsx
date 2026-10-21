@@ -1,61 +1,60 @@
 import { Link } from "react-scroll";
 import { NavLink } from "react-router-dom";
 import { ArrowDown } from "lucide-react";
-import bgFront from "../../assets/images/bigfarma-brandimage.png";
+import bgFront from "../../assets/images/bigfarma-brandimage.webp";
 import bgBack from "../../assets/images/bg-image-back.png";
 
 const Hero = () => {
   return (
-    <section
-      id="home"
-      className="w-full lg:h-screen flex flex-col lg:flex-row  lg:items-center  px-4 sm:px-8  relative overflow-hidden"
-    >
-      {/* Tagline Section */}
-      <div className="w-full flex flex-col lg:mr-10">
-        <div className="flex flex-col gap-3 m-4">
-          <span className="w-22 h-8 bg-[var(--color-primary-transparent)] text-[var(--color-primary)] text-base p-3.5 font-bold leading-[0.34]">
+    <section id="home" className="w-full overflow-hidden">
+      <div className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-10 sm:px-6 md:py-16 lg:min-h-[calc(100svh-5rem)] lg:grid-cols-2 lg:gap-12 lg:px-8">
+        {/* Tagline */}
+        <div className="flex flex-col items-start gap-4 sm:gap-5">
+          <span className="inline-flex w-fit rounded-md bg-primary-transparent px-3 py-1.5 text-sm font-bold text-primary sm:text-base">
             We Are
           </span>
-          <div className="font-extrabold text-2xl sm:text-3xl md:text-5xl text-[var(--color-primary)] leading-snug break-word">
-            Empowering Farmers <br />
-            Connecting Markets <br />
-            Growing Agriculture
-          </div>
-          <span className="italic text-base sm:text-lg text-[var(--color-primary)]">
+          <h1 className="text-3xl leading-tight font-extrabold text-primary sm:text-4xl md:text-5xl xl:text-6xl">
+            <span className="block">Empowering Farmers</span>
+            <span className="block">Connecting Markets</span>
+            <span className="block">Growing Agriculture</span>
+          </h1>
+          <p className="text-base text-primary italic sm:text-lg">
             Transforming Africa&apos;s agro business
-          </span>
+          </p>
           <NavLink
-            to="role"
-            className="bg-[var(--color-primary)] text-white w-40 h-12 sm:w-60 sm:h-14 flex justify-center items-center rounded-lg text-sm sm:text-xl font-bold shadow hover:bg-[var(--color-primary-dark)] transition-colors"
+            to="/role"
+            className="rounded-lg bg-primary px-6 py-3 font-semibold text-white shadow transition-colors hover:bg-primary-dark sm:text-lg"
           >
             Create an account
           </NavLink>
-        </div>
-      </div>
 
-      {/*  Image Section */}
-      <div className="w-full max-w-xl flex items-center justify-center relative mt-4 lg:mt-20 flex-col">
-        <div className="relative flex items-center justify-center w-[19rem] h-[22rem] sm:w-[25rem] sm:h-[31.5rem] md:w-[31rem] md:h-[38rem] lg:w-[42rem] lg:h-[49rem] pb-10  mt-4">
+          <Link
+            to="about-us"
+            href="#about-us"
+            smooth={true}
+            duration={500}
+            aria-label="Scroll to About Us"
+            className="mt-4 hidden h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-secondary bg-secondary-transparent shadow-md transition-transform hover:translate-y-0.5 sm:flex lg:mt-10 lg:h-14 lg:w-14"
+          >
+            <ArrowDown className="text-secondary-dark" aria-hidden="true" />
+          </Link>
+        </div>
+
+        {/* Image */}
+        <div className="relative mx-auto w-full max-w-sm sm:max-w-md lg:max-w-lg">
           <img
             src={bgBack}
-            alt="backImage"
-            className="w-[15rem] h-[20rem] sm:w-[20rem] sm:h-[25rem] md:w-[25rem] md:h-[38rem] lg:w-[32rem] lg:h-[49rem] object-contain drop-shadow-lg z-10"
+            alt=""
+            aria-hidden="true"
+            className="mx-auto block h-auto w-4/5 drop-shadow-lg"
           />
           <img
             src={bgFront}
-            alt="frontImage"
-            className="absolute -translate-x-1/2 -translate-y-[42%] left-[51%] top-[42%] sm:top-[47%] w-[19rem] h-[20rem] sm:w-[22rem] sm:h-[28.5rem] md:w-[38rem] md:h-[44rem] object-contain drop-shadow-xl z-50"
+            alt="Smiling woman holding a basket of fresh fruit"
+            className="absolute bottom-0 left-1/2 h-auto w-[92%] -translate-x-1/2 drop-shadow-xl"
           />
         </div>
       </div>
-
-      {/* Arrow Down */}
-      <Link
-        to="About-us"
-        className="w-10 h-10 border-1 border-[var(--color-secondary)] bg-[var(--color-secondary-transparent)] flex items-center justify-center rounded-full sm:w-13 sm:h-13 lg:w-16 lg:h-16 mt-2 lg:mt-7 ml-0 mr-auto shadow-md lg:absolute top-[85%] left-15"
-      >
-        <ArrowDown className="text-[var(--color-secondary-dark)]" />
-      </Link>
     </section>
   );
 };

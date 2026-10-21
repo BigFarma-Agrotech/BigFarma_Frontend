@@ -1,26 +1,40 @@
 import { axios } from "../lib/axios";
-import Cookies from "js-cookie";
-// import { transactions } from "./Transaction";
+import { endpoints } from "../components/config/endpoints";
 
-
-const BASE_URL = import.meta.env.SERVER_URL;
-
+// Expected (unverified) response shape of GET /wallet/dashboard:
+// {
+//   wallet: { balance, ledger_balance },
+//   total_earnings,
+//   total_withdrawals,
+//   recent_transactions: [{ id, description | category, status, type, amount, created_at }]
+// }
+// The shared axios instance sets the base URL and Authorization header.
 export const walletApi = async () => {
   try {
-    const token = Cookies.get("BIGFARMA_ACCESS_TOKEN");
-
-    const res = await axios.get(`${BASE_URL}/wallet/dashboard`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
- 
-
-    console.log("Wallet response:", res.data);
+    const res = await axios.get(endpoints().wallet.dashboard);
     return res.data;
   } catch (error) {
     console.error("Wallet API error:", error.response || error.message);
-    throw error; 
+    throw error;
   }
+};
+
+// Shared query config so every wallet widget reads the same cache entry.
+export const walletDashboardQueryKey = ["walletDashboard"];
+
+export const walletDashboardQuery = {
+  queryKey: walletDashboardQueryKey,
+  queryFn: walletApi,
+};
+
+/** Available balance as a number (0 when missing / unparseable). */
+export const getWalletBalance = (walletData) => {
+  const num = Number(walletData?.wallet?.balance ?? 0);
+  return Number.isFinite(num) ? num : 0;
+};
+
+// eslint-disable-next-line no-unused-vars
+export const requestWithdrawal = async ({ amount }) => {
+  // TODO: wire to POST /wallet/withdraw once the backend endpoint exists
+  throw new Error("Withdrawals are not available yet");
 };

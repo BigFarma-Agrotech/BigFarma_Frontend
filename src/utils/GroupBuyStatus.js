@@ -5,12 +5,11 @@ export const StatusLabel = {
   },
   AlmostFull: {
     label: "Almost Full",
-    className: "text-[#ffffff] bg-[#FFA725]",
+    className: "text-white bg-secondary",
   },
   Complete: {
     label: "Complete",
-    className: "text-[#ffffff] bg-[#016130]",
-
+    className: "text-white bg-primary",
   },
 };
 

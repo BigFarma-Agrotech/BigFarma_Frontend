@@ -1,37 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Data from "./Data";
-import { useEffect } from "react";
 import LoadingSkeleton from "./LoadingSkeleton";
 
 const orders = [
-  {
-    id: "10001",
-    farmName: "Bisi Farm",
-    date: "04-02-2025",
-    status: "delivered",
-  },
-  { id: "10002", 
-    farmName: "Olu Farm", 
-    date: "05-02-2025", 
-    status: "pending" },
-  {
-    id: "10003",
-    farmName: "Tola Farm",
-    date: "06-02-2025",
-    status: "delivered",
-  },
-  {
-    id: "10004",
-    farmName: "Yemi Farm",
-    date: "07-02-2025",
-    status: "cancelled",
-  },
-  {
-    id: "10005",
-    farmName: "Kemi Farm",
-    date: "08-02-2025",
-    status: "shipping",
-  },
+  { id: "10001", farmName: "Bisi Farm", date: "04-02-2025", status: "delivered" },
+  { id: "10002", farmName: "Olu Farm", date: "05-02-2025", status: "pending" },
+  { id: "10003", farmName: "Tola Farm", date: "06-02-2025", status: "delivered" },
+  { id: "10004", farmName: "Yemi Farm", date: "07-02-2025", status: "cancelled" },
+  { id: "10005", farmName: "Kemi Farm", date: "08-02-2025", status: "shipping" },
 ];
 
 const RecentOrders = () => {
@@ -53,39 +29,38 @@ const RecentOrders = () => {
   }, []);
 
   return (
-    <div className="w-full lg:border border-grey-200 rounded-lg overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-[#EFEFEF]">
-          <tr className="text-left text-lg *:px-6 *:py-2.5 border-b border-grey-200 hidden lg:table-row">
-            <th>Order ID</th>
-            <th>Farm Name</th>
-            <th>Date</th>
-            <th>Status</th>
+    <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <table className="w-full min-w-[520px] text-left text-sm">
+        <thead className="bg-gray-50 text-gray-600">
+          <tr className="*:px-4 *:py-3 *:font-medium">
+            <th scope="col">Order ID</th>
+            <th scope="col">Farm Name</th>
+            <th scope="col">Date</th>
+            <th scope="col">Status</th>
           </tr>
         </thead>
 
-        {isLoading ? (
-          [...Array(4)].map((_, index) => (
-            <LoadingSkeleton key={index} itemKey={index} />
-          ))
-        ) : orders.length === 0 ? (
-          <tr colSpan={4}>
-            <td>No recent order</td>
-          </tr>
-        ) : (
-          orders.map((order) => (
-            <tr
-              key={order.id}
-              className="table-row cursor-pointer text-sm *:px-4 lg:*:px-6 *:py-2 lg:*:py-3 lg:py-0 border-t border-grey-200 bg-white"
-            >
-              <Data
-                props={order}
-                isChecked={selectedOrders.includes(order.id)}
-                onToggle={() => toggleSingle(order.id)}
-              />
+        <tbody className="divide-y divide-gray-200 bg-white text-gray-700">
+          {isLoading ? (
+            [...Array(4)].map((_, index) => <LoadingSkeleton key={index} />)
+          ) : orders.length === 0 ? (
+            <tr>
+              <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                No recent orders
+              </td>
             </tr>
-          ))
-        )}
+          ) : (
+            orders.map((order) => (
+              <tr key={order.id} className="*:px-4 *:py-3 hover:bg-gray-50">
+                <Data
+                  props={order}
+                  isChecked={selectedOrders.includes(order.id)}
+                  onToggle={() => toggleSingle(order.id)}
+                />
+              </tr>
+            ))
+          )}
+        </tbody>
       </table>
     </div>
   );

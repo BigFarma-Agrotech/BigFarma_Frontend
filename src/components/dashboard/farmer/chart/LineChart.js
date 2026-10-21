@@ -21,16 +21,16 @@ ChartJS.register(
   Legend
 );
 
-const Orders = ["Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sun"];
-const lineData = [10000, 50000, 100000, 500000, 1000000, 5000000];
+const formatNaira = (value) => `₦${Number(value || 0).toLocaleString()}`;
 
-const LineChart = () => {
+/** @param {{ labels: string[], values: number[] }} props */
+const LineChart = ({ labels = [], values = [] }) => {
   const data = {
-    labels: Orders,
+    labels,
     datasets: [
       {
-        label: "Orders",
-        data: lineData,
+        label: "Revenue",
+        data: values,
         borderColor: "#016130",
         backgroundColor: "#016130",
         fill: false,
@@ -46,17 +46,10 @@ const LineChart = () => {
     plugins: {
       legend: {
         display: false,
-        position: "right",
-        align: "center",
-        labels: {
-          color: "#000000",
-          padding: 20,
-          boxWidth: 30,
-          usePointStyle: true,
-          font: {
-            weight: 700,
-            size: 18, 
-          },
+      },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => `Revenue: ${formatNaira(ctx.parsed.y)}`,
         },
       },
     },
@@ -66,26 +59,23 @@ const LineChart = () => {
           display: false,
         },
         ticks: {
-          color: "#000000", 
+          color: "#111827",
           font: {
-            weight: 700,
-            size: 14,
+            weight: 600,
+            size: 12,
           },
         },
       },
       y: {
-        beginAtZero: false,
-        min: lineData[0],
+        beginAtZero: true,
         ticks: {
           maxTicksLimit: 6,
-          color: "#000000", 
+          color: "#111827",
           font: {
-            weight: 700,
-            size: 14,
+            weight: 600,
+            size: 12,
           },
-          callback: function (value) {
-            return `#${value.toLocaleString()}`;
-          },
+          callback: (value) => formatNaira(value),
         },
       },
     },
@@ -93,8 +83,13 @@ const LineChart = () => {
 
   return React.createElement(
     "div",
-    { className: "w-full h-[300px]" },
-    React.createElement(Line, { data, options })
+    { className: "relative h-64 w-full sm:h-72" },
+    React.createElement(Line, {
+      data,
+      options,
+      "aria-label": "Revenue by month",
+      role: "img",
+    })
   );
 };
 

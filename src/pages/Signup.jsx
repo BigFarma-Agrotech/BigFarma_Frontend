@@ -1,13 +1,5 @@
-import React from 'react'
-import SignUpForm from '../components/auth/SignUpForm'
+import SignUpForm from "../components/auth/SignUpForm";
 
-const Signup = () => {
-  return (
-    <>
-      <SignUpForm />
-    </>
-  )
-}
+const Signup = () => <SignUpForm />;
 
-export default Signup
-
+export default Signup;

@@ -1,18 +1,32 @@
-import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import DataTablePage from '../components/dashboard/farmer/components/farmer-table/dataTable';
-import { useFarmerOrder } from '../hooks/useFarmerOrder';
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { ChevronDown, ShoppingBag } from "lucide-react";
+import DataTablePage from "../components/dashboard/farmer/components/farmer-table/dataTable";
+import { useFarmerOrder } from "../hooks/useFarmerOrder";
+import { cn } from "@/lib/utils";
+import {
+  ORDER_STATUSES,
+  extractOrders,
+  formatNaira,
+  getOrderStatusColor,
+  getOrderStatusLabel,
+  normalizeOrderStatus,
+  getOrderImage,
+  getOrderProductName,
+  getOrderQuantity,
+  getProductOrdersPath,
+} from "../lib/farmerOrder";
 
 // Fallback images
-import eggs from '../assets/ProductImages/categories/Egg image.png';
-import onions from '../assets/ProductImages/onions.png';
-import watermelon from '../assets/ProductImages/watermelon.png';
-import carrot from '../assets/ProductImages/categories/Carrot image.png';
-import rice from '../assets/ProductImages/Rice.png';
-import tomatoes from '../assets/ProductImages/tomatoes.png';
-import vegetable from '../assets/ProductImages/categories/vegetables.png';
-import cassava from '../assets/ProductImages/cassava.png';
-import filterIcon from '../assets/icons/filter.svg'; // 🔹 Make sure you have this icon or adjust path
+import eggs from "../assets/ProductImages/categories/Egg image.png";
+import onions from "../assets/ProductImages/onions.png";
+import watermelon from "../assets/ProductImages/watermelon.png";
+import carrot from "../assets/ProductImages/categories/Carrot image.png";
+import rice from "../assets/ProductImages/Rice.png";
+import tomatoes from "../assets/ProductImages/tomatoes.png";
+import vegetable from "../assets/ProductImages/categories/vegetables.png";
+import cassava from "../assets/ProductImages/cassava.png";
+import filterIcon from "../assets/icons/filter.svg";
 
 const productImages = {
   Eggs: eggs,
@@ -25,296 +39,216 @@ const productImages = {
   Cassava: cassava,
 };
 
+const orderFilterOptions = [
+  { label: "All", value: "all" },
+  ...ORDER_STATUSES.map(({ value, label }) => ({ value, label })),
+];
+
 const FarmerOrderPage = () => {
   const { data: apiOrders, isLoading, error, refetch } = useFarmerOrder();
 
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState("all");
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
 
-  // 🔹 Helper function to map order status
-  const mapOrderStatusToProductStatus = (apiStatus) => {
-    const statusMap = {
-      pending: 'Active',
-      confirmed: 'Active',
-      shipped: 'Active',
-      delivered: 'Active',
-      cancelled: 'Out of stock',
-      refunded: 'Out of stock',
-    };
-    return statusMap[apiStatus] || 'Active';
-  };
-
-  // 🔹 Transform API data
   const transformedOrders = useMemo(() => {
-    if (!apiOrders) return [];
-
-    const ordersData = Array.isArray(apiOrders)
-      ? apiOrders
-      : apiOrders.orders || apiOrders.data || [];
-
-    return ordersData.map((order, index) => {
-      const productId = order.product_id
-        ? `product-${order.product_id}`
-        : `product-${index}`;
-
-      const productName = order.product_name || `Product ${index + 1}`;
-
-      // Normalize product image (handles string URLs or object entries)
-      let productImage = productImages[productName] || watermelon;
-      if (order.product_images && order.product_images.length > 0) {
-        const firstImg = order.product_images[0];
-        if (typeof firstImg === 'string') {
-          productImage = firstImg;
-        } else if (firstImg && typeof firstImg === 'object') {
-          productImage =
-            firstImg.url ||
-            firstImg.src ||
-            firstImg.image ||
-            firstImg.path ||
-            firstImg.location ||
-            firstImg.file ||
-            productImage;
-        }
-      }
-
-      // Normalize price (accepts number or numeric string)
-      let price = '₦0';
-      if (order.total_price != null) {
-        const raw = order.total_price;
-        const num =
-          typeof raw === 'number'
-            ? raw
-            : parseFloat(
-                String(raw)
-                  .replace(/,/g, '')
-                  .replace(/[^0-9.-]+/g, '')
-              );
-        if (!isNaN(num)) price = `₦${num.toLocaleString()}`;
-      }
-
-      const status = mapOrderStatusToProductStatus(order.status);
+    return extractOrders(apiOrders).map((order, index) => {
+      const productName = getOrderProductName(order);
+      const productImage =
+        getOrderImage(order) || productImages[productName] || watermelon;
 
       return {
         id: order.id?.toString() || `order-${index}`,
-        productId,
+        productOrdersPath: getProductOrdersPath(order),
         images: productImage,
         product: productName,
         productID: order.order_number || `#ORDER${order.id || index}`,
-        price,
-        quantity: String(order.quantity_ordered || '1'),
+        price: formatNaira(order.total_price),
+        quantity: String(getOrderQuantity(order)),
         orders: 1,
-        status,
+        status: normalizeOrderStatus(order.status),
         originalData: order,
       };
     });
   }, [apiOrders]);
-  // ...existing code...
 
-  // 🔹 Filter logic
   const filteredOrders = useMemo(() => {
-    if (filter === 'all') return transformedOrders;
+    if (filter === "all") return transformedOrders;
     return transformedOrders.filter((order) => order.status === filter);
   }, [filter, transformedOrders]);
 
-  // 🔹 Filter options
-  const productFilterOptions = [
-    { label: 'All', value: 'all' },
-    { label: 'Active', value: 'Active' },
-    { label: 'Out of Stock', value: 'Out of stock' },
-  ];
-
-  const getCurrentFilterLabel = () => {
-    const found = productFilterOptions.find((opt) => opt.value === filter);
-    return found ? found.label : 'Filter';
-  };
+  const currentFilterLabel =
+    orderFilterOptions.find((opt) => opt.value === filter)?.label || "Filter";
 
   const handleFilterSelect = (value) => {
     setFilter(value);
     setIsFilterDropdownOpen(false);
   };
 
-  // 🔹 Table row UI
-  const OrderRow = ({ data: order }) => (
-    <tr className="hover:bg-gray-50">
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
+  const orderColumns = [
+    {
+      key: "product",
+      label: "Product",
+      render: (order) => (
+        <div className="flex items-center gap-3">
           <img
             src={order.images}
             alt={order.product}
-            className="w-10 h-10 rounded-lg object-cover mr-3"
-            onError={(e) => (e.target.src = watermelon)}
+            className="h-10 w-10 shrink-0 rounded-lg object-cover"
+            onError={(e) => {
+              e.target.src = watermelon;
+            }}
           />
           <div>
-            <span className="text-sm font-medium text-gray-900 block">
+            <span className="block text-sm font-medium text-gray-900">
               {order.product}
             </span>
-            <span className="text-xs text-gray-500 block">
-              {order.originalData.farm_name || 'Farm'}
+            <span className="block text-xs text-gray-500">
+              {order.originalData.farm_name || "Farm"}
             </span>
           </div>
         </div>
-      </td>
-      <td className="px-6 py-4 text-sm text-gray-500">{order.productID}</td>
-      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-        {order.price}
-      </td>
-      <td className="px-6 py-4 text-sm text-gray-500">{order.quantity}</td>
-      <td className="px-6 py-4 text-sm text-gray-500">{order.orders}</td>
-      <td className="px-6 py-4">
+      ),
+    },
+    {
+      key: "productID",
+      label: "Order Number",
+      render: (order) => <span className="text-gray-500">{order.productID}</span>,
+    },
+    {
+      key: "price",
+      label: "Total Price",
+      render: (order) => (
+        <span className="font-medium text-gray-900">{order.price}</span>
+      ),
+    },
+    {
+      key: "quantity",
+      label: "Quantity",
+      render: (order) => <span className="text-gray-500">{order.quantity}</span>,
+    },
+    {
+      key: "orders",
+      label: "Orders",
+      render: (order) => <span className="text-gray-500">{order.orders}</span>,
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (order) => (
         <span
-          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-            order.status === 'Active'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-          }`}
+          className={cn(
+            "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+            getOrderStatusColor(order.status)
+          )}
         >
-          {order.status}
+          {getOrderStatusLabel(order.status)}
         </span>
-        <div className="text-xs text-gray-500 mt-1">
-          {order.originalData.status}
-        </div>
-      </td>
-      <td className="px-6 py-4 text-sm font-medium">
+      ),
+    },
+    {
+      key: "actions",
+      label: "Action",
+      render: (order) => (
         <Link
-          to={`/farmer-orders/${order.productId}`}
+          to={order.productOrdersPath}
           state={{ order: order.originalData }}
-          className="text-blue-700 bg-blue-200 hover:text-blue-900 rounded-xl py-1 px-2 font-medium"
+          className="inline-flex rounded-lg bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-200"
         >
           View
         </Link>
-      </td>
-    </tr>
-  );
-
-  // 🔹 Table column structure
-  const orderColumns = [
-    { key: 'product', label: 'Product' },
-    { key: 'productID', label: 'Order Number' },
-    { key: 'price', label: 'Total Price' },
-    { key: 'quantity', label: 'Quantity' },
-    { key: 'orders', label: 'Orders' },
-    { key: 'status', label: 'Status' },
-    { key: 'actions', label: 'Action' },
+      ),
+    },
   ];
 
-  // // 🔹 Empty state
-  // const emptyOrdersState = (
-  //   <div className="flex flex-col items-center justify-center py-10">
-  //     <p className="text-gray-500 italic">No orders found.</p>
-  //   </div>
-  // );
+  const hasNoOrders = transformedOrders.length === 0;
 
-  //Empty state for orders (your existing JSX)
   const emptyOrdersState = (
-    <div className="flex flex-col items-center justify-center">
-      <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-        <svg
-          className="w-12 h-12 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-          />
-        </svg>
+    <div className="flex flex-col items-center justify-center text-center">
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
+        <ShoppingBag className="h-10 w-10 text-gray-400" aria-hidden="true" />
       </div>
-      <h3 className="text-lg font-medium text-gray-900 mb-2">
-        {apiOrders && (Array.isArray(apiOrders) ? apiOrders.length === 0 : true)
-          ? 'No Orders Yet'
-          : 'No Orders Match Filter'}
+      <h3 className="mb-2 text-lg font-medium text-gray-900">
+        {hasNoOrders ? "No Orders Yet" : "No Orders Match Filter"}
       </h3>
-      <p className="text-gray-500 mb-4 max-w-md text-center">
-        {apiOrders && (Array.isArray(apiOrders) ? apiOrders.length === 0 : true)
+      <p className="mb-4 max-w-md text-sm text-gray-600">
+        {hasNoOrders
           ? "You don't have any orders at the moment. When customers place orders for your products, they will appear here."
-          : 'No orders match your current filter. Try changing the filter to see more orders.'}
+          : "No orders match your current filter. Try changing the filter to see more orders."}
       </p>
-      {apiOrders &&
-        (Array.isArray(apiOrders) ? apiOrders.length === 0 : true) && (
-          <Link
-            to="/my-products"
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md font-medium"
-          >
-            Go to My Products
-          </Link>
-        )}
+      {hasNoOrders && (
+        <Link
+          to="/my-products"
+          className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-base font-medium text-white transition-colors hover:bg-primary-dark"
+        >
+          Go to My Products
+        </Link>
+      )}
     </div>
   );
 
-  // ✅ MAIN RETURN
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <div className="flex items-center space-x-4">
-          <h1 className="text-2xl font-bold">My Orders</h1>
-          <span className="bg-green-100 text-green-700 text-sm font-semibold px-3 py-1 rounded-lg">
-            {filteredOrders.length}{' '}
-            {filteredOrders.length === 1 ? 'Order' : 'Orders'}
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
+            My Orders
+          </h1>
+          <span className="rounded-full bg-primary-subtle px-2.5 py-0.5 text-xs font-medium text-primary">
+            {filteredOrders.length}{" "}
+            {filteredOrders.length === 1 ? "Order" : "Orders"}
           </span>
         </div>
 
-        {/* Filter Dropdown */}
-        <div className="relative">
+        <div className="relative self-start sm:self-auto">
           <button
-            onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-            className="flex items-center space-x-2 border border-green-700 rounded-md px-4 py-2 focus:outline-none focus:ring-1 focus:ring-green-200 min-w-[120px]"
+            type="button"
+            onClick={() => setIsFilterDropdownOpen((open) => !open)}
+            aria-haspopup="listbox"
+            aria-expanded={isFilterDropdownOpen}
+            className="flex h-10 min-w-[140px] items-center gap-2 rounded-lg border border-primary bg-white px-4 text-sm font-medium text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-light"
           >
-            <img src={filterIcon} alt="Filter" className="w-4 h-4" />
-            <span>{getCurrentFilterLabel()}</span>
-            <svg
-              className={`w-4 h-4 transition-transform ${
-                isFilterDropdownOpen ? 'rotate-180' : ''
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+            <img src={filterIcon} alt="" className="h-4 w-4" />
+            <span className="flex-1 text-left">{currentFilterLabel}</span>
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 transition-transform",
+                isFilterDropdownOpen && "rotate-180"
+              )}
+              aria-hidden="true"
+            />
           </button>
 
           {isFilterDropdownOpen && (
-            <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
-              <div className="py-1">
-                {productFilterOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => handleFilterSelect(option.value)}
-                    className={`flex items-center w-full px-4 py-2 text-sm ${
-                      filter === option.value
-                        ? 'bg-green-50 text-green-700'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <span>{option.label}</span>
-                  </button>
-                ))}
-              </div>
+            <div className="absolute left-0 z-30 mt-1 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg sm:left-auto sm:right-0">
+              {orderFilterOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleFilterSelect(option.value)}
+                  className={cn(
+                    "flex w-full items-center px-4 py-2 text-left text-sm",
+                    filter === option.value
+                      ? "bg-primary-subtle text-primary"
+                      : "text-gray-700 hover:bg-gray-100"
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
           )}
         </div>
       </div>
 
-      {/* Table */}
       <DataTablePage
-        title=""
+        title="orders"
         data={filteredOrders}
         isLoading={isLoading}
         error={error}
         refetch={refetch}
         columns={orderColumns}
         emptyState={emptyOrdersState}
-        hideHeader={true}
-        RowComponent={OrderRow}
+        hideHeader
       />
     </div>
   );

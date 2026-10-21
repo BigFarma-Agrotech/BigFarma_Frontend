@@ -21,7 +21,7 @@ export default function OtpInput({ value, onChange, length = 6, className = "" }
   }
 
   return (
-    <div className={`flex gap-2 md:gap-6 justify-center ${className}`}>
+    <div className={`flex justify-center gap-2 sm:gap-3 md:gap-6 ${className}`}>
       {[...Array(length)].map((_, i) => (
         <input
           key={i}
@@ -32,7 +32,7 @@ export default function OtpInput({ value, onChange, length = 6, className = "" }
           value={value[i] || ""}
           onChange={e => handleChange(e, i)}
           onKeyDown={e => handleKeyDown(e, i)}
-          className="w-12 h-12 text-lg border-2 border-[#DDD5DD] rounded-lg text-center focus:border-[#016130] focus:outline-none"
+          className="h-12 w-10 rounded-lg border-2 border-grey-100 text-center text-lg focus:border-primary focus:outline-none sm:w-12"
         />
       ))}
     </div>

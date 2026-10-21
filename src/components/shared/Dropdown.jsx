@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import {motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import flags from "emoji-flags";
 
@@ -48,22 +48,21 @@ const Dropdown = ({ countries = [], onSelect, isOpen, onToggle }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.25 }}
-            className="absolute  w-[16.3rem] mt-1 left-15 top-10 bg-white shadow rounded z-20 text-center"
+            className="absolute left-0 top-full z-20 mt-2 max-h-72 w-64 max-w-[calc(100vw-3rem)] overflow-y-auto rounded-lg bg-white py-1 shadow-lg"
           >
             {countries.map((country, id) => (
-              <div
+              <button
+                type="button"
                 key={id}
-                className="flex items-center p-2 cursor-pointer"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left font-normal text-neutral hover:bg-[#e9e9e9]"
                 onClick={() => handleSelect(country)}
               >
-                <div className="w-[350px] h-8 inline-flex items-center gap-1 text-left px-2 text-[#3C3C3C] hover:bg-[#E9E9E9] font-normal">
-                  <span>{country.flag}</span>
-                  <span>{country.name}</span>
-                  <span className="font-extralight text-sm">
-                    {country.code}
-                  </span>
-                </div>
-              </div>
+                <span>{country.flag}</span>
+                <span className="truncate">{country.name}</span>
+                <span className="ml-auto text-sm font-extralight">
+                  {country.code}
+                </span>
+              </button>
             ))}
           </motion.div>
         )}

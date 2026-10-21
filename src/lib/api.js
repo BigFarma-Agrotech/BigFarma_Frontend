@@ -3,7 +3,6 @@
 const baseURL = import.meta.env.SERVER_URL;
 
 export async function fetchProducts() {
-    console.log("Fetching products from:", `${baseURL}/marketplace/products?skip=0&limit=100`);
     
     try {
         const res = await fetch(
@@ -21,7 +20,6 @@ export async function fetchProducts() {
         }
         
         const data = await res.json();
-        console.log("Products API response:", data);
         
         // Ensure we always return an object with a products array
         return {
@@ -39,7 +37,6 @@ export async function fetchProducts() {
 }
 
 export async function fetchProductById(id) {
-    console.log("Fetching product:", id, "from:", `${baseURL}/marketplace/products/${id}`);
     
     try {
         const res = await fetch(
@@ -57,7 +54,6 @@ export async function fetchProductById(id) {
         }
 
         const data = await res.json();
-        console.log("Product detail API response:", data);
         return data;
     } catch (error) {
         console.error(`Error in fetchProductById for ID ${id}:`, error);

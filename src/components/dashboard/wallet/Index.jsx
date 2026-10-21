@@ -1,49 +1,59 @@
-import LoadingSkeleton from "../../shared/Loader.jsx"
-import {useState, useEffect} from "react";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 import WalletDashboard from "./Wallet.jsx";
 import History from "./History.jsx";
 
+const tabs = [
+  { id: "wallet", label: "Dashboard" },
+  { id: "history", label: "Transaction History", shortLabel: "History" },
+];
+
 const WalletIndex = () => {
-    
-	const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState("wallet");
+  const [activeTab, setActiveTab] = useState("wallet");
 
-    useEffect(() => {
-		const timer = setTimeout(() => {
-			setLoading(false);
-		}, 1500);
-		return () => clearTimeout(timer);
-	}, []);
+  return (
+    <div className="mx-auto w-full max-w-3xl space-y-6">
+      <div>
+        <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">Wallet</h1>
+        <p className="mt-1 text-sm text-gray-600">
+          Manage your balance, withdrawals and transactions.
+        </p>
+      </div>
 
-    if(loading) {
-    return (
-			<div className="flex items-center justify-center h-[70vh]">
-				<LoadingSkeleton />
-			</div>
-		);
-  } 
+      <div
+        role="tablist"
+        aria-label="Wallet sections"
+        className="grid grid-cols-2 gap-3 sm:flex"
+      >
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              "flex h-10 items-center justify-center whitespace-nowrap rounded-lg border border-primary px-4 text-sm font-medium transition-colors sm:min-w-44",
+              activeTab === tab.id
+                ? "bg-primary text-white"
+                : "bg-white text-primary hover:bg-primary-subtle"
+            )}
+          >
+            {tab.shortLabel ? (
+              <>
+                <span className="sm:hidden">{tab.shortLabel}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+              </>
+            ) : (
+              tab.label
+            )}
+          </button>
+        ))}
+      </div>
 
-	return (
-		<>
-			<div className="w-full flex items-center justify-start p-5 "> 
-				<div className="w-full lg:max-w-2xl h-full gap-10 text-center py-2 ml-10">
-                   <div className="flex items-center justify-center gap-11 mb-5">
-                     <button className={` w-76 h-10 flex items-center justify-center rounded-lg font-medium   ${activeTab === "wallet" ? "bg-[#016130] text-white" : "bg-white text-[#016130] border border-[#016130] hover:bg-gray-100" }`} onClick={() => setActiveTab("wallet")}>
-                        Dashboard
-                    </button>
-                    <button className={` w-76 h-10 flex items-center justify-center rounded-lg font-medium  ${activeTab === "history" ? "bg-[#016130] text-white" : "bg-white text-[#016130] border border-[#016130] hover:bg-gray-100" }`} onClick={() => setActiveTab("history")}>
-                        Transaction History
-                    </button>
-                   </div>
-                    <div className="mt-8 mx-2">
-                        {activeTab === "wallet" ? <WalletDashboard/> : <History/>}
-                    </div>
-                </div>
-                
-			</div>
-		</>
-	);
-  
-}
+      {activeTab === "wallet" ? <WalletDashboard /> : <History />}
+    </div>
+  );
+};
 
-export default WalletIndex
+export default WalletIndex;

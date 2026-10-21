@@ -1,6 +1,4 @@
-// src/components/DataTablePage.jsx
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import Button from "@/components/shared/Button";
 
 const DataTablePage = ({
   title,
@@ -8,108 +6,91 @@ const DataTablePage = ({
   isLoading,
   error,
   refetch,
-  filterOptions = [],
   columns = [],
   emptyState,
-  type = 'products',
   hideHeader = false,
-  currentFilter, // Receive filter state from parent
-  onFilterChange, // Callback to update filter in parent
 }) => {
-  const filteredData = data; // Data is already filtered based on the selected filter
+  const rows = data || [];
 
-  // Loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-        <span className="ml-2">Loading {title}...</span>
+      <div className="flex items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-12 text-sm text-gray-600">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <span>Loading{title ? ` ${title}` : ""}...</span>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="text-center py-8 bg-red-50 rounded-lg mx-6">
-        <div className="text-red-600 mb-4">
-          <strong>Error loading {title}:</strong>
-          <br />
+      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center sm:p-6">
+        <p className="mb-4 text-sm text-red-600">
+          <strong>Error loading{title ? ` ${title}` : ""}:</strong>{" "}
           {error.response?.data?.detail ||
             error.message ||
             `Failed to load ${title}`}
-        </div>
-        <button
-          onClick={() => refetch()}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
-        >
+        </p>
+        <Button onClick={() => refetch()} className="h-10 py-0">
           Try Again
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      {/* Header */}
+    <div className="space-y-6">
       {!hideHeader && (
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold">{title}</h1>
-            <span className="bg-green-100 text-green-700 text-sm font-semibold px-3 py-1 rounded-lg">
-              {filteredData.length}{' '}
-              {filteredData.length === 1 ? title.slice(0, -1) : title}
-            </span>
-          </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">{title}</h1>
+          <span className="rounded-full bg-primary-subtle px-2.5 py-0.5 text-xs font-medium text-primary">
+            {rows.length} {rows.length === 1 ? title.slice(0, -1) : title}
+          </span>
         </div>
       )}
 
-      {/* Data Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {columns.map((column) => (
-                <th
-                  key={column.key}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  {column.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
+      {rows.length === 0 ? (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-12 sm:px-6">
+          {emptyState}
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  {columns.map((column) => (
+                    <th
+                      key={column.key}
+                      scope="col"
+                      className="whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6"
+                    >
+                      {column.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
 
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredData?.length > 0 ? (
-              filteredData?.map((item) => (
-                <DataTableRow
-                  key={item.id}
-                  item={item}
-                  columns={columns}
-                  type={type}
-                />
-              ))
-            ) : (
-              <tr>
-                <td colSpan={columns.length} className="px-6 py-12 text-center">
-                  {emptyState}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {rows.map((item) => (
+                  <DataTableRow key={item.id} item={item} columns={columns} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// Reusable Row Component
-const DataTableRow = ({ item, columns, type }) => {
+const DataTableRow = ({ item, columns }) => {
   return (
     <tr className="hover:bg-gray-50">
       {columns.map((column) => (
-        <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm">
+        <td
+          key={column.key}
+          className="whitespace-nowrap px-4 py-4 text-sm text-gray-700 sm:px-6"
+        >
           {column.render ? column.render(item) : item[column.key]}
         </td>
       ))}

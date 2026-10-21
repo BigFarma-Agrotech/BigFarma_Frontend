@@ -1,5 +1,6 @@
-// src/components/RestockProductModal.jsx
-import React, { useState } from 'react';
+import { useEffect, useState } from "react";
+import { PackagePlus, X } from "lucide-react";
+import Button from "@/components/shared/Button";
 
 const RestockProductModal = ({
   isOpen,
@@ -8,7 +9,12 @@ const RestockProductModal = ({
   product,
   isLoading,
 }) => {
-  const [quantity, setQuantity] = useState('');
+  const [quantity, setQuantity] = useState("");
+
+  // Start from an empty field each time the modal opens
+  useEffect(() => {
+    if (isOpen) setQuantity("");
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -20,92 +26,91 @@ const RestockProductModal = ({
   };
 
   const handleClose = () => {
-    setQuantity('');
+    setQuantity("");
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-800/20 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="restock-product-title"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-4 sm:p-6"
+      >
         <form onSubmit={handleSubmit}>
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-                <svg
-                  className="w-6 h-6 text-green-800"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Restock Product
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Update quantity for {product?.product}
-                </p>
-              </div>
+          <div className="mb-4 flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-subtle">
+              <PackagePlus className="h-6 w-6 text-primary" aria-hidden="true" />
             </div>
-
-            {/* Current Quantity */}
-            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600">Current Quantity</p>
-              <p className="text-lg font-semibold text-gray-900">
-                {product?.quantity}
+            <div className="min-w-0 flex-1">
+              <h3
+                id="restock-product-title"
+                className="text-lg font-semibold text-gray-900"
+              >
+                Restock Product
+              </h3>
+              <p className="break-words text-sm text-gray-600">
+                Update quantity for {product?.product}
               </p>
             </div>
+            <button
+              type="button"
+              onClick={handleClose}
+              disabled={isLoading}
+              aria-label="Close"
+              className="shrink-0 rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
 
-            {/* Quantity Input */}
-            <div className="mb-6">
-              <label
-                htmlFor="quantity"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                New Quantity
-              </label>
-              <input
-                type="number"
-                id="quantity"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="Enter new quantity"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                required
-                min="0"
-                step="1"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Enter the total quantity you want to set for this product
-              </p>
-            </div>
+          <div className="mb-4 rounded-lg bg-gray-50 p-3">
+            <p className="text-sm text-gray-600">Current Quantity</p>
+            <p className="text-lg font-semibold text-gray-900">
+              {product?.quantity}
+            </p>
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-4">
-              <button
-                type="button"
-                onClick={handleClose}
-                disabled={isLoading}
-                className="px-6 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-700 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading || !quantity}
-                className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-800 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-              >
-                {isLoading ? 'Updating...' : 'Update Quantity'}
-              </button>
-            </div>
+          <div className="mb-6">
+            <label
+              htmlFor="restock-quantity"
+              className="mb-1.5 block text-sm font-medium text-gray-700"
+            >
+              New Quantity
+            </label>
+            <input
+              type="number"
+              id="restock-quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              placeholder="Enter new quantity"
+              className="h-12 w-full rounded-lg border border-gray-300 px-4 text-base focus:border-primary-light focus:outline-none focus:ring-1 focus:ring-primary-light"
+              required
+              min="0"
+              step="1"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Enter the total quantity you want to set for this product
+            </p>
+          </div>
+
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              disabled={isLoading}
+              className="h-10 py-0"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isLoading || !quantity}
+              className="h-10 py-0"
+            >
+              {isLoading ? "Updating..." : "Update Quantity"}
+            </Button>
           </div>
         </form>
       </div>

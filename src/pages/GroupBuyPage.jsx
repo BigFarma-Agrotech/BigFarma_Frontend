@@ -1,9 +1,7 @@
-
-import GroupBuy from  "@/components/dashboard/GroupBuy/Index.jsx"
-import React from 'react'
+import GroupBuy from "@/components/dashboard/GroupBuy/Index.jsx";
 
 const GroupBuyPage = () => {
-  return  <GroupBuy/>
-}
+  return <GroupBuy />;
+};
 
-export default GroupBuyPage
+export default GroupBuyPage;

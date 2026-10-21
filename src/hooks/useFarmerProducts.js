@@ -9,7 +9,6 @@ export const useFarmerProducts = () => {
     queryFn: async () => {
       try {
         const response = await farmerApi.getProducts();
-        console.log('Products API Response:', response.data);
         return response.data;
       } catch (error) {
         console.error('Error fetching products:', error);
@@ -53,7 +52,7 @@ export const useCreateFarmerProduct = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['farmerProducts']);
+      queryClient.invalidateQueries({ queryKey: ['farmerProducts'] });
     },
     onError: (error) => {
       console.error('Error creating product:', error);
@@ -72,8 +71,8 @@ export const useUpdateFarmerProduct = () => {
     },
     onSuccess: (data, variables) => {
       // Invalidate both the list and the specific product
-      queryClient.invalidateQueries(['farmerProducts']);
-      queryClient.invalidateQueries(['farmerProduct', variables.productId]);
+      queryClient.invalidateQueries({ queryKey: ['farmerProducts'] });
+      queryClient.invalidateQueries({ queryKey: ['farmerProduct', variables.productId] });
     },
   });
 };
@@ -88,7 +87,7 @@ export const useDeleteFarmerProduct = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['farmerProducts']);
+      queryClient.invalidateQueries({ queryKey: ['farmerProducts'] });
     },
   });
 };
@@ -103,7 +102,7 @@ export const useRestockFarmerProduct = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['farmerProducts']);
+      queryClient.invalidateQueries({ queryKey: ['farmerProducts'] });
     },
   });
 };
@@ -120,7 +119,7 @@ export const useUpdateProductStatus = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['farmerProducts']);
+      queryClient.invalidateQueries({ queryKey: ['farmerProducts'] });
     },
   });
 };

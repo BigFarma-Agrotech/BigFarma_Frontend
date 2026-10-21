@@ -1,11 +1,5 @@
-import InputOtpForm from '../components/auth/InputOtpForm'
+import InputOtpForm from "../components/auth/InputOtpForm";
 
-const InputOtp = () => {
-  return (
-    <>
-        <InputOtpForm />
-    </>
-  )
-}
+const InputOtp = () => <InputOtpForm />;
 
-export default InputOtp
+export default InputOtp;

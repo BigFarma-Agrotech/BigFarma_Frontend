@@ -1,135 +1,146 @@
-import React, { useRef, useState } from 'react'
-import { reviewers } from '../../lib/reviewers'
-import { Swiper, SwiperSlide } from 'swiper/react'
-import { Navigation, Autoplay } from 'swiper/modules'
+import { useRef, useState } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Autoplay } from "swiper/modules";
+import { reviewers } from "../../lib/reviewers";
 
-import 'swiper/css'
-import 'swiper/css/navigation'
-import 'swiper/css/autoplay'
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/autoplay";
+
+const arrowButtonClass =
+  "group pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-grey-100 bg-white text-grey-300 shadow-lg transition-all duration-300 hover:bg-primary hover:text-white hover:shadow-xl";
 
 const Testimonials = () => {
-  const swiperRef = useRef(null)
-  const [isBeginning, setIsBeginning] = useState(true)
-  const [isEnd, setIsEnd] = useState(false)
+  const swiperRef = useRef(null);
+  const [isBeginning, setIsBeginning] = useState(true);
+  const [isEnd, setIsEnd] = useState(false);
+
+  const updateEdges = (swiper) => {
+    setIsBeginning(swiper.isBeginning);
+    setIsEnd(swiper.isEnd);
+  };
 
   const handleSwiper = (swiper) => {
-    swiperRef.current = swiper
-    setIsBeginning(swiper.isBeginning)
-    setIsEnd(swiper.isEnd)
-    swiper.on('slideChange', () => {
-      setIsBeginning(swiper.isBeginning)
-      setIsEnd(swiper.isEnd)
-    })
-  }
+    swiperRef.current = swiper;
+    updateEdges(swiper);
+  };
 
-  // Custom navigation handlers
-  const goNext = () => {
-    if (swiperRef.current) {
-      swiperRef.current.slideNext()
-    }
-  }
-
-  const goPrev = () => {
-    if (swiperRef.current) {
-      swiperRef.current.slidePrev()
-    }
-  }
+  const goNext = () => swiperRef.current?.slideNext();
+  const goPrev = () => swiperRef.current?.slidePrev();
 
   return (
-    <section className="relative px-4 sm:px-8">
-      <h2 className="text-center text-2xl sm:text-3xl md:text-[3rem] font-semibold mt-10 sm:mt-24 mx-auto">
-        Testimonials
-      </h2>
+    <section id="testimonials" className="py-16 md:py-24">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h2 className="mb-8 text-center text-2xl font-bold sm:text-3xl md:mb-12 lg:text-4xl">
+          Testimonials
+        </h2>
 
-      <div className="relative overflow-hidden py-5 max-w-screen-xl mx-auto">
-        {/* Faded edges for desktop only */}
-        <div className="hidden lg:block absolute top-0 left-0 h-full w-12 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-        <div className="hidden lg:block absolute top-0 right-0 h-full w-12 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+        <div className="relative overflow-hidden">
+          {/* Faded edges (desktop only) */}
+          <div className="pointer-events-none absolute top-0 left-0 z-10 hidden h-full w-12 bg-linear-to-r from-white to-transparent lg:block" />
+          <div className="pointer-events-none absolute top-0 right-0 z-10 hidden h-full w-12 bg-linear-to-l from-white to-transparent lg:block" />
 
-        {/* Custom Navigation Arrows (desktop only) */}
-        <div className="hidden lg:flex justify-between items-center absolute top-1/2 left-0 right-0 z-20 px-4 pointer-events-none transform -translate-y-1/2">
-          {!isBeginning && (
-            <button
-              onClick={goPrev}
-              className="group pointer-events-auto bg-white rounded-full shadow-lg w-12 h-12 flex items-center justify-center text-2xl text-gray-600 hover:bg-green-800 hover:shadow-xl transition-all duration-300 border border-gray-200"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="group-hover:text-white transition-colors duration-300"
+          {/* Custom navigation arrows (desktop only) */}
+          <div className="pointer-events-none absolute inset-x-0 top-1/2 z-20 hidden -translate-y-1/2 items-center justify-between px-4 lg:flex">
+            {!isBeginning ? (
+              <button
+                type="button"
+                onClick={goPrev}
+                aria-label="Previous testimonial"
+                className={arrowButtonClass}
               >
-                <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          )}
-          <div className="flex-1"></div>
-          {!isEnd && (
-            <button
-              onClick={goNext}
-              className="group pointer-events-auto bg-white rounded-full shadow-lg w-12 h-12 flex items-center justify-center text-2xl text-gray-600 hover:bg-green-800 hover:shadow-xl transition-all duration-300 border border-gray-200"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="group-hover:text-white transition-colors duration-300"
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M15 18L9 12L15 6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            ) : (
+              <span />
+            )}
+            {!isEnd && (
+              <button
+                type="button"
+                onClick={goNext}
+                aria-label="Next testimonial"
+                className={arrowButtonClass}
               >
-                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          )}
-        </div>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M9 18L15 12L9 6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
 
-        <Swiper
-          modules={[Navigation, Autoplay]}
-          onSwiper={handleSwiper}
-          autoplay={{
-            delay: 3500,
-            disableOnInteraction: false,
-          }}
-          spaceBetween={12}
-          slidesPerView={1}
-          grabCursor={true}
-          breakpoints={{
-            768: {
-              slidesPerView: 2,
-              spaceBetween: 16,
-            },
-            1024: {
-              slidesPerView: 3,
-              spaceBetween: 24,
-            },
-          }}
-        >
-          {reviewers.map((reviewer) => (
-            <SwiperSlide key={reviewer.id}>
-              <div className="w-full h-full mx-auto flex flex-col gap-5 justify-start items-center pt-4 pb-7 bg-white rounded-xl px-4">
-                <img
-                  src={reviewer.profileImage}
-                  alt={`review - ${reviewer.name}`}
-                  className="rounded-full shadow-2xl w-24 h-24 object-cover"
-                />
-                <p className="max-w-[280px] text-[var(--color-neutral-dark)] italic text-center opacity-50">
-                  {reviewer.review}
-                </p>
-                <div className="font-bold flex flex-col items-center justify-center">
-                  <p className="text-lg">{reviewer.name}</p>
-                  <p className="text-sm text-[var(--color-neutral-dark)] opacity-50">
-                    {reviewer.additionalDetails}
+          <Swiper
+            modules={[Navigation, Autoplay]}
+            onSwiper={handleSwiper}
+            onSlideChange={updateEdges}
+            autoplay={{
+              delay: 3500,
+              disableOnInteraction: false,
+            }}
+            spaceBetween={12}
+            slidesPerView={1}
+            grabCursor={true}
+            breakpoints={{
+              768: {
+                slidesPerView: 2,
+                spaceBetween: 16,
+              },
+              1024: {
+                slidesPerView: 3,
+                spaceBetween: 24,
+              },
+            }}
+          >
+            {reviewers.map((reviewer) => (
+              <SwiperSlide key={reviewer.id} className="h-auto!">
+                <div className="mx-auto flex h-full w-full flex-col items-center justify-start gap-5 rounded-xl bg-white px-4 pt-4 pb-8">
+                  <img
+                    src={reviewer.profileImage}
+                    alt={`Photo of ${reviewer.name}`}
+                    className="h-24 w-24 rounded-full object-cover shadow-2xl"
+                  />
+                  <p className="max-w-xs text-center text-base text-grey-300 italic">
+                    {reviewer.review}
                   </p>
+                  <div className="flex flex-col items-center justify-center text-center font-bold">
+                    <p className="text-lg">{reviewer.name}</p>
+                    <p className="text-sm text-grey-300">
+                      {reviewer.additionalDetails}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </SwiperSlide>
-          ))}
-        </Swiper>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
       </div>
     </section>
-  )
-}
+  );
+};
 
-export default Testimonials
+export default Testimonials;
