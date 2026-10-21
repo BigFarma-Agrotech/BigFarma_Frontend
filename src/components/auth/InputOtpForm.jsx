@@ -3,21 +3,24 @@ import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, Check } from "lucide-react";
 import Button from "@/components/shared/Button";
 import OtpInput from "@/components/shared/OtpInput";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
+import { setSession } from "@/lib/auth";
 import { verifyOtp } from "@/components/queries/auth/verifyOtp";
 import { requestOtp } from "@/components/queries/auth/register";
 import { toast } from "react-toastify";
 
 function InputOtpForm(props) {
   const location = useLocation();
-  const email = location.state?.email || props.email || "";
+  // Email or phone number the code was sent to
+  const identifier = location.state?.identifier || props.email || "";
   const [value, setValue] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [timer, setTimer] = useState(60); 
-  const timerRef = useRef(); 
-  const navigate = useNavigate(); 
+  const [timer, setTimer] = useState(60);
+  const timerRef = useRef();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (timer > 0) {
@@ -26,52 +29,54 @@ function InputOtpForm(props) {
     return () => clearTimeout(timerRef.current);
   }, [timer]);
 
+  // Without an email/phone there is nothing to verify
+  if (!identifier) {
+    return <Navigate to="/sign-up" replace />;
+  }
+
   const handleVerify = async () => {
-    if (value.length !== 6) return; 
+    if (value.length !== 6) return;
     setLoading(true);
     const result = await verifyOtp({
-      email,
+      identifier,
       code: value,
-      medium: "email",
       otp_type: "verification",
     });
     setLoading(false);
-    if (result.isSuccess) {
-      toast.success(result.message || "OTP verified successfully!"); 
-      setIsSuccess(true);
-    } else {
-      toast.error(result.message || "OTP verification failed.");
+
+    if (!result.isSuccess) {
+      toast.error(result.message);
+      return;
     }
+
+    // Sign the user straight in if the server returns a token with the verification
+    if (result.data?.access_token) {
+      setSession(result.data);
+      setIsSignedIn(true);
+    }
+    toast.success(result.message);
+    setIsSuccess(true);
   };
 
   const handleResendCode = async () => {
     setIsResending(true);
     setValue("");
-    try {
-      const otpPayload = {
-        email: email || "",
-        medium: "email",
-        otp_type: "verification",
-      };
-      const result = await requestOtp(otpPayload);
-      if (result.isSuccess) {
-        toast.success(result.message || "OTP resent successfully!");
-        setTimer(60);
-      } else {
-        toast.error(result.message || "Failed to resend OTP.");
-      }
-    } catch {
-      toast.error("Failed to resend OTP. Please try again.");
-    }
+    const result = await requestOtp({ identifier, otp_type: "verification" });
     setIsResending(false);
+    if (result.isSuccess) {
+      toast.success(result.message);
+      setTimer(60);
+    } else {
+      toast.error(result.message);
+    }
   };
 
   const handleBack = () => {
-    navigate("/");
+    navigate("/sign-up");
   };
 
   const handleContinue = () => {
-    navigate("/dashboard");
+    navigate(isSignedIn ? "/dashboard" : "/sign-in", { replace: true });
   };
 
   if (isSuccess) {
@@ -87,7 +92,9 @@ function InputOtpForm(props) {
             <div className="space-y-2">
               <h1 className="text-[32px] font-bold">Successful</h1>
               <p className="">
-                Congratulations your account has been successfully created
+                {isSignedIn
+                  ? "Congratulations your account has been successfully created"
+                  : "Your account has been verified. Sign in to continue"}
               </p>
             </div>
             <Button
@@ -122,7 +129,7 @@ function InputOtpForm(props) {
               </h1>
               <p className="text-lg">
                 We sent a 6 digit code to{" "}
-                <span className="font-medium">{email}</span>. Please enter it to
+                <span className="font-medium">{identifier}</span>. Please enter it to
                 continue
               </p>
             </div>

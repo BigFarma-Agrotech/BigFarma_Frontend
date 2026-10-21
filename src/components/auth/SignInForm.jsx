@@ -12,8 +12,15 @@ import { FcGoogle } from "react-icons/fc";
 import { countries } from "../../lib/countries";
 
 // ==================== React & Hooks ====================
-import { useState, useContext } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useState, useContext, useEffect } from "react";
+import {
+  Navigate,
+  NavLink,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
+import { isAuthenticated } from "@/lib/auth";
 import useForm from "../../hooks/useForm";
 import useIsMobile from "../../hooks/useIsMobile";
 import { FocusContext } from "../../context/FocusContext";
@@ -26,7 +33,6 @@ import Support from "./Support";
 // ==================== Animations ====================
 
 import { motion, AnimatePresence } from "framer-motion";
-import Cookies from "js-cookie";
 
 const SignInForm = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -34,11 +40,14 @@ const SignInForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
   const [loading, setLoading] = useState(false);
-  const Navigate = useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const isMobile = useIsMobile(); // Tailwind's breakpoint can be passed as a value
   const { setRole } = useContext(FocusContext);
 
-  const { loginData, errors, updateField, updateCountry } = useForm();
+  const { loginData, errors, updateField, updateCountry, handleSubmit, setFieldErrors } =
+    useForm();
 
   // Country
   const handleSelect = (country) => {
@@ -58,34 +67,48 @@ const SignInForm = () => {
     updateField(field, value);
   };
 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const loginValue = loginData.username;
-    const password = loginData.password;
-    try {
-      const result = await login({ login: loginValue, password});
-      if (result.isSuccess) {
-        toast.success(result.message || "Login successful!");
-        localStorage.setItem("token", result.token);
-        
-        // Store user role from login response
-        if (result.role) {
-          Cookies.set("BIGFARMA_ROLE", result.role, { expires: 7 });
-          setRole(result.role);
-          // localStorage.setItem("selectedRole", result.role);
-        }
-        
-        console.log("Login successful - User role:", result.role); //
-        Navigate("/dashboard");
-      } else {
-        toast.error(result.message || "Login failed.");
-      }
-    } catch (err) {
-      toast.error(err?.message || "Login failed.");
-    } finally {
-      setLoading(false);
+  // Where to go after signing in: the page that bounced the user here, else the dashboard
+  const redirectTo =
+    location.state?.from || searchParams.get("from") || "/dashboard";
+
+  useEffect(() => {
+    if (searchParams.get("expired")) {
+      toast.info("Your session has expired. Please sign in again.", {
+        toastId: "session-expired",
+      });
     }
+  }, [searchParams]);
+
+  // Already signed in: skip the form
+  if (isAuthenticated()) {
+    return <Navigate to={redirectTo} replace />;
+  }
+
+  const handleFormSubmit = async (e) => {
+    const formData = await handleSubmit(e);
+    if (!formData) return;
+
+    setLoading(true);
+    const result = await login({
+      login: formData.username,
+      password: formData.password,
+      remember: formData.rememberMe,
+    });
+    setLoading(false);
+
+    if (!result.isSuccess) {
+      const { login: loginError, password: passwordError } = result.fieldErrors;
+      setFieldErrors({
+        ...(loginError && { username: loginError }),
+        ...(passwordError && { password: passwordError }),
+      });
+      toast.error(result.message);
+      return;
+    }
+
+    setRole(result.role);
+    toast.success(result.message);
+    navigate(redirectTo, { replace: true });
   };
 
   return (

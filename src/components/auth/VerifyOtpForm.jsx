@@ -1,23 +1,23 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, Check } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import Button from "@/components/shared/Button";
 import OtpInput from "@/components/shared/OtpInput";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { verifyOtp } from "@/components/queries/auth/verifyOtp";
 import { requestOtp } from "@/components/queries/auth/register";
 import { toast } from "react-toastify";
 
 function VerifyOtpForm(props) {
   const location = useLocation();
-  const email = location.state?.email || props.email || "";
+  // Email or phone number the reset code was sent to
+  const identifier = location.state?.identifier || props.email || "";
   const [value, setValue] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [timer, setTimer] = useState(60); 
-  const timerRef = useRef(); 
-  const navigate = useNavigate(); 
+  const [timer, setTimer] = useState(60);
+  const timerRef = useRef();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (timer > 0) {
@@ -26,83 +26,47 @@ function VerifyOtpForm(props) {
     return () => clearTimeout(timerRef.current);
   }, [timer]);
 
+  // Without an email/phone there is nothing to verify
+  if (!identifier) {
+    return <Navigate to="/forgot-password" replace />;
+  }
+
   const handleVerify = async () => {
-    if (value.length !== 6) return; 
+    if (value.length !== 6) return;
     setLoading(true);
     const result = await verifyOtp({
-      email,
+      identifier,
       code: value,
-      medium: "email",
       otp_type: "password_reset",
     });
     setLoading(false);
-    if (result.isSuccess) {
-      toast.success(result.message || "OTP verified successfully!"); 
-      setIsSuccess(true);
-      navigate("/reset-password", { state: { email, code: value } });
-    } else {
-      toast.error(result.message || "OTP verification failed.");
+
+    if (!result.isSuccess) {
+      toast.error(result.message);
+      return;
     }
+
+    toast.success(result.message);
+    // The reset endpoint doesn't take the code; the server tracks the verification
+    navigate("/reset-password", { state: { identifier, verified: true } });
   };
 
   const handleResendCode = async () => {
     setIsResending(true);
     setValue("");
-    try {
-      const otpPayload = {
-        email: email || "",
-        medium: "email",
-        otp_type: "verification",
-      };
-      const result = await requestOtp(otpPayload);
-      if (result.isSuccess) {
-        toast.success(result.message || "OTP resent successfully!");
-        setTimer(60);
-      } else {
-        toast.error(result.message || "Failed to resend OTP.");
-      }
-    } catch {
-      toast.error("Failed to resend OTP. Please try again.");
-    }
+    const result = await requestOtp({ identifier, otp_type: "password_reset" });
     setIsResending(false);
+    if (result.isSuccess) {
+      toast.success(result.message);
+      setTimer(60);
+    } else {
+      toast.error(result.message);
+    }
   };
 
   const handleBack = () => {
-    navigate("/");
+    navigate("/forgot-password");
   };
-
-  const handleContinue = () => {
-    navigate("/");
-  };
-
-  if (isSuccess) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-[650px]">
-          <div className="space-y-6 p-8 text-center">
-            <div className="flex justify-center">
-              <div className="w-28 h-28 bg-[#01AE5624] rounded-full flex items-center justify-center border border-[#003F1F]">
-                <Check className="w-8 h-8 text-[#003F1F]" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-[32px] font-bold">Successful</h1>
-              <p className="">
-                Congratulations your account has been successfully created
-              </p>
-            </div>
-            <Button
-              onClick={handleContinue}
-              className="w-[280px] mx-auto"
-              variant="default"
-            >
-              Continue
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen mx-auto flex items-center justify-center p-4">
@@ -123,7 +87,7 @@ function VerifyOtpForm(props) {
               </h1>
               <p className="text-lg">
                 We sent a 6 digit code to{" "}
-                <span className="font-medium">{email}</span>. Please enter it to
+                <span className="font-medium">{identifier}</span>. Please enter it to
                 continue
               </p>
             </div>

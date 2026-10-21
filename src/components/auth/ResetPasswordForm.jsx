@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import arrowLeft from '../../assets/icons/arrow_left.svg';
 import supportIcon from '../../assets/icons/Support_Icon .png';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Navigate, NavLink, useNavigate } from 'react-router-dom';
 import { EyeOff, Eye } from 'lucide-react';
 import Support from './Support';
 import { passwordReset } from '@/components/queries/auth/passwordReset';
@@ -10,8 +10,9 @@ import { toast } from 'react-toastify';
 
 const ResetPasswordForm = () => {
   const location = useLocation();
-  const email = location.state?.email;
-  const code = location.state?.code;
+  // Set by VerifyOtpForm once the reset code has been verified
+  const identifier = location.state?.identifier;
+  const verified = location.state?.verified;
   const [showSupport, setShowSupport] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,6 +26,11 @@ const ResetPasswordForm = () => {
 
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+
+  // Only reachable after verifying a reset code
+  if (!identifier || !verified) {
+    return <Navigate to="/forgot-password" replace />;
+  }
 
   const validateForm = () => {
     const newErrors = {};
@@ -54,32 +60,23 @@ const ResetPasswordForm = () => {
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-    } else if (!email || !code) {
-      toast.error("Missing email or OTP code. Please restart the password reset process.");
-    } else {
-      setErrors({});
-      setLoading(true);
-      const payload = {
-        email,
-        phone: "",
-        medium: "email",
-        code,
-        new_password: password,
-      };
-      try {
-        const result = await passwordReset(payload);
-        if (result.isSuccess) {
-          toast.success(result.message || "Password updated successfully!");
-          navigate("/sign-in");
-        } else {
-          toast.error(result.message || "Failed to update password.");
-        }
-      } catch (err) {
-        toast.error(err?.message || "Failed to update password.");
-      } finally {
-        setLoading(false);
-      }
+      return;
     }
+
+    setErrors({});
+    setLoading(true);
+    const result = await passwordReset({ identifier, new_password: password });
+    setLoading(false);
+
+    if (!result.isSuccess) {
+      const { new_password } = result.fieldErrors;
+      if (new_password) setErrors({ password: new_password });
+      toast.error(result.message);
+      return;
+    }
+
+    toast.success(result.message);
+    navigate("/sign-in", { replace: true });
   };
 
   return (

@@ -1,6 +1,9 @@
 "use client";
-import {useState, UseEffect} from "react"
+import { useState, useContext } from "react";
 import { cn } from "@/lib/utils";
+import { clearSession } from "@/lib/auth";
+import { queryClient } from "@/lib/queryClient";
+import { FocusContext } from "@/context/FocusContext";
 import brandLogo from "../../assets/images/brand-logo.png";
 import Cookies from "js-cookie";
 import { axios } from "../../lib/axios";
@@ -27,7 +30,7 @@ import { useEffect } from "react";
 
 export default function DashboardSidebar({ isOpen, onClose }) {
 	const [role, setRole] = useState(null);
-	// const role = Cookies.get("BIGFARMA_ROLE");
+	const { setRole: setFocusRole } = useContext(FocusContext);
 	const navigate = useNavigate();
 	const location = useLocation();
 	const token = Cookies.get("BIGFARMA_ACCESS_TOKEN");
@@ -126,7 +129,10 @@ export default function DashboardSidebar({ isOpen, onClose }) {
 
 	const handleNavClick = (item) => {
 		if (item.name === "Logout") {
-			navigate("/sign-in");
+			clearSession();
+			setFocusRole(null);
+			queryClient.clear();
+			navigate("/sign-in", { replace: true });
 		} else if (item.name === "My Orders") {
 			const userRole = Cookies.get("BIGFARMA_ROLE");
 			const ordersPath = userRole === "farmer" ? "/farmer-orders" : "/orders";
