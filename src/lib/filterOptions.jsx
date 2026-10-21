@@ -1,249 +1,210 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, Check, X } from 'lucide-react';
+import { useState } from "react";
+import { ChevronDown, Check, X } from "lucide-react";
+import {
+  AVAILABILITY_OPTIONS,
+  CATEGORY_OPTIONS,
+  EMPTY_FILTERS,
+} from "@/components/dashboard/marketplace/filters";
 
-export default function FiltersComponent({ setFilterOpen }) {
-    const [expandedSection, setExpandedSection] = useState(null);
-    const [selectedCategories, setSelectedCategories] = useState([]);
-    const [selectedProductTypes, setSelectedProductTypes] = useState([]);
-    const [selectedLocations, setSelectedLocations] = useState([]);
-    const [maxPrice, setMaxPrice] = useState('');
+const toggleValue = (list, value) =>
+  list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 
-    const categories = ['Vegetables', 'Livestock', 'Grains', 'Protein'];
-    const productTypes = ['Fresh', 'Processed', 'Organic', 'Conventional'];
-    const locations = ['North', 'South', 'East', 'West', 'Central'];
+const CheckboxOption = ({ checked, onChange, label }) => (
+  <label className="flex cursor-pointer items-center gap-3">
+    <input type="checkbox" checked={checked} onChange={onChange} className="peer sr-only" />
+    <span
+      aria-hidden="true"
+      className={`flex h-5 w-5 items-center justify-center rounded border-2 peer-focus-visible:ring-2 peer-focus-visible:ring-primary-light ${
+        checked ? "border-primary bg-primary" : "border-gray-300"
+      }`}
+    >
+      {checked && <Check className="h-4 w-4 text-white" strokeWidth={3} />}
+    </span>
+    <span className="text-gray-700">{label}</span>
+  </label>
+);
 
-    const toggleSection = (section) => {
-        setExpandedSection(expandedSection === section ? null : section);
-    };
+const Section = ({ id, title, count, expanded, onToggle, children }) => (
+  <div className="overflow-hidden rounded-lg border-2 border-gray-300">
+    <button
+      type="button"
+      onClick={() => onToggle(id)}
+      aria-expanded={expanded}
+      aria-controls={`filter-${id}`}
+      className="flex w-full items-center justify-between bg-gray-50 px-4 py-4 text-left"
+    >
+      <span className="text-lg text-gray-600">
+        {title}
+        {count > 0 && <span className="ml-2 text-sm font-medium text-primary">({count})</span>}
+      </span>
+      <ChevronDown
+        aria-hidden="true"
+        className={`h-5 w-5 text-gray-600 transition-transform ${expanded ? "rotate-180" : ""}`}
+      />
+    </button>
+    {expanded && (
+      <div id={`filter-${id}`} className="space-y-3 bg-white px-4 py-4">
+        {children}
+      </div>
+    )}
+  </div>
+);
 
-    const toggleCategory = (category) => {
-        setSelectedCategories(prev =>
-            prev.includes(category)
-                ? prev.filter(c => c !== category)
-                : [...prev, category]
-        );
-    };
+/**
+ * Marketplace filter panel. Keeps a draft of the filters locally and only
+ * hands them to the parent when "Apply Filters" is pressed.
+ */
+export default function FiltersComponent({
+  setFilterOpen,
+  initialFilters = EMPTY_FILTERS,
+  onApply,
+  locationOptions = [],
+}) {
+  const [expandedSection, setExpandedSection] = useState(null);
+  const [draft, setDraft] = useState(() => ({ ...EMPTY_FILTERS, ...initialFilters }));
+  const [priceError, setPriceError] = useState("");
 
-    const toggleProductType = (type) => {
-        setSelectedProductTypes(prev =>
-            prev.includes(type)
-                ? prev.filter(t => t !== type)
-                : [...prev, type]
-        );
-    };
+  const toggleSection = (section) =>
+    setExpandedSection((prev) => (prev === section ? null : section));
 
-    const toggleLocation = (location) => {
-        setSelectedLocations(prev =>
-            prev.includes(location)
-                ? prev.filter(l => l !== location)
-                : [...prev, location]
-        );
-    };
+  const toggle = (key, value) =>
+    setDraft((prev) => ({ ...prev, [key]: toggleValue(prev[key], value) }));
 
-    const clearAll = () => {
-        setSelectedCategories([]);
-        setSelectedProductTypes([]);
-        setSelectedLocations([]);
-        setMaxPrice('');
-        setExpandedSection(null);
-    };
+  const clearAll = () => {
+    setDraft(EMPTY_FILTERS);
+    setPriceError("");
+    setExpandedSection(null);
+  };
 
-    const handleClose = () => {
-        if (setFilterOpen) {
-            setFilterOpen(false);
-        }
-    };
+  const handleClose = () => setFilterOpen?.(false);
 
-    const applyFilters = () => {
-        console.log({
-            categories: selectedCategories,
-            productTypes: selectedProductTypes,
-            locations: selectedLocations,
-            maxPrice
-        });
-        handleClose();
-    };
+  const applyFilters = () => {
+    const price = String(draft.maxPrice).trim();
+    if (price !== "" && (!Number.isFinite(Number(price)) || Number(price) < 0)) {
+      setPriceError("Enter a valid price");
+      setExpandedSection("maxPrice");
+      return;
+    }
+    onApply?.({ ...draft, maxPrice: price });
+    handleClose();
+  };
 
-    return (
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-6">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                        <button onClick={handleClose} className="text-gray-900 hover:text-gray-600">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                        <h1 className="text-2xl font-semibold text-gray-900">Filters</h1>
-                    </div>
-                    <button
-                        onClick={clearAll}
-                        className="text-gray-500 text-base hover:text-gray-700"
-                    >
-                        Clear All
-                    </button>
-                </div>
-
-                {/* Filters Container */}
-                <div className="space-y-3">
-                    {/* Category */}
-                    <div className="border-2 border-gray-300 rounded-lg overflow-hidden">
-                        <button
-                            onClick={() => toggleSection('category')}
-                            className="w-full flex items-center justify-between px-4 py-5 text-left bg-gray-50"
-                        >
-                            <span className="text-gray-600 text-lg">Category</span>
-                            <ChevronDown className="w-5 h-5 text-gray-600" />
-                        </button>
-                        {expandedSection === 'category' && (
-                            <div className="px-4 py-4 bg-white space-y-3">
-                                {categories.map((category) => (
-                                    <label
-                                        key={category}
-                                        className="flex items-center gap-3 cursor-pointer"
-                                    >
-                                        <div className="relative">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedCategories.includes(category)}
-                                                onChange={() => toggleCategory(category)}
-                                                className="sr-only"
-                                            />
-                                            <div
-                                                className={`w-5 h-5 border-2 rounded flex items-center justify-center ${selectedCategories.includes(category)
-                                                    ? 'bg-green-500 border-green-500'
-                                                    : 'border-gray-300'
-                                                    }`}
-                                            >
-                                                {selectedCategories.includes(category) && (
-                                                    <Check className="w-4 h-4 text-white" strokeWidth={3} />
-                                                )}
-                                            </div>
-                                        </div>
-                                        <span className="text-gray-700">{category}</span>
-                                    </label>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Product Type */}
-                    <div className="border-2 border-gray-300 rounded-lg overflow-hidden">
-                        <button
-                            onClick={() => toggleSection('productType')}
-                            className="w-full flex items-center justify-between px-4 py-5 text-left bg-gray-50"
-                        >
-                            <span className="text-gray-600 text-lg">Product Type</span>
-                            <ChevronDown className="w-5 h-5 text-gray-600" />
-                        </button>
-                        {expandedSection === 'productType' && (
-                            <div className="px-4 py-4 bg-white space-y-3">
-                                {productTypes.map((type) => (
-                                    <label
-                                        key={type}
-                                        className="flex items-center gap-3 cursor-pointer"
-                                    >
-                                        <div className="relative">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedProductTypes.includes(type)}
-                                                onChange={() => toggleProductType(type)}
-                                                className="sr-only"
-                                            />
-                                            <div
-                                                className={`w-5 h-5 border-2 rounded flex items-center justify-center ${selectedProductTypes.includes(type)
-                                                    ? 'bg-green-500 border-green-500'
-                                                    : 'border-gray-300'
-                                                    }`}
-                                            >
-                                                {selectedProductTypes.includes(type) && (
-                                                    <Check className="w-4 h-4 text-white" strokeWidth={3} />
-                                                )}
-                                            </div>
-                                        </div>
-                                        <span className="text-gray-700">{type}</span>
-                                    </label>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Location */}
-                    <div className="border-2 border-gray-300 rounded-lg overflow-hidden">
-                        <button
-                            onClick={() => toggleSection('location')}
-                            className="w-full flex items-center justify-between px-4 py-5 text-left bg-gray-50"
-                        >
-                            <span className="text-gray-600 text-lg">Location</span>
-                            <ChevronDown className="w-5 h-5 text-gray-600" />
-                        </button>
-                        {expandedSection === 'location' && (
-                            <div className="px-4 py-4 bg-white space-y-3">
-                                {locations.map((location) => (
-                                    <label
-                                        key={location}
-                                        className="flex items-center gap-3 cursor-pointer"
-                                    >
-                                        <div className="relative">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedLocations.includes(location)}
-                                                onChange={() => toggleLocation(location)}
-                                                className="sr-only"
-                                            />
-                                            <div
-                                                className={`w-5 h-5 border-2 rounded flex items-center justify-center ${selectedLocations.includes(location)
-                                                    ? 'bg-green-500 border-green-500'
-                                                    : 'border-gray-300'
-                                                    }`}
-                                            >
-                                                {selectedLocations.includes(location) && (
-                                                    <Check className="w-4 h-4 text-white" strokeWidth={3} />
-                                                )}
-                                            </div>
-                                        </div>
-                                        <span className="text-gray-700">{location}</span>
-                                    </label>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Max Price */}
-                    <div className="border-2 border-gray-300 rounded-lg overflow-hidden">
-                        <button
-                            onClick={() => toggleSection('maxPrice')}
-                            className="w-full flex items-center justify-between px-4 py-5 text-left bg-gray-50"
-                        >
-                            <span className="text-gray-600 text-lg">Max Price</span>
-                            <div className="flex flex-col">
-                                <ChevronUp className="w-4 h-4 text-gray-400 -mb-1" />
-                                <ChevronDown className="w-4 h-4 text-gray-400" />
-                            </div>
-                        </button>
-                        {expandedSection === 'maxPrice' && (
-                            <div className="px-4 py-4 bg-white">
-                                <input
-                                    type="number"
-                                    value={maxPrice}
-                                    onChange={(e) => setMaxPrice(e.target.value)}
-                                    placeholder="Enter max price"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                />
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Apply Button */}
-                <button
-                    onClick={applyFilters}
-                    className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                >
-                    Apply Filters
-                </button>
-            </div>
+  return (
+    <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
+      <div className="p-6">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={handleClose}
+              aria-label="Close filters"
+              className="text-gray-900 hover:text-gray-600"
+            >
+              <X className="h-6 w-6" aria-hidden="true" />
+            </button>
+            <h1 className="text-2xl font-semibold text-gray-900">Filters</h1>
+          </div>
+          <button
+            type="button"
+            onClick={clearAll}
+            className="text-base text-gray-500 hover:text-gray-700"
+          >
+            Clear All
+          </button>
         </div>
-    );
+
+        <div className="space-y-3">
+          <Section
+            id="category"
+            title="Category"
+            count={draft.categories.length}
+            expanded={expandedSection === "category"}
+            onToggle={toggleSection}
+          >
+            {CATEGORY_OPTIONS.map((category) => (
+              <CheckboxOption
+                key={category}
+                label={category}
+                checked={draft.categories.includes(category)}
+                onChange={() => toggle("categories", category)}
+              />
+            ))}
+          </Section>
+
+          <Section
+            id="availability"
+            title="Availability"
+            count={draft.availability.length}
+            expanded={expandedSection === "availability"}
+            onToggle={toggleSection}
+          >
+            {AVAILABILITY_OPTIONS.map(({ value, label }) => (
+              <CheckboxOption
+                key={value}
+                label={label}
+                checked={draft.availability.includes(value)}
+                onChange={() => toggle("availability", value)}
+              />
+            ))}
+          </Section>
+
+          <Section
+            id="location"
+            title="Location"
+            count={draft.locations.length}
+            expanded={expandedSection === "location"}
+            onToggle={toggleSection}
+          >
+            {locationOptions.length === 0 ? (
+              <p className="text-sm text-gray-500">No locations available</p>
+            ) : (
+              locationOptions.map((location) => (
+                <CheckboxOption
+                  key={location}
+                  label={location}
+                  checked={draft.locations.includes(location)}
+                  onChange={() => toggle("locations", location)}
+                />
+              ))
+            )}
+          </Section>
+
+          <Section
+            id="maxPrice"
+            title="Max Price"
+            count={draft.maxPrice !== "" ? 1 : 0}
+            expanded={expandedSection === "maxPrice"}
+            onToggle={toggleSection}
+          >
+            <label htmlFor="filter-max-price" className="sr-only">
+              Max price in Naira
+            </label>
+            <input
+              id="filter-max-price"
+              type="number"
+              min="0"
+              inputMode="numeric"
+              value={draft.maxPrice}
+              onChange={(e) => {
+                setPriceError("");
+                setDraft((prev) => ({ ...prev, maxPrice: e.target.value }));
+              }}
+              placeholder="Enter max price (₦)"
+              aria-invalid={Boolean(priceError)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary-light focus:outline-none"
+            />
+            {priceError && <p className="text-sm text-red-600">{priceError}</p>}
+          </Section>
+        </div>
+
+        <button
+          type="button"
+          onClick={applyFilters}
+          className="mt-6 w-full rounded-lg bg-primary px-6 py-3 font-semibold text-white transition-colors hover:bg-primary-dark"
+        >
+          Apply Filters
+        </button>
+      </div>
+    </div>
+  );
 }

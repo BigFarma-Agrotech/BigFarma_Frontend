@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FaCheckCircle } from "react-icons/fa";
-import { Button } from "@/components/shared";
 
 export default function OrderConfirmationPage() {
   const [orderData, setOrderData] = useState(null);
@@ -20,7 +19,7 @@ export default function OrderConfirmationPage() {
       const timer = setTimeout(() => {
         localStorage.removeItem("bigfarma-order");
       }, 1000);
-      
+
       return () => clearTimeout(timer);
     } catch (error) {
       console.error("Error parsing order data:", error);
@@ -30,132 +29,130 @@ export default function OrderConfirmationPage() {
 
   if (!orderData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
           <p className="mt-4 text-gray-600">Loading order details...</p>
         </div>
       </div>
     );
   }
 
-  const deliveryText = orderData.customerInfo.deliveryOption === "door-delivery" ? "Door delivery" : "Pickup";
+  const deliveryText =
+    orderData.customerInfo.deliveryOption === "door-delivery" ? "Door delivery" : "Pickup";
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-lg p-8 shadow-sm border border-neutral-light text-center">
-          <div className="mb-6">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FaCheckCircle className="w-12 h-12 text-primary" />
+    <div className="mx-auto w-full max-w-2xl">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm sm:p-8">
+        <div className="mb-6">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-subtle sm:h-20 sm:w-20">
+            <FaCheckCircle className="h-10 w-10 text-primary sm:h-12 sm:w-12" aria-hidden="true" />
+          </div>
+          <h1 className="mb-2 text-xl font-bold text-gray-900 sm:text-2xl">Order Confirmed</h1>
+          <p className="text-sm text-gray-600 sm:text-base">
+            Thank you {orderData.customerInfo.firstName}, your produce will be delivered soon.
+          </p>
+        </div>
+
+        {/* Order Details */}
+        <dl className="mb-6 grid grid-cols-1 gap-4 rounded-lg bg-gray-50 p-4 text-left sm:grid-cols-2 sm:p-6">
+          <div>
+            <dt className="text-sm text-gray-600">Order ID</dt>
+            <dd className="font-semibold break-all">{orderData.orderId}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-gray-600">Total paid</dt>
+            <dd className="font-semibold">₦{orderData.totals.total.toLocaleString()}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-gray-600">Delivery</dt>
+            <dd className="font-semibold">{deliveryText}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-gray-600">Payment Method</dt>
+            <dd className="font-semibold capitalize">{orderData.customerInfo.paymentOption}</dd>
+          </div>
+        </dl>
+
+        {/* Order Items */}
+        <div className="mb-6 rounded-lg border border-gray-200 p-4 text-left sm:p-6">
+          <h2 className="mb-4 font-semibold text-gray-900">Order Items</h2>
+          <div className="space-y-3">
+            {orderData.items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="break-words font-medium capitalize">{item.name}</p>
+                  <p className="text-sm text-gray-600">
+                    Quantity: {item.cartQuantity}{" "}
+                    {item.quantity?.split(" ").slice(1).join(" ") || "units"}
+                  </p>
+                </div>
+                <p className="shrink-0 font-semibold">
+                  ₦{(item.price * item.cartQuantity).toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <hr className="my-4 border-gray-200" />
+
+          <div className="space-y-2 text-sm sm:text-base">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span>₦{orderData.totals.subtotal.toLocaleString()}</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Confirmed</h1>
-            <p className="text-gray-600">
-              Thank you {orderData.customerInfo.firstName}, Your produce will be delivered soon.
+            <div className="flex justify-between">
+              <span>Delivery</span>
+              <span>₦{orderData.totals.deliveryFee.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Tax</span>
+              <span>₦{orderData.totals.tax.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between border-t border-gray-200 pt-2 text-lg font-semibold text-gray-900">
+              <span>Total</span>
+              <span>₦{orderData.totals.total.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Delivery Information */}
+        <div className="mb-6 rounded-lg bg-gray-50 p-4 text-left sm:p-6">
+          <h2 className="mb-4 font-semibold text-gray-900">Delivery Information</h2>
+          <div className="space-y-2 break-words text-sm sm:text-base">
+            <p>
+              <span className="text-gray-600">Name:</span> {orderData.customerInfo.firstName}{" "}
+              {orderData.customerInfo.lastName}
+            </p>
+            <p>
+              <span className="text-gray-600">Phone:</span> +234{orderData.customerInfo.phoneNumber}
+            </p>
+            {orderData.customerInfo.email && (
+              <p>
+                <span className="text-gray-600">Email:</span> {orderData.customerInfo.email}
+              </p>
+            )}
+            <p>
+              <span className="text-gray-600">Address:</span> {orderData.customerInfo.address}
+            </p>
+            <p>
+              <span className="text-gray-600">Delivery Method:</span> {deliveryText}
             </p>
           </div>
+        </div>
 
-          {/* Order Details */}
-          <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <p className="text-sm text-gray-600">Order ID</p>
-                <p className="font-semibold">{orderData.orderId}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Total paid</p>
-                <p className="font-semibold">₦{orderData.totals.total.toLocaleString()}</p>
-              </div>
-            </div>
+        {/* Action Button */}
+        <Link
+          to="/marketplace"
+          className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-primary px-8 font-medium text-white transition-colors hover:bg-primary-dark sm:w-auto"
+        >
+          Back To Market
+        </Link>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600">Delivery</p>
-                <p className="font-semibold">{deliveryText}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Payment Method</p>
-                <p className="font-semibold capitalize">{orderData.customerInfo.paymentOption}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Order Items */}
-          <div className="rounded-lg p-6 mb-6 text-left">
-            <h3 className="font-semibold mb-4">Order Items</h3>
-            <div className="space-y-3">
-              {orderData.items.map((item) => (
-                <div key={item.id} className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium capitalize">{item.name}</p>
-                    <p className="text-sm text-gray-600">
-                      Quantity: {item.cartQuantity} {item.quantity?.split(" ").slice(1).join(" ") || "units"}
-                    </p>
-                  </div>
-                  <p className="font-semibold">₦{(item.price * item.cartQuantity).toLocaleString()}</p>
-                </div>
-              ))}
-            </div>
-
-            <hr className="my-4" />
-
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>₦{orderData.totals.subtotal.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Delivery</span>
-                <span>₦{orderData.totals.deliveryFee.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tax</span>
-                <span>₦{orderData.totals.tax.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between font-semibold text-lg pt-2 border-t">
-                <span>Total</span>
-                <span>₦{orderData.totals.total.toLocaleString()}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Delivery Information */}
-          <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">
-            <h3 className="font-semibold mb-4">Delivery Information</h3>
-            <div className="space-y-2">
-              <p>
-                <span className="text-gray-600">Name:</span> {orderData.customerInfo.firstName}{" "}
-                {orderData.customerInfo.lastName}
-              </p>
-              <p>
-                <span className="text-gray-600">Phone:</span> +234{orderData.customerInfo.phoneNumber}
-              </p>
-              {orderData.customerInfo.email && (
-                <p>
-                  <span className="text-gray-600">Email:</span> {orderData.customerInfo.email}
-                </p>
-              )}
-              <p>
-                <span className="text-gray-600">Address:</span> {orderData.customerInfo.address}
-              </p>
-              <p>
-                <span className="text-gray-600">Delivery Method:</span> {deliveryText}
-              </p>
-            </div>
-          </div>
-
-          {/* Action Button */}
-          <Link to="/marketplace">
-            <Button className=" px-8 py-3 rounded-md">
-              Back To Market
-            </Button>
-          </Link>
-
-          {/* Additional Info */}
-          <div className="mt-6 text-sm text-gray-600">
-            <p>You will receive SMS updates about your order status.</p>
-            <p className="mt-1">Expected delivery: 2-5 business days</p>
-          </div>
+        {/* Additional Info */}
+        <div className="mt-6 text-sm text-gray-600">
+          <p>You will receive SMS updates about your order status.</p>
+          <p className="mt-1">Expected delivery: 2-5 business days</p>
         </div>
       </div>
     </div>

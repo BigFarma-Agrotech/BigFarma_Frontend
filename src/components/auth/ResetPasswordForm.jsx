@@ -1,31 +1,32 @@
-import React, { useState } from 'react';
-import arrowLeft from '../../assets/icons/arrow_left.svg';
-import supportIcon from '../../assets/icons/Support_Icon .png';
-import { Navigate, NavLink, useNavigate } from 'react-router-dom';
-import { EyeOff, Eye } from 'lucide-react';
-import Support from './Support';
-import { passwordReset } from '@/components/queries/auth/passwordReset';
-import { useLocation } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { useState } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { passwordReset } from "@/components/queries/auth/passwordReset";
+import Button from "@/components/shared/Button";
+import {
+  AuthHeader,
+  AuthPage,
+  BackLink,
+  FormField,
+  PasswordInput,
+  SupportButton,
+} from "./AuthUI";
+import { primaryButtonClass } from "./authStyles";
 
 const ResetPasswordForm = () => {
   const location = useLocation();
   // Set by VerifyOtpForm once the reset code has been verified
   const identifier = location.state?.identifier;
   const verified = location.state?.verified;
-  const [showSupport, setShowSupport] = useState(false);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [errors, setErrors] = useState({});
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [touched, setTouched] = useState({
     password: false,
     confirmPassword: false,
   });
+  const [serverErrors, setServerErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  const [passwordVisible, setPasswordVisible] = useState(false);
-  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
   // Only reachable after verifying a reset code
   if (!identifier || !verified) {
@@ -35,15 +36,15 @@ const ResetPasswordForm = () => {
   const validateForm = () => {
     const newErrors = {};
     if (!password) {
-      newErrors.password = 'Password is required.';
+      newErrors.password = "Password is required.";
     } else if (password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters.';
+      newErrors.password = "Password must be at least 8 characters.";
     }
 
     if (!confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password.';
+      newErrors.confirmPassword = "Please confirm your password.";
     } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match.';
+      newErrors.confirmPassword = "Passwords do not match.";
     }
 
     return newErrors;
@@ -57,157 +58,89 @@ const ResetPasswordForm = () => {
       confirmPassword: true,
     });
 
-    const newErrors = validateForm();
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+    if (loading) return;
+    if (Object.keys(validateForm()).length > 0) return;
 
-    setErrors({});
+    setServerErrors({});
     setLoading(true);
     const result = await passwordReset({ identifier, new_password: password });
     setLoading(false);
 
     if (!result.isSuccess) {
       const { new_password } = result.fieldErrors;
-      if (new_password) setErrors({ password: new_password });
+      if (new_password) setServerErrors({ password: new_password });
       toast.error(result.message);
       return;
     }
 
     toast.success(result.message);
-    navigate("/sign-in", { replace: true });
+    navigate("/success", { replace: true });
   };
 
+  // Derived from the current values; shown once a field is touched.
+  // A server message for the password shows until the user edits it.
+  const errors = validateForm();
+  const passwordError =
+    (touched.password && errors.password) || serverErrors.password;
+  const confirmError = touched.confirmPassword && errors.confirmPassword;
+
   return (
-    <section className="flex flex-col items-center justify-center h-screen bg-gray-100 ">
-      <div className=" h-full p-6 flex items-center justify-center flex-col">
-        <div className="md:max-w-[800px] w-full">
-          {/* Back button */}
-          <div>
-            <NavLink
-              to="/sign-in"
-              className="flex items-center gap-2 cursor-pointer mb-8"
-            >
-              <img src={arrowLeft} alt="Back" />
-              <p>Back</p>
-            </NavLink>
-          </div>
+    <AuthPage>
+      <BackLink fallback="/forgot-password" />
 
-          {/* Title */}
-          <div>
-            <span className="text-[32px] font-bold leading-tight">
-              Set a new password
-            </span>
-            <p className="text-[18px] font-normal pt-5">
-              Create a new password. Ensure it differs from previous ones for
-              security
-            </p>
-          </div>
+      <AuthHeader
+        className="mt-6"
+        title="Set a new password"
+        subtitle="Create a new password. Ensure it differs from previous ones for security."
+      />
 
-          {/* Form */}
-          <form className="w-full h-auto mt-10" onSubmit={handleFormSubmit}>
-            {/* Password */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-bold text-gray-700 mb-1"
-              >
-                Password
-              </label>
-              <div
-                className={`flex items-center border rounded-md px-3 ${
-                  touched.password && errors.password
-                    ? 'border-red-500'
-                    : 'border-gray-300'
-                }`}
-              >
-                <input
-                  type={passwordVisible ? 'text' : 'password'}
-                  value={password}
-                  id="password"
-                  placeholder="Must be 8 characters"
-                  onChange={(e) => setPassword(e.target.value)}
-                  onBlur={() => setTouched({ ...touched, password: true })}
-                  className="w-full bg-white focus:outline-none py-2"
-                />
-                <div
-                  className="cursor-pointer"
-                  onClick={() => setPasswordVisible(!passwordVisible)}
-                >
-                  {passwordVisible ? <Eye /> : <EyeOff />}
-                </div>
-              </div>
-              {touched.password && errors.password && (
-                <p className="text-red-600 text-xs mt-1">{errors.password}</p>
-              )}
-            </div>
+      <form className="mt-8 space-y-5" onSubmit={handleFormSubmit} noValidate>
+        <FormField label="Password" htmlFor="password" error={passwordError}>
+          <PasswordInput
+            id="password"
+            name="password"
+            autoComplete="new-password"
+            value={password}
+            placeholder="Must be 8 characters"
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (serverErrors.password) setServerErrors({});
+            }}
+            onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
+            hasError={Boolean(passwordError)}
+          />
+        </FormField>
 
-            {/* Confirm Password */}
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-bold text-gray-700 mb-1 mt-8"
-              >
-                Confirm Password
-              </label>
-              <div
-                className={`flex items-center border rounded-md px-3 ${
-                  touched.confirmPassword && errors.confirmPassword
-                    ? 'border-red-500'
-                    : 'border-gray-300'
-                }`}
-              >
-                <input
-                  type={confirmPasswordVisible ? 'text' : 'password'}
-                  value={confirmPassword}
-                  id="confirmPassword"
-                  placeholder="Repeat password"
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  onBlur={() =>
-                    setTouched({ ...touched, confirmPassword: true })
-                  }
-                  className="w-full bg-white focus:outline-none py-2"
-                />
-                <div
-                  className="cursor-pointer"
-                  onClick={() =>
-                    setConfirmPasswordVisible(!confirmPasswordVisible)
-                  }
-                >
-                  {confirmPasswordVisible ? <Eye /> : <EyeOff />}
-                </div>
-              </div>
-              {touched.confirmPassword && errors.confirmPassword && (
-                <p className="text-red-600 text-xs mt-1">
-                  {errors.confirmPassword}
-                </p>
-              )}
-            </div>
+        <FormField
+          label="Confirm Password"
+          htmlFor="confirmPassword"
+          error={confirmError}
+        >
+          <PasswordInput
+            id="confirmPassword"
+            name="confirmPassword"
+            autoComplete="new-password"
+            value={confirmPassword}
+            placeholder="Repeat password"
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            onBlur={() =>
+              setTouched((prev) => ({ ...prev, confirmPassword: true }))
+            }
+            hasError={Boolean(confirmError)}
+          />
+        </FormField>
 
-            {/* Submit button */}
-            <button
-              type="submit"
-              className="w-full px-6 py-3 rounded-lg mt-8 font-normal text-[22px] bg-[#DDD5DD] text-[#3C3C3C] hover:bg-green-700 hover:text-white hover:font-bold cursor-pointer transition-all duration-300"
-              disabled={loading}
-            >
-              {loading ? 'Updating...' : 'Update Password'}
-            </button>
-          </form>
-        </div>
-      </div>
+        <Button
+          type="submit"
+          className={`${primaryButtonClass} mt-1`}
+          disabled={loading}
+        >
+          {loading ? "Updating..." : "Update Password"}
+        </Button>
+      </form>
 
-      {/* Support icon */}
-      <div className="relative self-end p-[40px] cursor-pointer">
-        <img
-          src={supportIcon}
-          alt="supportIcon"
-          className="w-[40px] h-[40px] self-end"
-          onClick={() => setShowSupport(true)}
-        />
-        <Support show={showSupport} onClose={() => setShowSupport(false)} />
-      </div>
-    </section>
+      <SupportButton />
+    </AuthPage>
   );
 };
 

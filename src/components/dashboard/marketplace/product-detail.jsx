@@ -1,380 +1,316 @@
-/* eslint-disable no-undef */
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { fetchProductById, fetchProducts } from "@/lib/api";
-// import { demoMarketplaceProducts } from "@/lib/demoMarketplaceProducts"; // ⬅️ import your mock list
-import { IoMdArrowBack, IoIosStar } from "react-icons/io";
+import { IoMdArrowBack } from "react-icons/io";
 import { FaCheck, FaPlus, FaMinus } from "react-icons/fa6";
-import { useCart } from "@/hooks";
 import { toast } from "react-toastify";
+import { fetchProductById, fetchProducts } from "@/lib/api";
+import { useCart } from "@/hooks";
+import { Button, Skeleton } from "@/components/shared";
+import { ProductCard, StockBadge } from "./product-list";
+
+const getUnit = (quantity = "") => {
+  const parts = String(quantity ?? "").split(" ");
+  return parts.length > 1 ? parts.slice(1).join(" ") : quantity;
+};
+
+const BackLink = () => (
+  <Link
+    to="/marketplace"
+    className="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm font-semibold text-neutral transition-colors hover:bg-gray-50"
+  >
+    <IoMdArrowBack aria-hidden="true" />
+    Back to results
+  </Link>
+);
 
 export default function ProductDetail() {
-	const { id } = useParams();
-	const navigate = useNavigate();
-	const { addToCart } = useCart();
-	const [quantity, setQuantity] = useState(1);
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const [quantity, setQuantity] = useState(1);
 
-	const { data, isLoading, error } = useQuery({
-		queryKey: ["product", id],
-		queryFn: () => fetchProductById(id),
-	});
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["product", id],
+    queryFn: () => fetchProductById(id),
+  });
 
-	// 🟢 fetch all products to find similar ones
-	const { data: productsData } = useQuery({
-		queryKey: ["products"],
-		queryFn: fetchProducts,
-	});
+  // Fetch all products to find similar ones
+  const { data: productsData } = useQuery({
+    queryKey: ["products"],
+    queryFn: fetchProducts,
+  });
 
-	const handleAddToCart = (product) => {
-		if (product.availability !== "in_stock") {
-			toast.error("This product is out of stock");
-			return;
-		}
-		addToCart(product, quantity);
-		toast.success(
-			`${quantity} ${product.name}${quantity > 1 ? "s" : ""} added to cart!`
-		);
-	};
+  const handleAddToCart = (product) => {
+    if (product.availability !== "in_stock") {
+      toast.error("This product is out of stock");
+      return;
+    }
+    addToCart(product, quantity);
+    toast.success(
+      `${quantity} ${product.name}${quantity > 1 ? "s" : ""} added to cart!`
+    );
+  };
 
-	const handleAddSimilarToCart = (product) => {
-		if (product.availability !== "in_stock") {
-			toast.error("This product is out of stock");
-			return;
-		}
-		addToCart(product, 1);
-		toast.success(`${product.name} added to cart!`);
-	};
+  const handleAddSimilarToCart = (product) => {
+    if (product.availability !== "in_stock") {
+      toast.error("This product is out of stock");
+      return;
+    }
+    addToCart(product, 1);
+    toast.success(`${product.name} added to cart!`);
+  };
 
-	const handleBuyNow = (product) => {
-		if (product.availability !== "in_stock") {
-			toast.error("This product is out of stock");
-			return;
-		}
-		addToCart(product, quantity);
-		toast.success(
-			`${quantity} ${product.name}${quantity > 1 ? "s" : ""} added to cart!`
-		);
-		navigate("/checkout");
-	};
+  const handleBuyNow = (product) => {
+    if (product.availability !== "in_stock") {
+      toast.error("This product is out of stock");
+      return;
+    }
+    addToCart(product, quantity);
+    toast.success(
+      `${quantity} ${product.name}${quantity > 1 ? "s" : ""} added to cart!`
+    );
+    navigate("/checkout");
+  };
 
-	const incrementQuantity = () => {
-		const maxStock = parseInt(data.quantity.split(" ")[0]) || 999;
-		if (quantity < maxStock) {
-			setQuantity((prev) => prev + 1);
-		}
-	};
+  const incrementQuantity = () => {
+    const maxStock = parseInt(String(data?.quantity ?? "").split(" ")[0]) || 999;
+    if (quantity < maxStock) {
+      setQuantity((prev) => prev + 1);
+    }
+  };
 
-	const decrementQuantity = () => {
-		if (quantity > 1) {
-			setQuantity((prev) => prev - 1);
-		}
-	};
+  const decrementQuantity = () => {
+    if (quantity > 1) {
+      setQuantity((prev) => prev - 1);
+    }
+  };
 
-	if (isLoading) return <p>Loading...</p>;
-	if (error) return <p>Error loading product</p>;
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-40 rounded-lg" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+            <Skeleton className="aspect-[4/3] w-full rounded-lg" />
+            <Skeleton className="h-7 w-1/2 rounded" />
+            <Skeleton className="h-4 w-full rounded" />
+            <Skeleton className="h-4 w-3/4 rounded" />
+          </div>
+          <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+            <Skeleton className="h-6 w-1/3 rounded" />
+            <Skeleton className="h-4 w-full rounded" />
+            <Skeleton className="h-4 w-5/6 rounded" />
+            <Skeleton className="h-4 w-2/3 rounded" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-	// ✅ Find similar products from your mock list
-	const similar = productsData?.products?.filter(
-		(item) => item.category === data.category && item.id !== data.id
-	);
+  if (error || !data) {
+    return (
+      <div className="space-y-6">
+        <BackLink />
+        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-red-600">
+          Error loading product
+        </div>
+      </div>
+    );
+  }
 
-	return (
-		<>
-			<Link
-				to="/marketplace"
-				className="flex items-center text-[var(--color-neutral)] mb-4 p-2 border border-slate-200 rounded-md w-fit">
-				<IoMdArrowBack />
-				<span className="ml-2 cursor-pointer font-semibold">
-					Back to results
-				</span>
-			</Link>
+  const inStock = data.availability === "in_stock";
+  const unit = getUnit(data.quantity);
+  const stockCount = parseInt(String(data.quantity ?? "").split(" ")[0]) || null;
 
-			{/* existing product detail code... */}
+  // Find similar products in the same category
+  const similar =
+    productsData?.products?.filter(
+      (item) => item.category === data.category && item.id !== data.id
+    ) ?? [];
 
-			<div className="flex flex-col lg:flex-row gap-9">
-				<div className="p-6 lg:w-1/2 bg-white rounded-lg shadow">
-					<div className="mb-4 lg:w-full h-64 lg:h-96 lg:mb-10">
-						<img
-							src={Array.isArray(data.images) ? data.images[0] : data.images}
-							alt={data.name}
-							className="h-full bg-slate-50 mb-4  object-cover rounded"
-						/>
-					</div>
-					<div className="flex items-center gap-4 mb-4">
-						<h1 className="text-2xl font-semibold capitalize">{data.name}</h1>
-						{data.availability === "in_stock" ? (
-							<p className=" w-fit text-md text-green-700 py-1 px-4 rounded-md bg-green-50 capitalize">
-								In stock
-							</p>
-						) : (
-							<p className=" w-fit text-md text-red-700 py-1 px-4 rounded-md bg-red-100 capitalize">
-								Out of stock
-							</p>
-						)}
-					</div>
-					<p className="text-gray-600">{data.description}</p>
-					<div className="flex items-center gap-2 my-4">
-						<p className="font-semibold text-xl">₦{data.price}</p>
-						<p className="font-normal text-sm">
-							per{" "}
-							{data.quantity.split(" ").length > 1
-								? data.quantity.split(" ").slice(1).join(" ")
-								: data.quantity}
-						</p>
-					</div>
-					{data.availability === "in_stock" && (
-						<p className="text-[var(--color-primary)]">
-							{data.quantity.split(" ")[0]} in stock
-						</p>
-					)}
+  return (
+    <div className="space-y-6">
+      <BackLink />
 
-					{/* Quantity selector */}
-					{data.availability === "in_stock" && (
-						<div className="flex items-center gap-3 my-4 p-3">
-							{/* <span className="text-sm font-medium">Quantity:</span> */}
-							<div className="flex items-center bg-[#E6EFEA] rounded-lg">
-								<button
-									onClick={decrementQuantity}
-									disabled={quantity <= 1}
-									className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
-									<FaMinus className="h-6 w-6 border-2 rounded-full p-1" />
-								</button>
-								<span className="px-10 py-2 min-w-[3rem] text-center">
-									{quantity}
-								</span>
-								<button
-									onClick={incrementQuantity}
-									disabled={quantity >= parseInt(data.quantity.split(" ")[0])}
-									className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
-									<FaPlus className="h-6 w-6 border-2 rounded-full p-1" />
-								</button>
-							</div>
-						</div>
-					)}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Product summary */}
+        <div className="min-w-0 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+          <div className="aspect-[4/3] w-full overflow-hidden rounded-lg bg-gray-100">
+            <img
+              src={Array.isArray(data.images) ? data.images[0] : data.images}
+              alt={data.name}
+              className="h-full w-full object-cover"
+            />
+          </div>
 
-					{/* buttons  */}
-					<div className="flex justify-between  items-center gap-1 lg:justify-start lg:gap-7 mt-3">
-						<button
-							onClick={() => handleAddToCart(data)}
-							disabled={data.availability !== "in_stock"}
-							className={`py-2 underline capitalize ${
-								data.availability === "in_stock"
-									? "text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] cursor-pointer"
-									: "text-gray-400 cursor-not-allowed"
-							}`}>
-							Add to cart
-						</button>
-						<button
-							onClick={() => handleBuyNow(data)}
-							disabled={data.availability !== "in_stock"}
-							className={`px-6 py-2 text-white text-center rounded-md capitalize ${
-								data.availability === "in_stock"
-									? "bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] cursor-pointer"
-									: "bg-gray-400 cursor-not-allowed"
-							}`}>
-							Buy now
-						</button>
-					</div>
-				</div>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <h1 className="break-words text-xl font-bold capitalize text-gray-900 sm:text-2xl">
+              {data.name}
+            </h1>
+            <StockBadge inStock={inStock} />
+          </div>
+          <p className="mt-2 text-gray-600">{data.description}</p>
 
-				<div className="p-6 w-full lg:w-1/2 bg-white rounded-lg shadow">
-					<div className="space-y-10">
-						<section>
-							<h2 className="text-lg font-semibold capitalize lg:text-xl">
-								Fresh {data.name}
-							</h2>
+          <div className="mt-4 flex items-baseline gap-2">
+            <p className="text-xl font-semibold text-gray-900">
+              ₦{Number(data.discounted_price || data.price || 0).toLocaleString()}
+            </p>
+            {data.discounted_price && Number(data.discounted_price) < Number(data.price) && (
+              <p className="text-sm text-gray-400 line-through">
+                ₦{Number(data.price).toLocaleString()}
+              </p>
+            )}
+            <p className="text-sm text-gray-600">per {unit}</p>
+          </div>
 
-							{/* details  */}
-							<div className="space-y-3 mt-4 text-sm lg:text-lg">
-								<p>
-									<span className="font-medium">
-										Category:{" "}
-										<span className="capitalize font-normal">
-											{data.category}
-										</span>
-									</span>{" "}
-									|{" "}
-									<span className="font-medium">
-										Type:{" "}
-										<span className="capitalize font-normal">
-											{data.farmer.farm_type}
-										</span>
-									</span>{" "}
-									|{" "}
-									<span className="font-medium">
-										Origin:{" "}
-										<span className="capitalize font-normal">
-											{data.farmer.farm_location}
-										</span>
-									</span>
-								</p>
-								<p>
-									<span className="font-medium">Availability:</span>
-									{data.availability === "in_stock" ? (
-										<span> In Stock</span>
-									) : (
-										<span>Out of Stock</span>
-									)}
-								</p>
-								<p>
-									<span className="font-medium">Price:</span> ₦{data.price} per{" "}
-									{data.quantity.split(" ").length > 1
-										? data.quantity.split(" ").slice(1).join(" ")
-										: data.quantity}
-								</p>
-							</div>
-						</section>
+          {inStock && (
+            <>
+              <p className="mt-1 text-sm text-primary">{stockCount ? `${stockCount} in stock` : "In stock"}</p>
 
-						<section>
-							<div className="space-y-3 lg:space-y-4 ">
-								<h2 className="text-lg font-semibold capitalize lg:text-xl">
-									Description
-								</h2>
-								<p className="text-sm lg:text-lg">{data.description}</p>
-							</div>
-						</section>
+              {/* Quantity selector */}
+              <div className="mt-4 inline-flex items-center rounded-lg bg-primary-subtle/60">
+                <button
+                  type="button"
+                  onClick={decrementQuantity}
+                  disabled={quantity <= 1}
+                  aria-label="Decrease quantity"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-primary-subtle disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <FaMinus className="h-6 w-6 rounded-full border-2 p-1" />
+                </button>
+                <span className="min-w-12 px-6 text-center font-medium" aria-live="polite">
+                  {quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={incrementQuantity}
+                  disabled={stockCount !== null && quantity >= stockCount}
+                  aria-label="Increase quantity"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-primary-subtle disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <FaPlus className="h-6 w-6 rounded-full border-2 p-1" />
+                </button>
+              </div>
+            </>
+          )}
 
-						<section>
-							<div className="space-y-3 lg:space-y-4 ">
-								<h2 className="text-lg font-semibold capitalize lg:text-xl">
-									Key Details
-								</h2>
-								<div className="text-sm space-y-2 lg:text-xl">
-									<span className="flex items-center gap-2">
-										<FaCheck />
-										<p>Fresh, high-quality produce</p>
-									</span>
-									<span className="flex items-center gap-2">
-										<FaCheck />
-										<p>
-											Bulk packaging{" "}
-											<span className="capitalize">
-												(per{" "}
-												{data.quantity.split(" ").length > 1
-													? data.quantity.split(" ").slice(1).join(" ")
-													: data.quantity}
-												)
-											</span>
-										</p>
-									</span>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => handleAddToCart(data)}
+              disabled={!inStock}
+              className="h-12 py-0 sm:flex-1"
+            >
+              Add to cart
+            </Button>
+            <Button
+              onClick={() => handleBuyNow(data)}
+              disabled={!inStock}
+              className="h-12 py-0 sm:flex-1"
+            >
+              Buy now
+            </Button>
+          </div>
+        </div>
 
-									<span className="flex items-center gap-2">
-										<FaCheck />
-										<p>Delivery within 2-5 days</p>
-									</span>
-								</div>
-							</div>
-						</section>
+        {/* Product information */}
+        <div className="min-w-0 space-y-8 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+          <section>
+            <h2 className="text-lg font-semibold capitalize text-gray-900 lg:text-xl">
+              Fresh {data.name}
+            </h2>
+            <div className="mt-4 space-y-3 text-sm text-gray-700 lg:text-base">
+              <p className="flex flex-wrap gap-x-2 gap-y-1">
+                <span>
+                  <span className="font-medium">Category:</span>{" "}
+                  <span className="capitalize">{data.category}</span>
+                </span>
+                <span aria-hidden="true">|</span>
+                <span>
+                  <span className="font-medium">Type:</span>{" "}
+                  <span className="capitalize">{data.farmer?.farm_type}</span>
+                </span>
+                <span aria-hidden="true">|</span>
+                <span>
+                  <span className="font-medium">Origin:</span>{" "}
+                  <span className="capitalize">{data.farmer?.farm_location}</span>
+                </span>
+              </p>
+              <p>
+                <span className="font-medium">Availability:</span>{" "}
+                {inStock ? "In Stock" : "Out of Stock"}
+              </p>
+              <p>
+                <span className="font-medium">Price:</span> ₦{Number(data.discounted_price || data.price || 0).toLocaleString()} per {unit}
+              </p>
+            </div>
+          </section>
 
-						<section>
-							<div className="space-y-3 lg:space-y-4 ">
-								<h2 className="text-lg font-semibold capitalize lg:text-xl">
-									Farmer's Details
-								</h2>
-								<div className="flex flex-col gap-2">
-									<img
-										src={data.farmer.profile_picture}
-										alt={data.farmer.full_name}
-										className="w-14 h-14 bg-slate-50 rounded-full"
-									/>
-									<div className="text-sm lg:text-lg">
-										<p>
-											<span className="font-medium capitalize">Name:</span>{" "}
-											{data.farmer.full_name}
-										</p>
-										<p>
-											<span className="font-medium capitalize">Location:</span>{" "}
-											{data.farmer.farm_location}
-										</p>
-										<p>
-											<span className="font-medium capitalize">Farm type:</span>{" "}
-											{data.farmer.farm_type}
-										</p>
-									</div>
-								</div>
-							</div>
-						</section>
-					</div>
-				</div>
-			</div>
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold text-gray-900 lg:text-xl">Description</h2>
+            <p className="text-sm text-gray-700 lg:text-base">{data.description}</p>
+          </section>
 
-			<div className="flex justify-between items-center my-8">
-				<h4 className="font-semibold text-black text-xl">Similar Products</h4>
-			</div>
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold text-gray-900 lg:text-xl">Key Details</h2>
+            <ul className="space-y-2 text-sm text-gray-700 lg:text-base">
+              <li className="flex items-center gap-2">
+                <FaCheck className="shrink-0 text-primary" aria-hidden="true" />
+                Fresh, high-quality produce
+              </li>
+              <li className="flex items-center gap-2">
+                <FaCheck className="shrink-0 text-primary" aria-hidden="true" />
+                <span>
+                  Bulk packaging <span className="capitalize">(per {unit})</span>
+                </span>
+              </li>
+              <li className="flex items-center gap-2">
+                <FaCheck className="shrink-0 text-primary" aria-hidden="true" />
+                Delivery within 2-5 days
+              </li>
+            </ul>
+          </section>
 
-			{/* ✅ suggestions */}
-			{similar.length > 0 ? (
-				<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-					{similar.map((item) => (
-						<div key={item.id}>
-							<div className="p-4 bg-white shadow rounded-md">
-								<div className="w-full h-48 rounded-t-md bg-slate-100 flex items-center justify-center">
-									<img src={item.images} alt={item.name} className="w-fit" />
-								</div>
-								{/* details  */}
-								<div className="space-y-1">
-									{/* name  */}
-									<div className="flex items-center gap-3 pt-3">
-										<h3 className="font-medium capitalize text-lg">
-											{item.name}
-										</h3>
-										{item.availability === "in_stock" ? (
-											<p className="text-xs text-green-700 py-1 px-2 rounded-md bg-green-100 capitalize">
-												In stock
-											</p>
-										) : (
-											<p className="text-sm text-red-700 p-3 rounded-md bg-red-100 capitalize">
-												Out of stock
-											</p>
-										)}
-									</div>
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold text-gray-900 lg:text-xl">Farmer&apos;s Details</h2>
+            <div className="flex items-start gap-4">
+              <img
+                src={data.farmer?.profile_picture}
+                alt={data.farmer?.full_name}
+                className="h-14 w-14 shrink-0 rounded-full bg-gray-100 object-cover"
+              />
+              <div className="min-w-0 space-y-1 text-sm text-gray-700 lg:text-base">
+                <p>
+                  <span className="font-medium">Name:</span> {data.farmer?.full_name}
+                </p>
+                <p>
+                  <span className="font-medium">Location:</span> {data.farmer?.farm_location}
+                </p>
+                <p>
+                  <span className="font-medium">Farm type:</span> {data.farmer?.farm_type}
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
 
-									{/* price  */}
-									<div className="flex items-center gap-1">
-										<p className="font-semibold">₦{item.price}</p>
-										<p className="font-normal text-sm">
-											per{" "}
-											{item.quantity.split(" ").length > 1
-												? item.quantity.split(" ").slice(1).join(" ")
-												: item.quantity}
-										</p>
-									</div>
-									{/* rating  */}
-
-									<div className="flex items-center gap-1">
-										<IoIosStar className="inline text-yellow-500" />
-										<p className="text-sm">
-											{item.average_rating} ({item.total_ratings})
-										</p>
-									</div>
-								</div>
-
-								{/* buttons  */}
-								<div className="flex flex-col items-center lg:flex-row gap-1 mt-3">
-									<button
-										onClick={() => handleAddSimilarToCart(item)}
-										disabled={item.availability !== "in_stock"}
-										className={`w-full py-2 underline capitalize ${
-											item.availability === "in_stock"
-												? "text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] cursor-pointer"
-												: "text-gray-400 cursor-not-allowed"
-										}`}>
-										Add to cart
-									</button>
-									<Link
-										to={`/marketplace/products/${item.id}`}
-										className="w-full py-2 text-white text-center rounded-md capitalize bg-[var(--color-primary)]">
-										View details
-									</Link>
-								</div>
-							</div>
-						</div>
-					))}
-				</div>
-			) : (
-				<p className="text-gray-500">No similar products found</p>
-			)}
-		</>
-	);
+      {/* Suggestions */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-gray-900 sm:text-xl">Similar Products</h2>
+        {similar.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 2xl:grid-cols-4">
+            {similar.map((item) => (
+              <ProductCard key={item.id} product={item} onAddToCart={handleAddSimilarToCart} />
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
+            No similar products found
+          </p>
+        )}
+      </section>
+    </div>
+  );
 }

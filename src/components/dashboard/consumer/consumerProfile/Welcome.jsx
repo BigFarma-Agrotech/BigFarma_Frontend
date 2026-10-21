@@ -1,25 +1,21 @@
-import React from "react";
-import Button from "../../../shared/Button"
+import Button from "@/components/shared/Button";
+import {
+  modalOverlayClass,
+  modalPanelClass,
+  primaryButtonClass,
+  titleClass,
+} from "@/components/auth/authStyles";
+import { cn } from "@/lib/utils";
 
 const ConsumerOverlay = ({ onNext }) => {
-  
-
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
-    >
+    <div className={modalOverlayClass}>
       <div
-        className="bg-white rounded-xl shadow-lg p-8 text-center max-w-lg w-[30%] h-[50%] flex flex-col justify-center items-center"
-        onClick={(e) => e.stopPropagation()} 
+        className={cn(modalPanelClass, "max-w-md text-center")}
+        onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-xl font-semibold mb-4">
-          Let’s set up your Profile
-        </h2>
-        <Button
-          onClick={onNext}
-          className="text-white px-6 py-2 rounded-lg hover:bg-[#003F1F
-]"
-        >
+        <h2 className={titleClass}>Let&apos;s set up your profile</h2>
+        <Button onClick={onNext} className={cn(primaryButtonClass, "mt-8")}>
           Start Setup
         </Button>
       </div>

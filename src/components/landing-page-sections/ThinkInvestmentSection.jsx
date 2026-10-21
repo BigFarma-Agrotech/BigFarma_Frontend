@@ -1,41 +1,37 @@
-import bgImage from "../../assets/svgs/InvestmentBg.svg";
 import { Link } from "react-router-dom";
+import bgImage from "../../assets/svgs/InvestmentBg.svg";
 
 export default function ThinkInvestment() {
-	return (
-		<>
-			<section className="py-8 px-4 md:px-8 lg:px-16">
-				<div className="relative max-w-7xl mx-auto">
-					<img
-						src={bgImage}
-						alt="background image"
-						className="max-w-7xl mx-auto w-full h-[150px] md:h-auto object-cover"
-					/>
-					<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full text-[var(--color-neutral-light)]">
-						<h2 className="text-[16px] md:text-[42px] font-bold">
-							Think Investment, Think BigFarma
-						</h2>
-						<div className="pt-2 md:pt-8">
-							<p className="text-[10px] md:text-[14px]">
-								Grow Your money while supporting real farmers.
-							</p>
-							<p className="text-[10px] md:text-[14px] w-[250px] sm:w-auto mx-auto">
-								Choose verified farm projects, track your returns, and invest
-								with confidence
-							</p>
-						</div>
-						<div className="pt-2 md:pt-8 flex justify-center">
-							<Link to={"/sign-in"}>
-								<button
-									className="btn-start-invsting bg-[var(--color-neutral-light)] text-[var(--color-primary)] font-bold
-															text-[10px] md:text-[16px] rounded-md px-[20px] py-2 md:px-[50px] md:py-4 flex items-center gap-[10px] cursor-pointer hover:bg-[var(--color-primary-dark)] transition-colors">
-									Start investing
-								</button>
-							</Link>
-						</div>
-					</div>
-				</div>
-			</section>
-		</>
-	);
+  return (
+    <section className="py-16 md:py-24">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="relative overflow-hidden bg-primary">
+          <img
+            src={bgImage}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="relative flex flex-col items-center px-6 py-12 text-center text-white sm:px-10 md:py-20">
+            <h2 className="text-2xl font-bold sm:text-3xl lg:text-4xl">
+              Think Investment, Think BigFarma
+            </h2>
+            <div className="mt-4 max-w-xl space-y-1 text-base md:mt-6 md:text-lg">
+              <p>Grow your money while supporting real farmers.</p>
+              <p>
+                Choose verified farm projects, track your returns, and invest
+                with confidence.
+              </p>
+            </div>
+            <Link
+              to="/sign-in"
+              className="mt-8 inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 font-semibold text-primary transition-colors hover:bg-primary-subtle"
+            >
+              Start investing
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }

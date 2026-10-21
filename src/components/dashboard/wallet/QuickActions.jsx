@@ -1,45 +1,58 @@
-import React from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { History, List, Download } from "lucide-react";
 import WithdrawModal from "./WithdrawModal";
-const items = [
-    {icon: Download,   label: "Withdraw",},
-    {icon: History,     label: "History",},
-    {icon: List,  label: "Account Details",},
-]
-const QuickActions = () => {
-  const [withdrawModalOpen, setWithdrawModalOpen] = React.useState(false);
 
-  const openWithdrawModal = (label) => {
-    if (label === "Withdraw") {
+const items = [
+  { id: "withdraw", icon: Download, label: "Withdraw" },
+  { id: "history", icon: History, label: "History" },
+  { id: "account", icon: List, label: "Account Details" },
+];
+
+const QuickActions = ({ onShowHistory }) => {
+  const navigate = useNavigate();
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+
+  const handleAction = (id) => {
+    if (id === "withdraw") {
       setWithdrawModalOpen(true);
+    } else if (id === "history") {
+      onShowHistory?.();
+    } else if (id === "account") {
+      // Existing payment / bank-account setup route
+      navigate("/payment");
     }
   };
 
-
   return (
-    <div className="w-full h-43 bg-white shadow-[0_0_4px_0_rgba(0,0,0,0.25)] p-4 rounded-lg">
-      <p className="text-left">QuickActions</p>
+    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+      <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
 
-      <div className="mt-5 grid grid-cols-3 place-items-center lg:gap-7">
-
-       { items.map((item, index) => {
-         const Icon = item.icon;
-            return (
-            <div key={index} onClick={() => openWithdrawModal(item.label)} className="flex items-center justify-center  w-42 h-22 border border-[#016130] rounded-2xl cursor-pointer">
-               <div className="flex flex-col items-center justify-center gap-2">
-                 <div className="p-2 bg-[#C9F4DE] rounded-full">
-                    <Icon size={22} strokeWidth={2.5} className="text-[#016130]" />
-                 </div>
-                <p className="text-center text-sm">{item.label}</p>
-               </div>
-            </div>
-            );
-       } )}
+      <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-4">
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleAction(item.id)}
+              className="flex min-h-22 flex-col items-center justify-center gap-2 rounded-xl border border-primary px-1 py-3 transition-colors hover:bg-primary-subtle/40"
+            >
+              <span className="rounded-full bg-primary-subtle p-2">
+                <Icon size={22} strokeWidth={2.5} className="text-primary" />
+              </span>
+              <span className="text-center text-xs font-medium text-gray-700 sm:text-sm">
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {withdrawModalOpen && (
-        <WithdrawModal isOpen={withdrawModalOpen} onClose={() => setWithdrawModalOpen(false)} />
-      )}
+      <WithdrawModal
+        isOpen={withdrawModalOpen}
+        onClose={() => setWithdrawModalOpen(false)}
+      />
     </div>
   );
 };

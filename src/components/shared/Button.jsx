@@ -1,26 +1,29 @@
-import React from "react"
+import { cn } from "@/lib/utils";
 
 const base =
-  "inline-flex items-center justify-center gap-[3px] cursor-pointer rounded-[8px] py-3 opacity-100 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none rotate-0"
+  "inline-flex items-center justify-center gap-2 cursor-pointer rounded-lg px-4 py-3 text-base font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-light focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
 
 const variants = {
-  default: "bg-[#016130] text-white hover:bg-[#016130]/80",
+  default: "bg-primary text-white hover:bg-primary-dark",
+  outline: "border border-primary bg-white text-primary hover:bg-primary-subtle",
   ghost: "bg-transparent text-gray-700 hover:text-gray-900",
-  link: "bg-transparent text-orange-500 hover:text-orange-600 underline p-0 h-auto",
-}
+  link: "bg-transparent text-secondary hover:text-secondary-dark underline p-0 h-auto",
+};
 
 export default function Button({
   children,
   variant = "default",
+  type = "button",
   className = "",
   ...props
 }) {
   return (
     <button
-      className={`${base} ${variants[variant] || ""} ${className}`}
+      type={type}
+      className={cn(base, variants[variant], className)}
       {...props}
     >
       {children}
     </button>
-  )
+  );
 }

@@ -1,7 +1,8 @@
+import { cn } from "@/lib/utils";
 
 export default function Card({ children, className = "", ...props }) {
   return (
-    <div className={`rounded-xl shadow-sm bg-white border-none ${className}`} {...props}>
+    <div className={cn("rounded-xl bg-white shadow-sm", className)} {...props}>
       {children}
     </div>
   );

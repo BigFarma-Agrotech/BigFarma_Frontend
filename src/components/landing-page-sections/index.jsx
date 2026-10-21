@@ -1,10 +1,10 @@
-export {default as AboutUsSection} from "./AboutUsSection"
-export {default as HowItWorksSection } from "./HowItWorksSection"
-export {default as WhyChooseSection } from "./WhyChooseSection"
-export {default as ThinkInvestment } from "./ThinkInvestmentSection"
-export {default as NavBar} from "./NavBar"
-export {default as Hero} from "./Hero"
-export {default as FAQsSection} from "./FAQsSection"
-export {default as Testimonials} from "./Testimonials"
-export {default as ContactUs} from "./ContactUs"
-export {default as Footer} from "./Footer"
+export { default as AboutUsSection } from "./AboutUsSection";
+export { default as HowItWorksSection } from "./HowItWorksSection";
+export { default as WhyChooseSection } from "./WhyChooseSection";
+export { default as ThinkInvestment } from "./ThinkInvestmentSection";
+export { default as NavBar } from "./NavBar";
+export { default as Hero } from "./Hero";
+export { default as FAQsSection } from "./FAQsSection";
+export { default as Testimonials } from "./Testimonials";
+export { default as ContactUs } from "./ContactUs";
+export { default as Footer } from "./Footer";

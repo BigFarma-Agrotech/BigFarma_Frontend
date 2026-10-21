@@ -5,19 +5,19 @@ export const STATUSES = {
   },
   delivered: {
     label: "Delivered",
-    className: "text-white bg-[#016130]",
+    className: "text-white bg-primary",
   },
   pending: {
     label: "Pending",
-    className: "text-white bg-[#FFA725]",
+    className: "text-white bg-secondary",
   },
   cancelled: {
     label: "Cancelled",
-    className: "text-white bg-[#E02424]",
+    className: "text-white bg-[#e02424]",
   },
   shipping: {
     label: "Shipping",
-    className: "text-white bg-[#1161E6]",
+    className: "text-white bg-[#1161e6]",
   },
 };
 

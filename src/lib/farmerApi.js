@@ -1,13 +1,10 @@
-// src/services/farmerApi.js
 import { axios } from '../lib/axios';
 import { endpoints } from '../components/config/endpoints';
 
-// The shared axios instance attaches the current access token to every request.
-
+// The shared axios instance attaches the Authorization header on every request.
 export const farmerApi = {
-  // Orders (your existing endpoints)
-  getOrders: () =>
-    axios.get(endpoints().farmerOrders.orders),
+  // Orders
+  getOrders: () => axios.get(endpoints().farmerOrders.orders),
 
   getProductOrders: (productId) =>
     axios.get(`${endpoints().farmerOrders.orders}/${productId}`),
@@ -16,17 +13,17 @@ export const farmerApi = {
     axios.get(`${endpoints().farmerOrders.orders}/${orderId}`),
 
   updateOrderStatus: (orderId, statusData) =>
-    axios.patch(`${endpoints().farmerOrders}/${orderId}/status`, statusData, {
-      headers: {
-        'content-type': 'application/json',
-      },
-    }),
+    axios.patch(
+      `${endpoints().farmerOrders.update_order_status}/${orderId}/status`,
+      statusData
+    ),
 
-  // Products endpoints (new)
-  getProducts: () =>
-    axios.get(endpoints().farmerProducts.get_product),
+  // Products
+  getProducts: () => axios.get(endpoints().farmerProducts.get_product),
 
-  // getProduct: (productId) => axios.get(`${BASE_URL}/products/${productId}/`),
+  getProduct: (productId) =>
+    axios.get(`${endpoints().farmerProducts.get_product}/${productId}`),
+
   createProduct: (productData) => {
     const formData = new FormData();
 
@@ -44,11 +41,10 @@ export const farmerApi = {
       }
     });
 
-    return axios.post(endpoints().farmerProducts.create_product, formData, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    // Don't set Content-Type: the browser adds multipart/form-data with the
+    // correct boundary. Forcing application/json makes axios serialise the
+    // FormData to JSON and the image files are dropped.
+    return axios.post(endpoints().farmerProducts.create_product, formData);
   },
   updateProduct: (productId, productData) => {
     const formData = new FormData();
@@ -65,33 +61,26 @@ export const farmerApi = {
       }
     });
 
+    // Let the browser set multipart/form-data + boundary (see createProduct).
     return axios.put(
       `${endpoints().farmerProducts.update_product}/${productId}`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
+      formData
     );
   },
-  deleteProduct: (productId) => {
-    return axios.delete(`${endpoints().farmerProducts.delete_product}/${productId}`);
-  },
+  deleteProduct: (productId) =>
+    axios.delete(`${endpoints().farmerProducts.delete_product}/${productId}`),
 
-  restockProduct: (productId, quantityData) => {
-    return axios.put(
+  restockProduct: (productId, quantityData) =>
+    axios.put(
       `${endpoints().farmerProducts.update_product}/${productId}`,
       quantityData
-    );
-  },
+    ),
 
-  updateProductStatus: (productId, statusData) => {
-    return axios.put(
+  updateProductStatus: (productId, statusData) =>
+    axios.put(
       `${endpoints().farmerProducts.update_product}/${productId}`,
       statusData
-    );
-  },
+    ),
 };
 
 export default farmerApi;

@@ -1,16 +1,35 @@
-import React, { useState, useRef } from "react";
-import { countries } from "../../../../lib/countries";
-import Dropdown from "@/components/shared/Dropdown";
-import joy from "/src/assets/images/review-joy.jpg";
+import { useState, useRef } from "react";
 import { toast } from "react-toastify";
 import Cookies from "js-cookie";
+import axiosDefault from "axios";
+import Button from "@/components/shared/Button";
+import Dropdown from "@/components/shared/Dropdown";
+import { FormField } from "@/components/auth/AuthUI";
+import {
+  inputClass,
+  labelClass,
+  linkClass,
+  modalOverlayClass,
+  modalPanelClass,
+  primaryButtonClass,
+  textareaClass,
+  titleClass,
+} from "@/components/auth/authStyles";
+import { cn } from "@/lib/utils";
+import joy from "@/assets/images/review-joy.jpg";
+import { countries } from "../../../../lib/countries";
 import { endpoints } from "../../../config/endpoints";
 import { axios } from "../../../../lib/axios";
-import axiosDefault from "axios";
+
+const genderOptions = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+];
 
 export default function AccountSetup({ onSkip, onNext }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // Form state
   const [form, setForm] = useState({
@@ -23,8 +42,6 @@ export default function AccountSetup({ onSkip, onNext }) {
   });
 
   const fileInputRef = useRef(null);
-
-
 
   // Update form fields
   const handleChange = (e) => {
@@ -48,240 +65,229 @@ export default function AccountSetup({ onSkip, onNext }) {
 
   // Handle profile image change
   const handleImageChange = (e) => {
-		if (e.target.files && e.target.files[0]) {
-			const file = e.target.files[0];
-			const reader = new FileReader();
-			reader.onloadend = () => {
-				setProfileImage(reader.result);
-			};
-			reader.readAsDataURL(file);
-		}
-	};
-  
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Opens the hidden file input
   const handleEdit = () => {
     fileInputRef.current?.click();
   };
-  
+
   const handleSubmit = async (e) => {
-		e.preventDefault();
+    e.preventDefault();
+    if (loading) return;
 
-    if (form.firstName && form.lastName && form.phone && form.email) {
-      
-      // Prepare data to send
-			const dataToSend = {
-				first_name: form.firstName,
-				last_name: form.lastName,
-				address: form.address,
-				profile_picture: profileImage || null,
-				crop_preferences: ["vegetables"],
-				email: form.email,
-				phone: form.phone,
-			};
+    if (!(form.firstName && form.lastName && form.phone && form.email)) {
+      toast.error(
+        "Please fill in your first name, last name, email and phone number.",
+      );
+      return;
+    }
 
-			try {
-				const res = await axios.post(
-					endpoints().users.create_consumer_profile,
-					dataToSend,
-					{
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${Cookies.get("BIGFARMA_ACCESS_TOKEN")}`,
-						},
-					}
-				);
+    // Prepare data to send
+    const dataToSend = {
+      first_name: form.firstName,
+      last_name: form.lastName,
+      address: form.address,
+      profile_picture: profileImage || null,
+      crop_preferences: ["vegetables"],
+      email: form.email,
+      phone: form.phone,
+    };
 
-				const data = res.data;
-				if (res.status === 200 || res.status === 201) {
-					toast.success(data.message || "Saved successfully!");
-					onNext(data);
-				} else {
-					toast.error(data.message || "Network error. Please try again.");
-				}
-			} catch (error) {
-				console.error("Error:", error);
-				if (axiosDefault.isAxiosError(error) && error.response) {
-					toast.error(
-						error.response.data?.detail ||
-							error.response.data?.message ||
-							"Profile setup failed"
-					);
-				} else {
-					toast.error("Unable to connect to the server");
-				}
-			}
-		}
-	};
+    setLoading(true);
+    try {
+      const res = await axios.post(
+        endpoints().users.create_consumer_profile,
+        dataToSend,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Cookies.get("BIGFARMA_ACCESS_TOKEN")}`,
+          },
+        },
+      );
 
+      const data = res.data;
+      if (res.status === 200 || res.status === 201) {
+        toast.success(data.message || "Saved successfully!");
+        onNext(data);
+      } else {
+        toast.error(data.message || "Network error. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      if (axiosDefault.isAxiosError(error) && error.response) {
+        toast.error(
+          error.response.data?.detail ||
+            error.response.data?.message ||
+            "Profile setup failed",
+        );
+      } else {
+        toast.error("Unable to connect to the server");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-lg w-full flex items-center justify-center">
-        <div>
-          <div className="mb-4">
-            <img
-              src={profileImage || joy}
-              alt="avatar"
-              className="w-28 h-28 rounded-full mx-auto mb-2 object-cover border-4 border-gray-300"
-            />
-            <p
-              className="text-green-600 cursor-pointer"
-              onClick={handleEdit}
-            >
-              Edit
-            </p>
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              onChange={handleImageChange}
-              className="hidden"
-            />
+    <div className={modalOverlayClass}>
+      <div className={modalPanelClass}>
+        <h2 className={cn(titleClass, "text-center")}>Set up your profile</h2>
+
+        {/* Profile image */}
+        <div className="mt-6 flex flex-col items-center">
+          <img
+            src={profileImage || joy}
+            alt="Profile"
+            className="h-24 w-24 rounded-full border-4 border-grey-100 object-cover sm:h-28 sm:w-28"
+          />
+          <button
+            type="button"
+            onClick={handleEdit}
+            className="mt-2 text-sm font-medium text-primary transition-colors hover:text-primary-dark"
+          >
+            Edit
+          </button>
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handleImageChange}
+            className="hidden"
+            aria-label="Upload profile photo"
+          />
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+          {/* Name */}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
+            <FormField label="First Name" htmlFor="firstName" required>
+              <input
+                id="firstName"
+                name="firstName"
+                autoComplete="given-name"
+                value={form.firstName}
+                required
+                onChange={handleChange}
+                placeholder="John"
+                className={inputClass}
+              />
+            </FormField>
+            <FormField label="Last Name" htmlFor="lastName" required>
+              <input
+                id="lastName"
+                name="lastName"
+                autoComplete="family-name"
+                value={form.lastName}
+                required
+                onChange={handleChange}
+                placeholder="Doe"
+                className={inputClass}
+              />
+            </FormField>
           </div>
 
-          <form onSubmit={handleSubmit} className="text-left space-y-4">
-            {/* Name section */}
-            <div className="flex gap-6">
-              <div className="flex-1">
-                <div className="flex gap-1">
-                  <label htmlFor="firstName" className="block text-sm font-medium">
-                    First Name
-                  </label>
-                  <span className="text-red-500">*</span>
-                </div>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  value={form.firstName}
-                  required
-                  onChange={handleChange}
-                  placeholder="John"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-600 focus:outline-none"
-                />
-              </div>
-              <div className="flex-1">
-                <div className="flex gap-1">
-                  <label htmlFor="lastName" className="block text-sm font-medium">
-                    Last Name
-                  </label>
-                  <span className="text-red-500">*</span>
-                </div>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  value={form.lastName}
-                  required
-                  onChange={handleChange}
-                  placeholder="Doe"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-600 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Email and phone number */}
-            <div className="flex gap-6">
-              <div className="flex-1">
-                <label htmlFor="email" className="block text-sm font-medium">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="john@example.com"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-600 focus:outline-none"
-                />
-              </div>
-              <div className="flex-1">
-                <div className="flex gap-1">
-                  <label htmlFor="phone" className="block text-sm font-medium">
-                    Phone Number
-                  </label>
-                  <span className="text-red-500">*</span>
-                </div>
-                <div className="flex gap-2">
-                  <Dropdown
-                    countries={countries}
-                    onSelect={updateCountry}
-                    isOpen={dropdownOpen}
-                    onToggle={handleDropdownToggle}
-                  />
-                  <input
-                    id="phone"
-                    name="phone"
-                    value={form.phone}
-                    onChange={handleChange}
-                    required
-                    placeholder="08022222222"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-600 focus:outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Gender selection */}
-            <div>
-              <label className="block text-sm font-medium">Gender</label>
-              <div className="flex space-x-4">
-                <label className="flex items-center w-[35%] border border-gray-200 rounded-lg px-4 py-2 focus-within:ring-2 focus-within:ring-green-600">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="male"
-                    className="accent-green-700 mr-2"
-                    checked={form.gender === "male"}
-                    onChange={handleChange}
-                  />
-                  <span>Male</span>
-                </label>
-                <label className="flex items-center w-[35%] border border-gray-200 rounded-lg px-4 py-2 focus-within:ring-2 focus-within:ring-green-600">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="female"
-                    className="accent-green-700 mr-2"
-                    checked={form.gender === "female"}
-                    onChange={handleChange}
-                  />
-                  <span>Female</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Address section */}
-            <div>
-              <label htmlFor="address" className="block text-sm font-medium">
-                Address
-              </label>
-              <textarea
-                id="address"
-                name="address"
-                value={form.address}
+          {/* Email and phone number */}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
+            <FormField label="Email" htmlFor="email" required>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={form.email}
                 onChange={handleChange}
-                placeholder="123 Example Street, Ikeja, Lagos."
-                className="w-full border border-gray-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-600 focus:outline-none"
-              ></textarea>
-            </div>
+                required
+                placeholder="john@example.com"
+                className={inputClass}
+              />
+            </FormField>
+            <FormField label="Phone Number" htmlFor="phone" required>
+              <div className="flex h-12 w-full items-center gap-2 rounded-lg border border-grey-100 bg-white pl-3 transition-colors focus-within:border-primary">
+                <Dropdown
+                  countries={countries}
+                  onSelect={updateCountry}
+                  isOpen={dropdownOpen}
+                  onToggle={handleDropdownToggle}
+                />
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  value={form.phone}
+                  onChange={handleChange}
+                  required
+                  placeholder="08022222222"
+                  className="h-full min-w-0 flex-1 rounded-r-lg bg-transparent pr-4 text-base text-text-neutral placeholder:text-grey-200 focus:outline-none"
+                />
+              </div>
+            </FormField>
+          </div>
 
-            {/* Actions */}
-            <div className="flex justify-center items-center gap-6 pt-2">
-              <button
-                type="button"
-                className="text-green-600 font-medium"
-                onClick={onSkip}
-              >
-                Skip
-              </button>
-              <button
-                type="submit"
-                className="bg-[#DDD5DD] text-black hover:text-white hover:bg-[#003F1F] px-6 py-2 rounded-lg"
-              >
-                Continue
-              </button>
+          {/* Gender */}
+          <fieldset>
+            <legend className={labelClass}>Gender</legend>
+            <div className="grid grid-cols-2 gap-4">
+              {genderOptions.map(({ value, label }) => (
+                <label
+                  key={value}
+                  className="flex h-12 cursor-pointer items-center gap-2 rounded-lg border border-grey-100 px-4 text-base transition-colors focus-within:border-primary"
+                >
+                  <input
+                    type="radio"
+                    name="gender"
+                    value={value}
+                    className="h-4 w-4 accent-primary"
+                    checked={form.gender === value}
+                    onChange={handleChange}
+                  />
+                  {label}
+                </label>
+              ))}
             </div>
-          </form>
-        </div>
+          </fieldset>
+
+          {/* Address */}
+          <FormField label="Address" htmlFor="address">
+            <textarea
+              id="address"
+              name="address"
+              autoComplete="street-address"
+              value={form.address}
+              onChange={handleChange}
+              placeholder="123 Example Street, Ikeja, Lagos."
+              className={textareaClass}
+            />
+          </FormField>
+
+          {/* Actions */}
+          <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:gap-4">
+            <button
+              type="button"
+              className={cn(linkClass, "h-12 w-full sm:w-1/3")}
+              onClick={onSkip}
+            >
+              Skip
+            </button>
+            <Button
+              type="submit"
+              className={cn(primaryButtonClass, "sm:flex-1")}
+              disabled={loading}
+            >
+              {loading ? "Saving..." : "Continue"}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

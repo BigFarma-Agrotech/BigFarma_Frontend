@@ -1,10 +1,7 @@
-import AccountSettings from "../components/dashboard/settings/Index"
+import AccountSettings from "../components/dashboard/settings/Index";
 
 const SettingsPage = () => {
-
-	return (
-		<AccountSettings/>
-	)
-}
+  return <AccountSettings />;
+};
 
 export default SettingsPage;

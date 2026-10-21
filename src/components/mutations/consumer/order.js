@@ -11,7 +11,7 @@ export const useReportConsumerOrderIssue = () => {
     mutationFn: ({ order_id, payload }) =>
       reportOrderIssueHandler(order_id, payload),
     onSuccess: (_, { order_id }) => {
-      queryClient.invalidateQueries(["consumer-orders", order_id, "issues"]);
+      queryClient.invalidateQueries({ queryKey: ["consumer-orders", order_id, "issues"] });
     },
   });
 };
@@ -21,8 +21,8 @@ export const useConfirmConsumerOrderDelivery = () => {
   return useMutation({
     mutationFn: (order_id) => confirmOrderDeliveryHandler(order_id),
     onSuccess: (_, order_id) => {
-      queryClient.invalidateQueries(["consumer-orders", order_id]);
-      queryClient.invalidateQueries(["consumer-orders"]);
+      queryClient.invalidateQueries({ queryKey: ["consumer-orders", order_id] });
+      queryClient.invalidateQueries({ queryKey: ["consumer-orders"] });
     },
   });
 };
@@ -33,8 +33,8 @@ export const useUpdateConsumerOrderStatus = () => {
     mutationFn: ({ order_id, payload }) =>
       updateOrderStatusHandler(order_id, payload),
     onSuccess: (_, { order_id }) => {
-      queryClient.invalidateQueries(["consumer-orders", order_id]);
-      queryClient.invalidateQueries(["consumer-orders"]);
+      queryClient.invalidateQueries({ queryKey: ["consumer-orders", order_id] });
+      queryClient.invalidateQueries({ queryKey: ["consumer-orders"] });
     },
   });
 };

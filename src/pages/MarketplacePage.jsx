@@ -1,7 +1,7 @@
-import Marketplace from "@/components/dashboard/marketplace"
+import Marketplace from "@/components/dashboard/marketplace";
 
 const MarketplacePage = () => {
-    return <Marketplace />
-}
+  return <Marketplace />;
+};
 
-export default MarketplacePage
+export default MarketplacePage;

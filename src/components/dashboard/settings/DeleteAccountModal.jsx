@@ -1,30 +1,52 @@
-import React from "react";
+import { X } from "lucide-react";
+import Button from "@/components/shared/Button";
 
-const DeleteAccountModal = ({ isOpen, onClose, onConfirm }) => {
-	if (!isOpen) return null; 
-	return (
-		<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-			<div className="bg-white rounded-lg shadow-lg w-full  md:w-[500px] space-y-3 px-10 py-20 text-center">
-				<h2 className="text-lg font-semibold text-gray-900 mb-4">
-					Are you sure you want to delete your account?
-				</h2>
+const DeleteAccountModal = ({ isOpen, onClose, onConfirm, isPending = false }) => {
+  if (!isOpen) return null;
 
-				<div className="flex justify-between gap-2 mt-6">
-					<button
-						onClick={onClose}
-						className="px-12 py-2 border border-[#016130] text-[#016130] rounded-md hover:bg-[#003F1F] transition">
-						No, Go Back
-					</button>
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-account-title"
+        className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-4 text-center sm:p-6"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-3 top-3 rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+        >
+          <X className="h-5 w-5" />
+        </button>
 
-					<button
-						onClick={onConfirm}
-						className="px-12 py-2 bg-[#016130] text-white rounded-md hover:bg-[#003F1F] transition">
-						Delete Account
-					</button>
-				</div>
-			</div>
-		</div>
-	);
+        <h2
+          id="delete-account-title"
+          className="mx-auto mt-6 max-w-xs text-lg font-semibold text-gray-900"
+        >
+          Are you sure you want to delete your account?
+        </h2>
+
+        <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="h-10 flex-1 py-0"
+          >
+            No, Go Back
+          </Button>
+          <Button
+            onClick={onConfirm}
+            disabled={isPending}
+            className="h-10 flex-1 bg-red-600 py-0 hover:bg-red-700"
+          >
+            {isPending ? "Deleting..." : "Delete Account"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default DeleteAccountModal;

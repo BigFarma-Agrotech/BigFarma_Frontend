@@ -1,341 +1,298 @@
-// src/pages/ProductOrdersPage.jsx
-import React from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { useFarmerOrder } from '../hooks/useFarmerOrder'; // TanStack Query hook
-import eggs from '../assets/ProductImages/categories/Egg image.png';
-import onions from '../assets/ProductImages/onions.png';
-import carrot from '../assets/ProductImages/categories/Carrot image.png';
-import rice from '../assets/ProductImages/Rice.png';
-import tomatoes from '../assets/ProductImages/tomatoes.png';
-import vegetable from '../assets/ProductImages/categories/vegetables.png';
-import cassava from '../assets/ProductImages/cassava.png';
-import watermelon from '../assets/ProductImages/watermelon.png'; // Added watermelon import
+import { useMemo } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { useFarmerOrder } from "../hooks/useFarmerOrder";
+import { useFarmerProducts } from "../hooks/useFarmerProducts";
+import { cn } from "@/lib/utils";
+import {
+  extractOrders,
+  extractProducts,
+  formatNaira,
+  formatOrderDate,
+  fromProductRouteId,
+  getOrderBuyerName,
+  getOrderId,
+  getOrderImage,
+  getOrderNumber,
+  getOrderProductId,
+  getOrderProductName,
+  getOrderQuantity,
+  getOrderStatusColor,
+  getOrderStatusLabel,
+  getProductImage,
+  getSingleOrderPath,
+  normalizeOrderStatus,
+} from "../lib/farmerOrder";
+import watermelon from "../assets/ProductImages/watermelon.png";
 
-const productDetailsMap = {
-  123: {
-    name: 'Eggs',
-    status: 'Active',
-    stock: 100,
-    price: '₦20,500',
-    image: eggs,
-  },
-  124: {
-    name: 'Onions',
-    status: 'Active',
-    stock: 50,
-    price: '₦50,000',
-    image: onions,
-  },
-  125: {
-    name: 'Watermelon (Pieces)',
-    status: 'Active',
-    stock: 100,
-    price: '₦3000',
-    image: watermelon, // Fixed the image reference
-  },
-  126: {
-    name: 'Carrot',
-    status: 'Draft',
-    stock: 0,
-    price: '₦500',
-    image: carrot,
-  },
-  127: {
-    name: 'Rice',
-    status: 'Out of stock',
-    stock: 0,
-    price: '₦2,500',
-    image: rice,
-  },
-  128: {
-    name: 'Tomatoes',
-    status: 'Active',
-    stock: 250,
-    price: '₦250',
-    image: tomatoes,
-  },
-  129: {
-    name: 'Vegetable',
-    status: 'Out of stock',
-    stock: 0,
-    price: '₦250',
-    image: vegetable,
-  },
-  130: {
-    name: 'Cassava',
-    status: 'Draft',
-    stock: 0,
-    price: '₦250',
-    image: cassava,
-  },
+const productStatusClasses = {
+  active: "bg-green-100 text-green-800",
+  draft: "bg-gray-100 text-gray-800",
 };
 
+const cardClass = "rounded-xl border border-gray-200 bg-white p-4 sm:p-6";
+
+const BackToOrders = () => (
+  <Link
+    to="/farmer-orders"
+    className="inline-flex h-10 items-center justify-center rounded-lg border border-primary bg-white px-4 text-base font-medium text-primary transition-colors hover:bg-primary-subtle"
+  >
+    Back to Orders
+  </Link>
+);
+
+const StateCard = ({ children }) => (
+  <div
+    className={cn(cardClass, "flex flex-col items-center gap-4 py-12 text-center")}
+  >
+    {children}
+  </div>
+);
+
 const ProductOrdersPage = () => {
-  const { productId } = useParams();
-  const productDetails = productDetailsMap[productId];
+  // Route param is "product-<id>" (built by getProductOrdersPath in lib/farmerOrder)
+  const { productId: routeProductId } = useParams();
+  const location = useLocation();
+  const stateOrder = location.state?.order;
+  const productId = fromProductRouteId(routeProductId);
 
-  // Use TanStack Query to get all orders
-  const { data: apiOrders, isLoading, error } = useFarmerOrder();
+  const { data: apiOrders, isLoading: ordersLoading, error } = useFarmerOrder();
+  // Products only enrich the header (stock / price / status); the page still
+  // works from order data alone if this request fails.
+  const { data: apiProducts, isLoading: productsLoading } = useFarmerProducts();
+  const isLoading = ordersLoading || productsLoading;
 
-  // Filter orders for this specific product from the API data
-  const productOrders = React.useMemo(() => {
-    if (!apiOrders || !Array.isArray(apiOrders)) return [];
+  const productOrders = useMemo(() => {
+    let orders = extractOrders(apiOrders);
+    if (productId) {
+      orders = orders.filter(
+        (order) => String(getOrderProductId(order)) === productId
+      );
+    } else {
+      // Order without a product_id: we can only show the order we came from.
+      orders = stateOrder ? [stateOrder] : [];
+    }
 
-    return apiOrders
-      .filter((order) => {
-        // Match orders for this product - adjust the logic based on your API response
-        const orderProductId = `product-${order.product_id}`;
-        return orderProductId === productId;
-      })
-      .map((order, index) => {
-        // Transform API order to match your UI structure
-        return {
-          id: order.id?.toString() || `order-${index}`,
-          productId: productId,
-          buyer: order.farmer_name || 'Unknown Buyer',
-          qty: order.quantity_ordered || '1',
-          date: order.created_at
-            ? new Date(order.created_at).toLocaleDateString()
-            : 'N/A',
-          status: getOrderStatus(order.status),
-          statusColor: getStatusColor(order.status),
-          originalData: order,
-        };
-      });
-  }, [apiOrders, productId]);
+    return orders.map((order, index) => ({
+      id: getOrderId(order) || `order-${index}`,
+      orderNumber: getOrderNumber(order),
+      buyer: getOrderBuyerName(order),
+      qty: getOrderQuantity(order),
+      date: formatOrderDate(order),
+      status: getOrderStatusLabel(order.status),
+      statusColor: getOrderStatusColor(order.status),
+      path: getSingleOrderPath(order),
+      originalData: order,
+    }));
+  }, [apiOrders, productId, stateOrder]);
 
-  // Helper function to map API status to your UI status
-  const getOrderStatus = (apiStatus) => {
-    const statusMap = {
-      pending: 'Pending',
-      confirmed: 'Awaiting Confirmation',
-      shipped: 'Shipping In Progress',
-      delivered: 'Delivered',
-      cancelled: 'Cancelled',
-      refunded: 'Refunded',
+  // Prefer the farmer's product record, fall back to fields on the orders.
+  const productDetails = useMemo(() => {
+    const product = productId
+      ? extractProducts(apiProducts).find((p) => String(p?.id) === productId)
+      : null;
+    const sampleOrder = productOrders[0]?.originalData || stateOrder;
+
+    if (!product && !sampleOrder) return null;
+
+    if (product) {
+      const quantity = product.quantity ?? product.stock;
+      return {
+        name: product.name || getOrderProductName(sampleOrder),
+        status: product.status || null,
+        stock:
+          quantity != null ? `${quantity} ${product.unit || ""}`.trim() : null,
+        price: product.price != null ? formatNaira(product.price) : null,
+        image: getProductImage(product) || getOrderImage(sampleOrder),
+      };
+    }
+
+    return {
+      name: getOrderProductName(sampleOrder),
+      status: null,
+      stock: null,
+      price: null,
+      image: getOrderImage(sampleOrder),
     };
-    return statusMap[apiStatus] || 'Pending';
-  };
+  }, [apiProducts, productId, productOrders, stateOrder]);
 
-  // Helper function to get status color
-  const getStatusColor = (apiStatus) => {
-    const colorMap = {
-      pending: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
-      confirmed: 'bg-purple-100 text-purple-700 border border-purple-200',
-      shipped: 'bg-blue-100 text-blue-700 border border-blue-200',
-      delivered: 'bg-green-100 text-green-700 border border-green-200',
-      cancelled: 'bg-red-100 text-red-700 border border-red-200',
-      refunded: 'bg-gray-100 text-gray-700 border border-gray-200',
-    };
-    return (
-      colorMap[apiStatus] ||
-      'bg-yellow-100 text-yellow-700 border border-yellow-200'
-    );
-  };
-
-  // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-        <span className="ml-2">Loading orders...</span>
-      </div>
+      <StateCard>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="text-sm text-gray-600">Loading orders...</p>
+      </StateCard>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="text-red-600 mb-4 text-center">
-          Error loading orders: {error.response?.data?.detail || error.message}
-        </div>
-        <div className="text-center">
-          <Link
-            to="/farmer-orders"
-            className="text-green-600 underline mt-2 inline-block"
-          >
-            Back to Orders
-          </Link>
-        </div>
-      </div>
+      <StateCard>
+        <p className="text-sm text-red-500">
+          Error loading orders: {error?.response?.data?.detail || error?.message}
+        </p>
+        <BackToOrders />
+      </StateCard>
     );
   }
 
   if (!productDetails) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <p className="text-red-600 text-center">Product not found.</p>
-        <div className="text-center">
-          <Link
-            to="/farmer-orders"
-            className="text-green-600 underline mt-2 inline-block"
-          >
-            Back to Orders
-          </Link>
-        </div>
-      </div>
+      <StateCard>
+        <p className="text-sm text-red-500">Product not found.</p>
+        <BackToOrders />
+      </StateCard>
     );
   }
 
+  const pendingCount = productOrders.filter(
+    (o) => normalizeOrderStatus(o.originalData?.status) === "pending"
+  ).length;
+  const deliveredCount = productOrders.filter(
+    (o) => normalizeOrderStatus(o.originalData?.status) === "delivered"
+  ).length;
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-8xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content - 2/3 width */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Product Info Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  {productDetails.image && (
-                    <img
-                      src={productDetails.image}
-                      alt={productDetails.name}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="min-w-0 space-y-6 lg:col-span-2">
+        <div className={cardClass}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              <img
+                src={productDetails.image || watermelon}
+                alt={productDetails.name}
+                className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = watermelon;
+                }}
+              />
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
+                  {productDetails.name}
+                </h1>
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  {productDetails.status && (
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize",
+                        productStatusClasses[
+                          normalizeOrderStatus(productDetails.status)
+                        ] || "bg-red-100 text-red-800"
+                      )}
+                    >
+                      {String(productDetails.status).replace(/_/g, " ")}
+                    </span>
                   )}
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">
-                      {productDetails.name}
-                    </h1>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          productDetails.status === 'Active'
-                            ? 'bg-green-100 text-green-800'
-                            : productDetails.status === 'Draft'
-                            ? 'bg-gray-200 text-gray-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {productDetails.status}
-                      </span>
-                      <span className="text-sm text-gray-600">
-                        {productDetails.stock} in stock
-                      </span>
-                      <span className="text-sm text-gray-600">·</span>
-                      <span className="text-sm font-medium text-gray-900">
-                        {productDetails.price}
-                      </span>
-                    </div>
-                  </div>
+                  {productDetails.stock && (
+                    <span className="text-sm text-gray-600">
+                      {productDetails.stock} in stock
+                    </span>
+                  )}
+                  {productDetails.stock && productDetails.price && (
+                    <span className="text-sm text-gray-600" aria-hidden="true">
+                      ·
+                    </span>
+                  )}
+                  {productDetails.price && (
+                    <span className="text-sm font-medium text-gray-900">
+                      {productDetails.price}
+                    </span>
+                  )}
                 </div>
-                <Link
-                  to="/farmer-orders"
-                  className="flex items-center text-green-700 font-medium hover:text-green-800 border border-green-700 px-4 py-1 rounded-lg transition-colors text-center"
+              </div>
+            </div>
+            <Link
+              to="/farmer-orders"
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-primary bg-white px-4 text-base font-medium text-primary transition-colors hover:bg-primary-subtle sm:self-auto"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              Back
+            </Link>
+          </div>
+        </div>
+
+        <div className={cardClass}>
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            Orders for this product
+          </h2>
+
+          {productOrders.length > 0 ? (
+            <ul className="space-y-3">
+              {productOrders.map((order) => (
+                <li
+                  key={order.id}
+                  className="flex flex-col gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  Back
-                </Link>
-              </div>
-            </div>
-
-            {/* Orders Section */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Orders for this product
-              </h2>
-
-              <div className="space-y-4">
-                {productOrders.length > 0 ? (
-                  productOrders.map((order) => (
-                    <div key={order.id}>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                        <div className="flex items-center space-x-1 mb-3 sm:mb-0">
-                          <span className="font-semibold text-gray-900 max-w-14 w-full">
-                            Order {order.id}
-                          </span>
-                          <span
-                            className={`max-w-4xl w-full py-1.5 rounded-full text-xs ml-1 font-medium ${order.statusColor}`}
-                          >
-                            {order.status}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 justify-between">
-                          <div className="text-sm text-gray-600 text-right">
-                            <span className="mr-1">Buyer: {order.buyer}</span>
-                            <span className="mr-1">Qty: {order.qty}</span>
-                            <span className="mr-1">{order.date}</span>
-                          </div>
-
-                          <Link
-                            to={`/farmer-orders/${productId}/${order.id.replace(
-                              '#',
-                              ''
-                            )}`}
-                            state={{ order: order.originalData }}
-                            className="bg-green-800 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors text-center"
-                          >
-                            Manage
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    No orders found for this product.
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-gray-900">
+                      Order {order.orderNumber}
+                    </span>
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+                        order.statusColor
+                      )}
+                    >
+                      {order.status}
+                    </span>
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
 
-          {/* Sidebar - 1/3 width */}
-          <div className="space-y-6">
-            {/* Tips Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Tips</h3>
-              <ul className="space-y-3 text-sm text-gray-600">
-                <li className="flex items-start">
-                  <span className="text-gray-700 mr-2">•</span>
-                  Update order status as soon as items leave your farm.
-                </li>
-                <li className="flex items-start">
-                  <span className="text-gray-700 mr-2">•</span>
-                  Encourage buyers to confirm delivery quickly to avoid delays.
-                </li>
-                <li className="flex items-start">
-                  <span className="text-gray-700 mr-2">•</span>
-                  Use the issue button if there is a delivery dispute.
-                </li>
-              </ul>
-            </div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-600">
+                      <span>Buyer: {order.buyer}</span>
+                      <span>Qty: {order.qty}</span>
+                      <span>{order.date}</span>
+                    </div>
 
-            {/* Quick Stats Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Order Summary
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Orders:</span>
-                  <span className="font-medium">{productOrders.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Pending:</span>
-                  <span className="font-medium text-yellow-600">
-                    {
-                      productOrders.filter(
-                        (o) => o.originalData?.status === 'pending'
-                      ).length
-                    }
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Delivered:</span>
-                  <span className="font-medium text-green-600">
-                    {
-                      productOrders.filter(
-                        (o) => o.originalData?.status === 'delivered'
-                      ).length
-                    }
-                  </span>
-                </div>
-              </div>
+                    <Link
+                      to={order.path}
+                      state={{ order: order.originalData }}
+                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
+                    >
+                      Manage
+                    </Link>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="py-8 text-center text-sm text-gray-500">
+              No orders found for this product.
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="min-w-0 space-y-6">
+        <div className={cardClass}>
+          <h3 className="mb-4 text-lg font-semibold text-gray-900">Tips</h3>
+          <ul className="list-disc space-y-3 pl-5 text-sm text-gray-600">
+            <li>Update order status as soon as items leave your farm.</li>
+            <li>Encourage buyers to confirm delivery quickly to avoid delays.</li>
+            <li>Use the issue button if there is a delivery dispute.</li>
+          </ul>
+        </div>
+
+        <div className={cardClass}>
+          <h3 className="mb-4 text-lg font-semibold text-gray-900">
+            Order Summary
+          </h3>
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-gray-600">Total Orders:</dt>
+              <dd className="font-medium text-gray-900">
+                {productOrders.length}
+              </dd>
             </div>
-          </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-gray-600">Pending:</dt>
+              <dd className="font-medium text-yellow-600">{pendingCount}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-gray-600">Delivered:</dt>
+              <dd className="font-medium text-green-600">{deliveredCount}</dd>
+            </div>
+          </dl>
         </div>
       </div>
     </div>

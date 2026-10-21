@@ -1,6 +1,4 @@
-import { Triangle } from "lucide-react";
-import { Bell } from "lucide-react";
-import { CheckCircle2, Clock } from "lucide-react";
+import { Bell, CheckCircle2, Clock, Triangle } from "lucide-react";
 
 export const getCurrentStepIndex = (statusLabel, timelineSteps) => {
   if (statusLabel === "Delivery Issue - Pending Review") {
@@ -14,9 +12,9 @@ export const getTimelineStepProps = (idx, currentStepIndex) => {
 
   return {
     IconComponent: isCompletedOrCurrent ? CheckCircle2 : Clock,
-    iconColor: isCompletedOrCurrent ? "#016130" : "#9CA3AF",
-    borderColor: isCompletedOrCurrent ? "#016130" : "#D1D5DB",
-    bgColor: isCompletedOrCurrent ? "#ECFDF3" : "#F3F4F6",
+    iconColor: isCompletedOrCurrent ? "#016130" : "#9ca3af",
+    borderColor: isCompletedOrCurrent ? "#016130" : "#d1d5db",
+    bgColor: isCompletedOrCurrent ? "#ecfdf3" : "#f3f4f6",
   };
 };
 
@@ -25,8 +23,8 @@ export const getBanner = (statusLabel) => {
     case "Awaiting Confirmation":
       return {
         icon: Bell,
-        iconColor: "#6B4610",
-        bgColor: "#FFF6E9",
+        iconColor: "#6b4610",
+        bgColor: "#fff6e9",
         firstText: "Confirmation Required",
         secondText:
           "Please confirm if you have received this order. If there is a problem, let us know.",
@@ -37,7 +35,7 @@ export const getBanner = (statusLabel) => {
       return {
         icon: Clock,
         iconColor: "#016130",
-        bgColor: "#C9F4DE",
+        bgColor: "#c9f4de",
         firstText: "Delivery Complete",
         secondText: "Thanks! The farmer has been notified.",
         show: true,
@@ -46,8 +44,8 @@ export const getBanner = (statusLabel) => {
     case "Delivery Issue - Pending Review":
       return {
         icon: Triangle,
-        iconColor: "#E02424",
-        bgColor: "#FFF6E9",
+        iconColor: "#e02424",
+        bgColor: "#fff6e9",
         firstText: "Delivery Issue - Pending Review",
         secondText:
           "We’ve logged your report. Support will contact you within 24-48 hours.",

@@ -1,12 +1,5 @@
-import React from 'react';
-import SuccessForm from '../components/auth/SuccessForm';
+import SuccessForm from "../components/auth/SuccessForm";
 
-const Success = () => {
-  return (
-    <>
-      <SuccessForm />
-    </>
-  );
-};
+const Success = () => <SuccessForm />;
 
 export default Success;

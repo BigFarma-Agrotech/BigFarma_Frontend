@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
+import { X } from "lucide-react";
 import { Button } from "@/components/shared";
-import { Bell } from "lucide-react";
 import { TIMELINE_STEPS } from "../mock";
 import { getBanner, getCurrentStepIndex, getTimelineStepProps } from "../utils";
 
-const DetailsModal = ({ order, onClose, onReport, onMarkDelivered }) => {
+const DetailsModal = ({ order, onClose, onReport, onMarkDelivered, isMarkingDelivered = false }) => {
   const currentStepIndex = getCurrentStepIndex(
     order.status.label,
     TIMELINE_STEPS
@@ -15,50 +15,61 @@ const DetailsModal = ({ order, onClose, onReport, onMarkDelivered }) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -50 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 50 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
     >
-      <div className="bg-white w-full max-w-[800px] max-h-[90vh] rounded-lg overflow-hidden flex flex-col">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="order-details-title"
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-7 py-5 sticky top-0 bg-white z-10">
-          <div className="max-w-2/3">
-            <p className="text-xl font-semibold">
-              {order.product} ({order.qty} pcs)
-            </p>
-            <p className="text-grey-300 text-xs italic">
-              Order #{order.id} : {order.farmer}
-            </p>
+        <div className="flex items-start justify-between gap-4 border-b border-gray-200 p-4 sm:p-6">
+          <div className="min-w-0 space-y-2">
+            <div>
+              <h2 id="order-details-title" className="break-words text-lg font-semibold text-gray-900 sm:text-xl">
+                {order.product} ({order.qty} pcs)
+              </h2>
+              <p className="text-xs italic text-grey-300">
+                Order #{order.id} : {order.farmer}
+              </p>
+            </div>
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+              style={{
+                color: order.status.textColor,
+                backgroundColor: order.status.bgColor,
+              }}
+            >
+              <order.status.icon size={14} aria-hidden="true" />
+              {order.status.label}
+            </span>
           </div>
-          <div
-            className="border p-2 rounded-xl flex items-center justify-center"
-            style={{
-              color: order.status.textColor,
-              backgroundColor: order.status.bgColor,
-            }}
-          >
-            <order.status.icon size={20} className="mr-1" />
-            {order.status.label}
-          </div>
-          <Button
+          <button
+            type="button"
             onClick={onClose}
-            className="border border-primary px-4 py-2! bg-white text-primary! hover:text-white!"
+            aria-label="Close order details"
+            className="shrink-0 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
           >
-            Close
-          </Button>
+            <X size={20} />
+          </button>
         </div>
 
-        <div className="overflow-y-auto px-7 py-5 space-y-6 flex-1">
+        <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:space-y-6 sm:p-6">
           {banner.show && (
             <div
-              className="flex gap-2 p-4 rounded-lg text-sm"
+              className="flex gap-2 rounded-lg p-4 text-sm"
               style={{
                 backgroundColor: banner.bgColor,
                 color: banner.iconColor,
               }}
             >
-              <banner.icon color={banner.iconColor} size={20} />
+              <banner.icon color={banner.iconColor} size={20} className="shrink-0" aria-hidden="true" />
               <div>
                 <p className="font-semibold">{banner.firstText}</p>
                 <p>{banner.secondText}</p>
@@ -67,10 +78,10 @@ const DetailsModal = ({ order, onClose, onReport, onMarkDelivered }) => {
           )}
 
           {/* Timeline */}
-          <div className="border border-black rounded-lg p-4 text-grey-300">
-            <p className="font-semibold text-black text-lg mb-4">
+          <section className="rounded-xl border border-gray-200 p-4 text-grey-300">
+            <h3 className="mb-4 text-base font-semibold text-gray-900 sm:text-lg">
               Order Timeline
-            </p>
+            </h3>
 
             {TIMELINE_STEPS.map((step, idx) => {
               const stepLabel =
@@ -83,75 +94,70 @@ const DetailsModal = ({ order, onClose, onReport, onMarkDelivered }) => {
                 getTimelineStepProps(idx, currentStepIndex, order.status);
 
               return (
-                <div key={idx} className="flex items-center gap-3 relative">
-                  <div className="flex flex-col items-center relative">
+                <div key={step.label} className="relative flex items-center gap-3">
+                  <div className="relative flex flex-col items-center">
                     {idx !== 0 && (
                       <div
-                        className="w-px h-4 border-l-2 border-dashed"
+                        className="h-4 w-px border-l-2 border-dashed"
                         style={{ borderColor }}
                       />
                     )}
 
                     <div
-                      className="rounded-full h-[30px] w-[30px] border flex items-center justify-center z-10"
+                      className="z-10 flex h-[30px] w-[30px] items-center justify-center rounded-full border"
                       style={{ borderColor, backgroundColor: bgColor }}
                     >
-                      <IconComponent color={iconColor} size={20} />
+                      <IconComponent color={iconColor} size={20} aria-hidden="true" />
                     </div>
 
                     {idx !== TIMELINE_STEPS.length - 1 && (
                       <div
-                        className="w-px h-4 border-l-2 border-dashed"
+                        className="h-4 w-px border-l-2 border-dashed"
                         style={{ borderColor }}
                       />
                     )}
                   </div>
 
-                  <div className="flex flex-col justify-center text-black h-[30px]">
-                    <p className="font-medium text-sm">{stepLabel}</p>
+                  <div className="flex min-h-[30px] flex-col justify-center text-gray-900">
+                    <p className="text-sm font-medium">{stepLabel}</p>
                     {step.subLabel && (
-                      <p className="text-grey-300 text-xs mt-0.5">
-                        {step.subLabel}
-                      </p>
+                      <p className="mt-0.5 text-xs text-grey-300">{step.subLabel}</p>
                     )}
                   </div>
                 </div>
               );
             })}
-          </div>
+          </section>
 
           {/* Items */}
-          <div className="border border-black rounded-lg p-4 text-grey-300">
-            <p className="font-semibold text-black text-lg mb-4">Items</p>
-            <ul className="list-disc ml-5">
+          <section className="rounded-xl border border-gray-200 p-4 text-grey-300">
+            <h3 className="mb-4 text-base font-semibold text-gray-900 sm:text-lg">Items</h3>
+            <ul className="ml-5 list-disc">
               <li>
                 {order.qty}x {order.product}
               </li>
             </ul>
-          </div>
+          </section>
 
           {/* Delivery */}
-          <div className="border border-black rounded-lg p-4 text-grey-300">
-            <p className="font-semibold text-black text-lg mb-4">Delivery</p>
-            <p>Address: {order.delivery.address}</p>
+          <section className="rounded-xl border border-gray-200 p-4 text-grey-300">
+            <h3 className="mb-4 text-base font-semibold text-gray-900 sm:text-lg">Delivery</h3>
+            <p className="break-words">Address: {order.delivery.address}</p>
             <p>Contact: {order.delivery.contact}</p>
-          </div>
+          </section>
 
           {/* Action Buttons */}
           {order.status.label !== "Delivered" && (
-            <div className="flex justify-center items-center gap-2.5">
-              <Button
-                onClick={onReport}
-                className="border border-primary px-4 py-2! bg-white text-primary! hover:text-white!"
-              >
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <Button variant="outline" onClick={onReport} className="h-10 py-0">
                 Report a problem
               </Button>
               <Button
                 onClick={onMarkDelivered}
-                disabled={!canMarkDelivered}
-                className={`px-4 py-2!`}
+                disabled={!canMarkDelivered || isMarkingDelivered}
+                className="h-10 py-0"
               >
-                Mark as delivered
+                {isMarkingDelivered ? "Confirming..." : "Mark as delivered"}
               </Button>
             </div>
           )}

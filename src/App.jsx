@@ -1,15 +1,18 @@
-import { Routes, Route } from 'react-router-dom';
-import './App.css';
-import { ToastContainer } from 'react-toastify';
-import Home from './components/landing-page-sections/Home';
-// Page Auth
-import SignIn from './pages/SignIn';
-import SignUp from './pages/Signup';
-import ForgotPassword from './pages/ForgotPassword';
-import InputOtp from './pages/InputOtp';
-import ResetPassword from './pages/ResetPassword';
-import RoleSelection from './pages/RoleSelection';
-import ProtectedRoute from './components/auth/ProtectedRoute';
+import { Routes, Route } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import ErrorBoundary from "./components/shared/ErrorBoundary";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import Home from "./components/landing-page-sections/Home";
+// Auth pages
+import SignIn from "./pages/SignIn";
+import SignUp from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import InputOtp from "./pages/InputOtp";
+import ResetPassword from "./pages/ResetPassword";
+import RoleSelection from "./pages/RoleSelection";
+import VerifyOtp from "./pages/VerifyOtp";
+import Success from "./pages/Success";
+import SupportPage from "./pages/SupportPage";
 
 import {
   DashboardPage,
@@ -21,214 +24,81 @@ import {
   FarmerOrderPage,
   ProductOrdersPage,
   SingleOrderPage,
-} from './pages';
-import VerifyOtp from './pages/VerifyOtp';
-import Success from './pages/Success';
-import PaymentSetup from './pages/PaymentSetupModal';
-import MarketplacePage from './components/dashboard/marketplace';
-import ProductDetail from './components/dashboard/marketplace/product-detail';
-import DashboardLayout from './components/dashboard/dashboard-layout';
-import GroupBuyPage from './pages/GroupBuyPage';
-import CreateGroupModal from './components/dashboard/GroupBuy/CreateGroupModal';
-import GroupDetailsPage from './pages/GroupDetailsPage';
+} from "./pages";
+import PaymentSetup from "./pages/PaymentSetupModal";
+import MarketplacePage from "./components/dashboard/marketplace";
+import ProductDetail from "./components/dashboard/marketplace/product-detail";
+import DashboardLayout from "./components/dashboard/dashboard-layout";
+import GroupBuyPage from "./pages/GroupBuyPage";
+import CreateGroupModal from "./components/dashboard/GroupBuy/CreateGroupModal";
+import GroupDetailsPage from "./pages/GroupDetailsPage";
 import InvestmentPage from "./pages/InvestmentPage";
 import WalletPage from "./pages/WalletPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import MyProductsPage from "./pages/MyProductsPage";
 import SettingsPage from "./pages/SettingsPage";
 
+const authRoutes = [
+  { path: "/sign-in", element: <SignIn /> },
+  { path: "/sign-up", element: <SignUp /> },
+  { path: "/forgot-password", element: <ForgotPassword /> },
+  { path: "/otp", element: <InputOtp /> },
+  { path: "/verify-otp", element: <VerifyOtp /> },
+  { path: "/reset-password", element: <ResetPassword /> },
+  { path: "/role", element: <RoleSelection /> },
+  { path: "/success", element: <Success /> },
+  { path: "/support", element: <SupportPage /> },
+];
 
+const dashboardRoutes = [
+  { path: "/dashboard", element: <DashboardPage /> },
+  { path: "/orders", element: <ConsumerOrderPage /> },
+  { path: "/marketplace", element: <MarketplacePage /> },
+  { path: "/marketplace/products/:id", element: <ProductDetail /> },
+  { path: "/group-buy", element: <GroupBuyPage /> },
+  { path: "/group-buy/create", element: <CreateGroupModal /> },
+  { path: "/group-buy/:groupId", element: <GroupDetailsPage /> },
+  { path: "/cart", element: <CartPage /> },
+  { path: "/checkout", element: <CheckoutPage /> },
+  { path: "/payment-processing", element: <PaymentProcessingPage /> },
+  { path: "/order-confirmation", element: <OrderConfirmationPage /> },
+  { path: "/payment", element: <PaymentSetup /> },
+  { path: "/farmer-orders", element: <FarmerOrderPage /> },
+  { path: "/farmer-orders/:productId", element: <ProductOrdersPage /> },
+  { path: "/farmer-orders/:productId/:orderId", element: <SingleOrderPage /> },
+  { path: "/investment", element: <InvestmentPage /> },
+  { path: "/wallet", element: <WalletPage /> },
+  { path: "/transactions", element: <TransactionsPage /> },
+  { path: "/my-products", element: <MyProductsPage /> },
+  { path: "/settings", element: <SettingsPage /> },
+];
 
 const App = () => {
   return (
-		<>
-			<ToastContainer position="top-right" autoClose={3000} />
-			<Routes>
-				<Route path="/" element={<Home />} />
-				{/* auth */}
-				<Route path="/sign-in" element={<SignIn />} />
-				<Route path="/sign-up" element={<SignUp />} />
-				<Route path="/forgot-password" element={<ForgotPassword />} />
-				<Route path="/otp" element={<InputOtp />} />
-				<Route path="/verify-otp" element={<VerifyOtp />} />
-				<Route path="/reset-password" element={<ResetPassword />} />
-				<Route path="/role" element={<RoleSelection />} />
-				<Route path="/success" element={<Success />} />
+    <>
+      <ToastContainer position="top-right" autoClose={3000} />
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={<Home />} />
 
-				{/* Dashboard */}
-				<Route element={<ProtectedRoute />}>
-					<Route
-						path="/dashboard"
-						element={
-							<DashboardLayout>
-								<DashboardPage />
-							</DashboardLayout>
-						}
-					/>
-					<Route
-						path="/orders"
-						element={
-							<DashboardLayout>
-								<ConsumerOrderPage />
-							</DashboardLayout>
-						}
-					/>
-					<Route
-						path="/marketplace"
-						element={
-							<DashboardLayout>
-								<MarketplacePage />
-							</DashboardLayout>
-						}
-					/>
-					<Route
-						path="/group-buy"
-						element={
-							<DashboardLayout>
-								<GroupBuyPage />
-							</DashboardLayout>
-						}
-					/>
-					<Route
-						path="/group-buy/create"
-						element={
-							<DashboardLayout>
-								<CreateGroupModal />
-							</DashboardLayout>
-						}
-					/>
-					<Route
-						path="/marketplace/products/:id"
-						element={
-							<DashboardLayout>
-								<ProductDetail />
-							</DashboardLayout>
-						}
-					/>
-					<Route
-						path="/cart"
-						element={
-							<DashboardLayout>
-								<CartPage />
-							</DashboardLayout>
-						}
-					/>
-					<Route
-						path="/checkout"
-						element={
-							<DashboardLayout>
-								<CheckoutPage />
-							</DashboardLayout>
-						}
-					/>
-					<Route
-						path="/payment-processing"
-						element={
-							<DashboardLayout>
-								<PaymentProcessingPage />
-							</DashboardLayout>
-						}
-					/>
-					<Route
-						path="/order-confirmation"
-						element={
-							<DashboardLayout>
-								<OrderConfirmationPage />
-							</DashboardLayout>
-						}
-					/>
-					<Route
-						path="/payment"
-						element={
-							<DashboardLayout>
-								<PaymentSetup />
-							</DashboardLayout>
-						}
-					/>
+          {authRoutes.map(({ path, element }) => (
+            <Route key={path} path={path} element={element} />
+          ))}
 
-					<Route
-						path="/farmer-orders"
-						element={
-							<DashboardLayout>
-								<FarmerOrderPage />
-							</DashboardLayout>
-						}
-					/>
-
-					<Route
-						path="/farmer-orders/:productId"
-						element={
-							<DashboardLayout>
-								<ProductOrdersPage />
-							</DashboardLayout>
-						}
-					/>
-
-					<Route
-						path="/farmer-orders/:productId/:orderId"
-						element={
-							<DashboardLayout>
-								<SingleOrderPage />
-							</DashboardLayout>
-						}
-					/>
-					<Route
-						path="/group-buy/:groupId"
-						element={
-							<DashboardLayout>
-								<GroupDetailsPage />
-							</DashboardLayout>
-						}
-					/>
-
-					<Route
-						path="/investment"
-						element={
-							<DashboardLayout>
-								<InvestmentPage />
-							</DashboardLayout>
-						}
-					/>
-
-					<Route
-						path="/wallet"
-						element={
-							<DashboardLayout>
-								<WalletPage />
-							</DashboardLayout>
-						}
-					/>
-
-					<Route
-						path="/transactions"
-						element={
-							<DashboardLayout>
-								<TransactionsPage />
-							</DashboardLayout>
-						}
-					/>
-
-					<Route
-						path="/my-products"
-						element={
-							<DashboardLayout>
-								<MyProductsPage />
-							</DashboardLayout>
-						}
-					/>
-
-					<Route
-						path="/settings"
-						element={
-							<DashboardLayout>
-								<SettingsPage />
-							</DashboardLayout>
-						}
-					/>
-				</Route>
-			</Routes>
-		</>
-	);
+          {/* Dashboard: requires a signed-in user */}
+          <Route element={<ProtectedRoute />}>
+            {dashboardRoutes.map(({ path, element }) => (
+              <Route
+                key={path}
+                path={path}
+                element={<DashboardLayout>{element}</DashboardLayout>}
+              />
+            ))}
+          </Route>
+        </Routes>
+      </ErrorBoundary>
+    </>
+  );
 };
 
 export default App;

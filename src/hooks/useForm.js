@@ -1,17 +1,33 @@
 import { useState } from "react";
 
+const initialLoginData = {
+  username: "",
+  password: "",
+  country: null,
+  rememberMe: false,
+};
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRegex = /^\+?\d{7,15}$/;
+
+// Validation rules for each field. Returns an error message or "".
+const fieldValidators = {
+  username: (value = "") => {
+    const trimmed = value.trim();
+    if (!trimmed) return "Email or phone number is required";
+    const isEmail = emailRegex.test(trimmed);
+    const isPhone = phoneRegex.test(trimmed.replace(/\s/g, ""));
+    if (!isEmail && !isPhone) {
+      return "Please enter a valid email or phone number";
+    }
+    return "";
+  },
+  password: (value = "") => (value ? "" : "Password is required"),
+};
 
 const useForm = () => {
-  const [loginData, setLoginData] = useState({
-    username: "",
-    password: "",
-    country: null,
-    rememberMe: false,
-  });
-
+  const [loginData, setLoginData] = useState(initialLoginData);
   const [errors, setErrors] = useState({});
-
-
 
   // Update any field
   const updateField = (field, value) => {
@@ -39,39 +55,26 @@ const useForm = () => {
 
   // Reset form to initial state
   const resetForm = () => {
-    setLoginData({
-      username: "",
-      password: "",
-      country: null,
-      rememberMe: false,
-    });
+    setLoginData(initialLoginData);
     setErrors({});
   };
 
-  // Basic validation
+  // Validate a single field (e.g. on blur). Returns true when valid.
+  const validateField = (field) => {
+    const validator = fieldValidators[field];
+    if (!validator) return true;
+    const message = validator(loginData[field]);
+    setErrors((prev) => ({ ...prev, [field]: message }));
+    return !message;
+  };
+
+  // Validate every field (e.g. on submit). Returns true when valid.
   const validateForm = () => {
     const newErrors = {};
-
-    // Email or phone validation
-    if (!loginData.username.trim()) {
-      newErrors.username = "Email or phone number is required";
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const phoneRegex = /^\+?\d{7,15}$/;
-
-      const isEmail = emailRegex.test(loginData.username.trim());
-      const isPhone = phoneRegex.test(
-        loginData.username.trim().replace(/\s/g, "")
-      );
-
-      if (!isEmail && !isPhone) {
-        newErrors.username = "Please enter a valid email or phone number";
-      }
-    }
-
-    if (!loginData.password) {
-      newErrors.password = "Password is required";
-    }
+    Object.entries(fieldValidators).forEach(([field, validator]) => {
+      const message = validator(loginData[field]);
+      if (message) newErrors[field] = message;
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -82,17 +85,9 @@ const useForm = () => {
     e.preventDefault();
 
     if (!validateForm()) {
-      console.log("Form has errors:", errors);
       return null;
     }
-    try {
-      // console.log("Form submitted with data:", loginData);
-      return loginData; //successful submission
-    } catch (error) {
-      // console.error("Form submission error:", error);
-      setErrors({ submit: error.message || "Failed to submit form" });
-      return null;
-    }
+    return loginData;
   };
 
   // Show errors returned by the server, e.g. { username: "Invalid email" }
@@ -117,6 +112,8 @@ const useForm = () => {
     updateField,
     updateCountry,
     resetForm,
+    validateField,
+    validateForm,
     handleSubmit,
     setFieldErrors,
     getFormData,

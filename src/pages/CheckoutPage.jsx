@@ -1,7 +1,14 @@
 import { useState } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks";
-import { Link, useNavigate } from "react-router-dom";
-import Input from "@/components/shared/Input";
+import { Button, Input } from "@/components/shared";
+
+const LABEL = "mb-1.5 block text-sm font-medium text-gray-700";
+const ERROR = "mt-1 text-sm text-red-600";
+const fieldClass = (hasError) =>
+  `h-12 w-full rounded-lg border-2 bg-white px-4 text-base focus:border-primary-light focus:outline-none ${
+    hasError ? "border-red-500" : "border-gray-300"
+  }`;
 
 export default function CheckoutPage() {
   const { cartItems, getCartTotal } = useCart();
@@ -26,8 +33,7 @@ export default function CheckoutPage() {
   const totalPayment = subtotal + deliveryFee + tax;
 
   if (cartItems.length === 0) {
-    navigate("/cart");
-    return null;
+    return <Navigate to="/cart" replace />;
   }
 
   const validateForm = () => {
@@ -98,207 +104,206 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Checkout Form */}
-          <div className="lg:col-span-2">
-            <h1 className="text-2xl font-semibold mb-6">Checkout</h1>
+    <div className="space-y-6">
+      <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">Checkout</h1>
 
-            <form id="checkout-form" onSubmit={handleSubmit} className="space-y-8">
-              {/* Personal Information */}
-              <div className="">
-                <h2 className="text-lg font-semibold mb-4">Personal Information</h2>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+        {/* Checkout Form */}
+        <form
+          id="checkout-form"
+          onSubmit={handleSubmit}
+          className="space-y-8 rounded-xl border border-gray-200 bg-white p-4 sm:p-6 lg:col-span-2"
+        >
+          {/* Personal Information */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">Personal Information</h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                      First Name
-                    </label>
-                    <Input
-                      id="firstName"
-                      value={formData.firstName}
-                      onChange={(e) => handleInputChange("firstName", e.target.value)}
-                      className={errors.firstName ? "border-red-500" : ""}
-                    />
-                    {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
-                  </div>
-
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Name
-                    </label>
-                    <Input
-                      id="lastName"
-                      value={formData.lastName}
-                      onChange={(e) => handleInputChange("lastName", e.target.value)}
-                      className={errors.lastName ? "border-red-500" : ""}
-                    />
-                    {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number
-                    </label>
-                    <div className="flex">
-                      <Input
-                        id="phoneNumber"
-                        value={formData.phoneNumber}
-                        onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-                        className={` ${errors.phoneNumber ? "border-red-500" : ""}`}
-                        placeholder="8022222222"
-                      />
-                    </div>
-                    {errors.phoneNumber && <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>}
-                  </div>
-
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email (Optional)
-                    </label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      placeholder="example@gmail.com"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                    Address
-                  </label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => handleInputChange("address", e.target.value)}
-                    className={errors.address ? "border-red-500" : ""}
-                    placeholder="Enter your full address"
-                  />
-                  {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
-                </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label htmlFor="firstName" className={LABEL}>
+                  First Name
+                </label>
+                <Input
+                  id="firstName"
+                  value={formData.firstName}
+                  onChange={(e) => handleInputChange("firstName", e.target.value)}
+                  className={`h-12 ${errors.firstName ? "border-red-500" : ""}`}
+                  aria-invalid={Boolean(errors.firstName)}
+                />
+                {errors.firstName && <p className={ERROR}>{errors.firstName}</p>}
               </div>
 
-              {/* Delivery & Payment Options */}
-              <div className="pt-5">
-                <h2 className="text-lg font-semibold mb-4">Delivery & Payment</h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="deliveryOption" className="block text-sm font-medium text-gray-700 mb-1">
-                      Delivery Option
-                    </label>
-                    <select
-                      id="deliveryOption"
-                      value={formData.deliveryOption}
-                      onChange={(e) => handleInputChange("deliveryOption", e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] ${
-                        errors.deliveryOption ? "border-red-500" : "border-gray-300"
-                      }`}
-                    >
-                      <option value="">Select delivery option</option>
-                      <option value="door-delivery">Door Delivery</option>
-                      <option value="pickup">Pickup</option>
-                    </select>
-                    {errors.deliveryOption && <p className="text-red-500 text-sm mt-1">{errors.deliveryOption}</p>}
-                  </div>
-
-                  <div>
-                    <label htmlFor="paymentOption" className="block text-sm font-medium text-gray-700 mb-1">
-                      Payment Option
-                    </label>
-                    <select
-                      id="paymentOption"
-                      value={formData.paymentOption}
-                      onChange={(e) => handleInputChange("paymentOption", e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] ${
-                        errors.paymentOption ? "border-red-500" : "border-gray-300"
-                      }`}
-                    >
-                      <option value="">Select payment option</option>
-                      <option value="flutterwave">Flutterwave</option>
-                      <option value="paystack">Paystack</option>
-                      <option value="bank-transfer">Bank Transfer</option>
-                    </select>
-                    {errors.paymentOption && <p className="text-red-500 text-sm mt-1">{errors.paymentOption}</p>}
-                  </div>
-                </div>
+              <div>
+                <label htmlFor="lastName" className={LABEL}>
+                  Last Name
+                </label>
+                <Input
+                  id="lastName"
+                  value={formData.lastName}
+                  onChange={(e) => handleInputChange("lastName", e.target.value)}
+                  className={`h-12 ${errors.lastName ? "border-red-500" : ""}`}
+                  aria-invalid={Boolean(errors.lastName)}
+                />
+                {errors.lastName && <p className={ERROR}>{errors.lastName}</p>}
               </div>
 
-              {/* Terms */}
-              <div className="text-sm text-gray-600">
-                By placing an order you agree to BigFarma terms and refund policy
-              </div>
-            </form>
-          </div>
-
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-neutral-light sticky top-4">
-              <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
-
-              <div className="space-y-4">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="capitalize">
-                      {item.name} x {item.cartQuantity}
-                    </span>
-                    <span>₦{(item.price * item.cartQuantity).toLocaleString()}</span>
-                  </div>
-                ))}
+              <div>
+                <label htmlFor="phoneNumber" className={LABEL}>
+                  Phone Number
+                </label>
+                <Input
+                  id="phoneNumber"
+                  type="tel"
+                  inputMode="tel"
+                  value={formData.phoneNumber}
+                  onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                  className={`h-12 ${errors.phoneNumber ? "border-red-500" : ""}`}
+                  aria-invalid={Boolean(errors.phoneNumber)}
+                  placeholder="8022222222"
+                />
+                {errors.phoneNumber && <p className={ERROR}>{errors.phoneNumber}</p>}
               </div>
 
-              <hr className="my-4" />
-
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span>Sub Total</span>
-                  <span>₦{subtotal.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Delivery</span>
-                  <span>₦{deliveryFee.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax (7.5%)</span>
-                  <span>₦{Math.round(tax).toLocaleString()}</span>
-                </div>
-              </div>
-
-              <hr className="my-4" />
-
-              <div className="flex justify-between text-lg font-semibold">
-                <span>Total Payment</span>
-                <span>₦{Math.round(totalPayment).toLocaleString()}</span>
-              </div>
-
-              {/* Action Buttons */}
-              <div className=" gap-4 mt-6">
-                <button
-                  type="submit"
-                  form="checkout-form"
-                  disabled={isSubmitting}
-                  className="w-full mb-3 bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white py-2 rounded-md disabled:opacity-50"
-                >
-                  {isSubmitting ? "Processing..." : "Checkout"}
-                </button>
-                <Link to="/cart" className="flex-1">
-                  <button
-                    type="button"
-                    className="w-full bg-transparent border border-gray-300 hover:bg-gray-50 py-2 rounded-md"
-                  >
-                    Back to cart
-                  </button>
-                </Link>
+              <div>
+                <label htmlFor="email" className={LABEL}>
+                  Email (Optional)
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  className="h-12"
+                  placeholder="example@gmail.com"
+                />
               </div>
             </div>
+
+            <div>
+              <label htmlFor="address" className={LABEL}>
+                Address
+              </label>
+              <Input
+                id="address"
+                value={formData.address}
+                onChange={(e) => handleInputChange("address", e.target.value)}
+                className={`h-12 ${errors.address ? "border-red-500" : ""}`}
+                aria-invalid={Boolean(errors.address)}
+                placeholder="Enter your full address"
+              />
+              {errors.address && <p className={ERROR}>{errors.address}</p>}
+            </div>
+          </section>
+
+          {/* Delivery & Payment Options */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">Delivery &amp; Payment</h2>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label htmlFor="deliveryOption" className={LABEL}>
+                  Delivery Option
+                </label>
+                <select
+                  id="deliveryOption"
+                  value={formData.deliveryOption}
+                  onChange={(e) => handleInputChange("deliveryOption", e.target.value)}
+                  className={fieldClass(errors.deliveryOption)}
+                  aria-invalid={Boolean(errors.deliveryOption)}
+                >
+                  <option value="">Select delivery option</option>
+                  <option value="door-delivery">Door Delivery</option>
+                  <option value="pickup">Pickup</option>
+                </select>
+                {errors.deliveryOption && <p className={ERROR}>{errors.deliveryOption}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="paymentOption" className={LABEL}>
+                  Payment Option
+                </label>
+                <select
+                  id="paymentOption"
+                  value={formData.paymentOption}
+                  onChange={(e) => handleInputChange("paymentOption", e.target.value)}
+                  className={fieldClass(errors.paymentOption)}
+                  aria-invalid={Boolean(errors.paymentOption)}
+                >
+                  <option value="">Select payment option</option>
+                  <option value="flutterwave">Flutterwave</option>
+                  <option value="paystack">Paystack</option>
+                  <option value="bank-transfer">Bank Transfer</option>
+                </select>
+                {errors.paymentOption && <p className={ERROR}>{errors.paymentOption}</p>}
+              </div>
+            </div>
+          </section>
+
+          {/* Terms */}
+          <p className="text-sm text-gray-600">
+            By placing an order you agree to BigFarma terms and refund policy
+          </p>
+        </form>
+
+        {/* Order Summary */}
+        <aside className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 lg:sticky lg:top-28">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900 sm:text-xl">Order Summary</h2>
+
+          <div className="space-y-3">
+            {cartItems.map((item) => (
+              <div key={item.id} className="flex justify-between gap-4 text-sm">
+                <span className="min-w-0 break-words capitalize">
+                  {item.name} x {item.cartQuantity}
+                </span>
+                <span className="shrink-0">
+                  ₦{(item.price * item.cartQuantity).toLocaleString()}
+                </span>
+              </div>
+            ))}
           </div>
-        </div>
+
+          <hr className="my-4 border-gray-200" />
+
+          <div className="space-y-3 text-sm sm:text-base">
+            <div className="flex justify-between">
+              <span>Sub Total</span>
+              <span>₦{subtotal.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Delivery</span>
+              <span>₦{deliveryFee.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Tax (7.5%)</span>
+              <span>₦{Math.round(tax).toLocaleString()}</span>
+            </div>
+          </div>
+
+          <hr className="my-4 border-gray-200" />
+
+          <div className="flex justify-between text-lg font-semibold text-gray-900">
+            <span>Total Payment</span>
+            <span>₦{Math.round(totalPayment).toLocaleString()}</span>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="mt-6 space-y-3">
+            <Button
+              type="submit"
+              form="checkout-form"
+              disabled={isSubmitting}
+              className="h-12 w-full py-0"
+            >
+              {isSubmitting ? "Processing..." : "Checkout"}
+            </Button>
+            <Link
+              to="/cart"
+              className="inline-flex h-12 w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-6 font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            >
+              Back to cart
+            </Link>
+          </div>
+        </aside>
       </div>
     </div>
   );
