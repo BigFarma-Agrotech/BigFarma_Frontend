@@ -7,13 +7,14 @@ import bgBack from "../../assets/images/bg-image-back.webp";
 const Hero = () => {
   return (
     <section id="home" className="w-full overflow-hidden">
-      <div className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-10 sm:px-6 md:py-16 lg:min-h-[calc(100svh-5rem)] lg:grid-cols-2 lg:gap-12 lg:px-8">
+      <div className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-10 sm:px-6 md:py-16 lg:min-h-[calc(100svh-5rem)] lg:grid-cols-2 lg:gap-12 lg:px-8 lg:pb-0">
         {/* Tagline */}
         <div className="flex flex-col items-start gap-4 sm:gap-5">
           <span className="inline-flex w-fit rounded-md bg-primary-transparent px-3 py-1.5 text-sm font-bold text-primary sm:text-base">
             We Are
           </span>
-          <h1 className="text-3xl leading-tight font-extrabold text-primary sm:text-4xl md:text-5xl xl:text-6xl">
+          {/* Each phrase stays on one line from sm up; lg is smaller since the heading shares the row with the image */}
+          <h1 className="text-3xl leading-tight font-extrabold text-primary sm:text-4xl sm:whitespace-nowrap md:text-5xl lg:text-4xl xl:text-5xl">
             <span className="block">Empowering Farmers</span>
             <span className="block">Connecting Markets</span>
             <span className="block">Growing Agriculture</span>
@@ -40,8 +41,8 @@ const Hero = () => {
           </Link>
         </div>
 
-        {/* Image */}
-        <div className="relative mx-auto w-full max-w-sm sm:max-w-md lg:max-w-lg">
+        {/* Image — sits on the section's bottom edge on desktop */}
+        <div className="relative mx-auto w-full max-w-sm sm:max-w-md lg:max-w-lg lg:self-end">
           <img
             src={bgBack}
             alt=""
