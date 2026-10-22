@@ -1,7 +1,9 @@
 import { axios } from "@/lib/axios";
 
+// The list route needs its trailing slash; `/orders` redirects to the backend
+// host directly, which bypasses the proxy and is blocked by CORS
 export const getOrdersHandler = async ({ status, search } = {}) => {
-  const response = await axios.get(`/orders`, {
+  const response = await axios.get(`/orders/`, {
     params: { status, search },
   });
   return response.data;

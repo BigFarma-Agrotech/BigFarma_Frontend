@@ -6,7 +6,7 @@ import { useOrder, useUpdateOrderStatus } from "../hooks/useFarmerOrder";
 import Button from "@/components/shared/Button";
 import { cn } from "@/lib/utils";
 import {
-  ORDER_STATUSES,
+  FARMER_STATUS_OPTIONS,
   extractOrder,
   formatNaira,
   formatOrderDate,
@@ -29,7 +29,13 @@ const formatDate = (value) => {
 };
 
 // Once an order reaches one of these it can no longer be marked as shipped.
-const CANNOT_SHIP = ["shipped", "delivered", "cancelled", "refunded"];
+const CANNOT_SHIP = [
+  "shipping",
+  "awaiting_confirmation",
+  "delivered",
+  "delivery_issue",
+  "cancelled",
+];
 
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.detail ||
@@ -196,7 +202,7 @@ const SingleOrderPage = () => {
           <div className="mt-6 flex flex-col gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:flex-wrap sm:items-center">
             <Button
               className="h-10 py-0 text-sm"
-              onClick={() => changeStatus("shipped", "ship")}
+              onClick={() => changeStatus("shipping", "ship")}
               disabled={isUpdating || !canShip}
               aria-busy={pendingAction === "ship"}
               title={canShip ? undefined : `Order is already ${statusLabel.toLowerCase()}`}
@@ -215,10 +221,10 @@ const SingleOrderPage = () => {
                 disabled={isUpdating}
                 className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:border-primary-light focus:outline-none focus:ring-1 focus:ring-primary-light"
               >
-                {!ORDER_STATUSES.some((s) => s.value === currentStatus) && (
+                {!FARMER_STATUS_OPTIONS.some((s) => s.value === currentStatus) && (
                   <option value={currentStatus}>{statusLabel}</option>
                 )}
-                {ORDER_STATUSES.map((s) => (
+                {FARMER_STATUS_OPTIONS.map((s) => (
                   <option key={s.value} value={s.value}>
                     {s.label}
                   </option>

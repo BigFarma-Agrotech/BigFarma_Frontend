@@ -1,7 +1,7 @@
-import { getStatusClasses, getStatusText } from "@/utils";
+import { getOrderStatusColor, getOrderStatusLabel } from "@/lib/farmerOrder";
 
 const Data = ({ props, isChecked, onToggle }) => {
-  const { id, farmName, date, status } = props;
+  const { orderNumber, farmName, date, status } = props;
 
   return (
     <>
@@ -12,18 +12,18 @@ const Data = ({ props, isChecked, onToggle }) => {
             checked={isChecked}
             onChange={() => onToggle?.()}
             className="h-4 w-4 accent-primary"
-            aria-label={`Select order #${id}`}
+            aria-label={`Select order ${orderNumber}`}
           />
-          <span className="font-medium text-gray-900">#{id}</span>
+          <span className="font-medium text-gray-900">{orderNumber}</span>
         </label>
       </td>
       <td className="whitespace-nowrap">{farmName}</td>
       <td className="whitespace-nowrap">{date}</td>
       <td>
         <span
-          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusClasses(status)}`}
+          className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${getOrderStatusColor(status)}`}
         >
-          {getStatusText(status)}
+          {getOrderStatusLabel(status)}
         </span>
       </td>
     </>

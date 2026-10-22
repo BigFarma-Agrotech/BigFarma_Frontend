@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Cookies from "js-cookie";
 import Charts from "./farmer/chart/Index.jsx";
 import DoughnutChart from "./consumer/chart/Index.jsx";
@@ -8,51 +8,28 @@ import ConsumerStatistics from "./consumer/statistics/Index.jsx";
 import FarmerStatistics from "./farmer/statistics/Index.jsx";
 import FarmerProfileSetup from "./farmer/profile-setup/Index.jsx";
 import ConsumerProfileSetup from "./consumer/consumerProfile/Index.jsx";
-import { endpoints } from "../config/endpoints";
-import { axios } from "../../lib/axios";
 import LoaderSpinner from "../shared/Loader.jsx";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const Dashboard = () => {
   const role = Cookies.get("BIGFARMA_ROLE");
-  const token = Cookies.get("BIGFARMA_ACCESS_TOKEN");
-  const [profileComplete, setProfileComplete] = useState(null);
-  const [loading, setLoading] = useState(true);
   const isFarmer = role === "farmer";
+  const { data: user, isLoading } = useUserProfile();
+  // Set when the setup flow finishes, so the dashboard shows straight away
+  // instead of waiting for the profile to refetch
+  const [setupFinished, setSetupFinished] = useState(false);
 
-  useEffect(() => {
-    const checkProfileCompletion = async () => {
-      if (token) {
-        try {
-          if (role === "farmer") {
-            const response = await axios.get(endpoints().users.get_farmer_profile, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-            setProfileComplete(Boolean(response.data?.full_name));
-          } else if (role === "consumer") {
-            const response = await axios.get(endpoints().users.get_consumer_profile, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-            setProfileComplete(Boolean(response.data?.first_name));
-          }
-        } catch (error) {
-          console.error("Error checking profile completion:", error);
-          setProfileComplete(false);
-        }
-      } else {
-        setProfileComplete(false);
-      }
-      setTimeout(() => {
-        setLoading(false);
-      }, 1500);
-    };
-    checkProfileCompletion();
-  }, [role, token]);
+  // Setup is done once the role's profile has a name. A failed profile request
+  // counts as not done, so the user can still go through setup.
+  const profileComplete =
+    setupFinished ||
+    Boolean(
+      isFarmer
+        ? user?.farmer_profile?.full_name
+        : user?.consumer_profile?.first_name
+    );
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <LoaderSpinner />
@@ -62,9 +39,9 @@ const Dashboard = () => {
 
   if (!profileComplete) {
     return isFarmer ? (
-      <FarmerProfileSetup onComplete={() => setProfileComplete(true)} />
+      <FarmerProfileSetup onComplete={() => setSetupFinished(true)} />
     ) : (
-      <ConsumerProfileSetup onComplete={() => setProfileComplete(true)} />
+      <ConsumerProfileSetup onComplete={() => setSetupFinished(true)} />
     );
   }
 

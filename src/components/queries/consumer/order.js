@@ -2,6 +2,7 @@ import {
   getOrderByIdHandler,
   getOrderIssuesHandler,
   getOrdersHandler,
+  getOrderStatisticsHandler,
   getOrderTimelineHandler,
 } from "@/services";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +11,14 @@ export const useConsumerOrders = ({ status, search } = {}) =>
   useQuery({
     queryKey: ["consumer-orders", { status, search }],
     queryFn: () => getOrdersHandler({ status, search }),
+  });
+
+// GET /orders/statistics/summary -> { data: { total_orders, pending_orders,
+// delivered_orders, cancelled_orders, total_spent, ... } }
+export const useConsumerOrderStats = () =>
+  useQuery({
+    queryKey: ["consumer-orders", "statistics"],
+    queryFn: async () => (await getOrderStatisticsHandler())?.data ?? {},
   });
 
 export const useConsumerOrderById = (order_id) =>

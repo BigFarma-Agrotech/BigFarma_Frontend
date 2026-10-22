@@ -1,14 +1,15 @@
 import { ORDER_STATUS } from "./mock";
 
-// API order status -> consumer-facing status. A "shipped" order is waiting for
-// the buyer to confirm delivery, which is when "Mark as delivered" applies.
+// API order status -> consumer-facing status. The backend only accepts
+// "Mark as delivered" (confirm-delivery) while an order is awaiting_confirmation.
 const STATUS_MAP = {
   pending: ORDER_STATUS.PLACED,
-  confirmed: ORDER_STATUS.SHIPPING,
-  shipped: ORDER_STATUS.AWAITING,
+  confirmed: ORDER_STATUS.PLACED,
+  shipping: ORDER_STATUS.SHIPPING,
+  awaiting_confirmation: ORDER_STATUS.AWAITING,
+  delivery_issue: ORDER_STATUS.ISSUE,
   delivered: ORDER_STATUS.DELIVERED,
   cancelled: ORDER_STATUS.CANCELLED,
-  refunded: ORDER_STATUS.CANCELLED,
 };
 
 /** Accepts a bare array or a list wrapped under orders/data/results/items. */

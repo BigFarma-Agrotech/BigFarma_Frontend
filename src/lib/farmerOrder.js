@@ -56,14 +56,20 @@ export const formatNaira = (value) => {
 // Status
 // ---------------------------------------------------------------------------
 
+// Matches the backend's OrderStatus enum; any other value is rejected with 422.
+// "delivered" and "delivery_issue" are set by the buyer (confirming delivery
+// credits the farmer's wallet), so farmers can't pick them.
 export const ORDER_STATUSES = [
-  { value: "pending", label: "Pending", color: "bg-yellow-100 text-yellow-700", chart: "#ffa725" },
-  { value: "confirmed", label: "Awaiting Confirmation", color: "bg-purple-100 text-purple-700", chart: "#ff8400" },
-  { value: "shipped", label: "Shipping In Progress", color: "bg-blue-100 text-blue-700", chart: "#3fdc7e" },
+  { value: "pending", label: "Pending", color: "bg-yellow-100 text-yellow-700", chart: "#ffa725", farmerCanSet: true },
+  { value: "confirmed", label: "Confirmed", color: "bg-purple-100 text-purple-700", chart: "#ff8400", farmerCanSet: true },
+  { value: "shipping", label: "Shipping In Progress", color: "bg-blue-100 text-blue-700", chart: "#3fdc7e", farmerCanSet: true },
+  { value: "awaiting_confirmation", label: "Awaiting Buyer Confirmation", color: "bg-sky-100 text-sky-700", chart: "#0ea5e9", farmerCanSet: true },
   { value: "delivered", label: "Delivered", color: "bg-green-100 text-green-700", chart: "#016130" },
-  { value: "cancelled", label: "Cancelled", color: "bg-red-100 text-red-700", chart: "#dc2626" },
-  { value: "refunded", label: "Refunded", color: "bg-gray-100 text-gray-700", chart: "#9ca3af" },
+  { value: "delivery_issue", label: "Delivery Issue", color: "bg-orange-100 text-orange-700", chart: "#ea580c" },
+  { value: "cancelled", label: "Cancelled", color: "bg-red-100 text-red-700", chart: "#dc2626", farmerCanSet: true },
 ];
+
+export const FARMER_STATUS_OPTIONS = ORDER_STATUSES.filter((s) => s.farmerCanSet);
 
 /** "Shipped" / "SHIPPED" / "shipped " -> "shipped" */
 export const normalizeOrderStatus = (status) =>
@@ -86,7 +92,7 @@ export const getOrderStatusChartColor = (status) =>
   findStatus(status)?.chart || "#6b7280";
 
 /** Orders in these states don't count toward revenue. */
-export const NON_REVENUE_STATUSES = ["cancelled", "refunded"];
+export const NON_REVENUE_STATUSES = ["cancelled"];
 
 // ---------------------------------------------------------------------------
 // Order field accessors
@@ -219,7 +225,7 @@ export const getSingleOrderPath = (order) =>
 export const isRevenueOrder = (order) =>
   !NON_REVENUE_STATUSES.includes(normalizeOrderStatus(order?.status));
 
-/** Sum of order totals, excluding cancelled / refunded orders. */
+/** Sum of order totals, excluding cancelled orders. */
 export const getOrdersRevenue = (orders) =>
   orders.reduce(
     (sum, order) => (isRevenueOrder(order) ? sum + (getOrderTotal(order) ?? 0) : sum),
