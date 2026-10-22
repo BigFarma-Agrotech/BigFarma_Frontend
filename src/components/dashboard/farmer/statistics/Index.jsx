@@ -19,8 +19,10 @@ const Statistics = () => {
   const walletQuery = useQuery(walletDashboardQuery);
 
   const orders = useMemo(() => extractOrders(ordersQuery.data), [ordersQuery.data]);
+  // Unpublished products are hidden from the marketplace, so they aren't "listed"
   const products = useMemo(
-    () => extractProducts(productsQuery.data),
+    () =>
+      extractProducts(productsQuery.data).filter((p) => p?.is_listed !== false),
     [productsQuery.data]
   );
 

@@ -7,12 +7,14 @@ import {
   useFarmerProducts,
   useDeleteFarmerProduct,
   useRestockFarmerProduct,
+  useUpdateFarmerProduct,
 } from "../../../hooks/useFarmerProducts";
 import AddProductModal from "./AddProductModal";
 import DeleteProductModal from "./DeleteProductModal";
 import RestockProductModal from "./RestockProductModal";
 import Button from "@/components/shared/Button";
 import { cn } from "@/lib/utils";
+import { parseApiError } from "@/lib/apiError";
 import {
   extractProducts,
   getProductImage,
@@ -44,28 +46,39 @@ const productImages = {
 const productFilterOptions = [
   { value: "all", label: "All" },
   { value: "active", label: "Active" },
-  { value: "draft", label: "Draft" },
+  { value: "unpublished", label: "Unpublished" },
   { value: "out_of_stock", label: "Out of stock" },
   { value: "pending", label: "Pending" },
 ];
 
-// "Out of stock" / "out_of_stock" / "Active" -> "out_of_stock" / "active"
-const normalizeStatus = (status) =>
-  String(status || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "_");
+const statusLabels = {
+  active: "Active",
+  unpublished: "Unpublished",
+  out_of_stock: "Out of stock",
+  pending: "Pending",
+};
+
+// The API has no single status field: unlisted products are hidden from the
+// marketplace, unapproved ones are awaiting review
+const getProductStatus = (product) => {
+  if (product.is_listed === false) return "unpublished";
+  if (product.is_approved === false) return "pending";
+  if (product.availability === "out_of_stock") return "out_of_stock";
+  return "active";
+};
 
 const statusBadgeClasses = {
   active: "bg-green-100 text-green-800",
-  draft: "bg-gray-100 text-gray-800",
+  unpublished: "bg-gray-100 text-gray-800",
   out_of_stock: "bg-red-100 text-red-800",
+  pending: "bg-yellow-100 text-yellow-800",
 };
 
 const MyProducts = () => {
   const { data: apiProducts, isLoading, error, refetch } = useFarmerProducts();
   const deleteMutation = useDeleteFarmerProduct();
   const restockMutation = useRestockFarmerProduct();
+  const listingMutation = useUpdateFarmerProduct();
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
@@ -91,7 +104,7 @@ const MyProducts = () => {
         ? `₦${parseFloat(product.price).toLocaleString()}`
         : "₦0",
       quantity: `${product.quantity || "0"} ${product.unit || ""}`.trim(),
-      status: product.status || "Active",
+      status: getProductStatus(product),
       originalData: product,
     }));
   }, [apiProducts]);
@@ -100,7 +113,7 @@ const MyProducts = () => {
   const filteredProducts = useMemo(() => {
     return transformedProducts.filter(
       (item) =>
-        (filter === "all" || normalizeStatus(item.status) === filter) &&
+        (filter === "all" || item.status === filter) &&
         (!searchTerm || item.product.toLowerCase().includes(searchTerm))
     );
   }, [transformedProducts, filter, searchTerm]);
@@ -167,6 +180,31 @@ const MyProducts = () => {
     setIsAddProductModalOpen(true);
   };
 
+  // Publishing lists the product on the marketplace; unpublishing hides it
+  const handleToggleListing = (item) => {
+    const publish = item.originalData?.is_listed === false;
+    listingMutation.mutate(
+      { productId: item.originalData?.id, productData: { is_listed: publish } },
+      {
+        onSuccess: () => {
+          toast.success(
+            publish
+              ? `${item.product} is now on the marketplace`
+              : `${item.product} is hidden from the marketplace`
+          );
+        },
+        onError: (error) => {
+          toast.error(
+            parseApiError(
+              error,
+              publish ? "Failed to publish product" : "Failed to unpublish product"
+            ).message
+          );
+        },
+      }
+    );
+  };
+
   const handleEditClick = (product) => {
     setEditingProduct(product.originalData);
     setIsAddProductModalOpen(true);
@@ -196,9 +234,14 @@ const MyProducts = () => {
               e.target.src = watermelon;
             }}
           />
-          <span className="text-sm font-medium text-gray-900">
+          <button
+            type="button"
+            onClick={() => handleEditClick(item)}
+            title="Edit product"
+            className="text-left text-sm font-medium text-gray-900 underline-offset-2 hover:text-primary hover:underline"
+          >
             {item.product}
-          </span>
+          </button>
         </div>
       ),
     },
@@ -224,11 +267,10 @@ const MyProducts = () => {
         <span
           className={cn(
             "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
-            statusBadgeClasses[normalizeStatus(item.status)] ||
-              "bg-blue-100 text-blue-800"
+            statusBadgeClasses[item.status] || "bg-blue-100 text-blue-800"
           )}
         >
-          {item.status}
+          {statusLabels[item.status] || item.status}
         </span>
       ),
     },
@@ -237,13 +279,31 @@ const MyProducts = () => {
       label: "Action",
       render: (item) => (
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleEditClick(item)}
-            className="rounded-lg bg-primary-subtle px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-green-100"
-          >
-            Edit
-          </button>
+          {(() => {
+            const isPublished = item.originalData?.is_listed !== false;
+            const isToggling =
+              listingMutation.isPending &&
+              listingMutation.variables?.productId === item.originalData?.id;
+            return (
+              <button
+                type="button"
+                onClick={() => handleToggleListing(item)}
+                disabled={isToggling}
+                className={cn(
+                  "whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                  isPublished
+                    ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    : "bg-primary-subtle text-primary hover:bg-green-100"
+                )}
+              >
+                {isToggling
+                  ? "Saving..."
+                  : isPublished
+                    ? "Unpublish"
+                    : "Publish"}
+              </button>
+            );
+          })()}
           <button
             type="button"
             onClick={() => handleRestockClick(item)}
