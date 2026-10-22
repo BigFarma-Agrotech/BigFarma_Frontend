@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import fileIcon from "@/assets/icons/fileIcon.png";
 import { endpoints } from "../../../config/endpoints";
 import { axios } from "../../../../lib/axios";
+import { parseApiError } from "@/lib/apiError";
 
 const IdentityVerification = ({ onNext }) => {
   const [file, setFile] = useState(null);
@@ -85,14 +86,8 @@ const IdentityVerification = ({ onNext }) => {
     } catch (error) {
       // Surface the failure and stay on this step.
       console.error("Error:", error);
-      if (axiosDefault.isAxiosError(error) && error.response) {
-        toast.error(
-          error.response.data?.detail ||
-            error.response.data?.message ||
-            "Upload failed. Please try again.",
-        );
-      } else if (axiosDefault.isAxiosError(error)) {
-        toast.error("Unable to connect to the server");
+      if (axiosDefault.isAxiosError(error)) {
+        toast.error(parseApiError(error, "Upload failed. Please try again.").message);
       } else {
         toast.error("Couldn't read the selected file. Please try another.");
       }
