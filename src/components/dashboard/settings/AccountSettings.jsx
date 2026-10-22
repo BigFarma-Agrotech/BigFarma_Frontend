@@ -6,6 +6,7 @@ import { endpoints } from "../../config/endpoints";
 import { axios } from "../../../lib/axios";
 import { parseApiError } from "@/lib/apiError";
 import { useUserProfile, userProfileKey } from "@/hooks/useUserProfile";
+import { useAccountContact } from "@/hooks/useAccountContact";
 import Button from "@/components/shared/Button";
 
 const EMPTY_FORM = {
@@ -103,6 +104,8 @@ const AccountSettings = () => {
   const isFarmer = role === "farmer";
   const queryClient = useQueryClient();
   const { data: user, isLoading } = useUserProfile();
+  // Email/phone already on the account are locked; only a missing one can be added
+  const account = useAccountContact();
 
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [profileImage, setProfileImage] = useState(""); // base64 data URL
@@ -237,7 +240,8 @@ const AccountSettings = () => {
 
   const labelClass = "mb-1.5 block text-sm font-medium text-gray-700";
   const fieldClass =
-    "h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-base text-gray-900 focus:border-primary-light focus:outline-none focus:ring-1 focus:ring-primary-light";
+    "h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-base text-gray-900 focus:border-primary-light focus:outline-none focus:ring-1 focus:ring-primary-light disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500";
+  const lockedNote = <p className="mt-1.5 text-xs text-gray-500">From your account</p>;
   const cardClass = "rounded-xl border border-gray-200 bg-white p-4 sm:p-6";
   const uploadButtonClass =
     "inline-flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-primary bg-white px-4 text-base font-medium text-primary transition-colors hover:bg-primary-subtle";
@@ -324,8 +328,10 @@ const AccountSettings = () => {
               autoComplete="email"
               value={formData.email}
               onChange={handleChange}
+              disabled={Boolean(account.email)}
               className={fieldClass}
             />
+            {account.email && lockedNote}
           </div>
 
           <div>
@@ -339,8 +345,10 @@ const AccountSettings = () => {
               autoComplete="tel"
               value={formData.phone}
               onChange={handleChange}
+              disabled={Boolean(account.phone)}
               className={fieldClass}
             />
+            {account.phone && lockedNote}
           </div>
 
           <div className="sm:col-span-2">

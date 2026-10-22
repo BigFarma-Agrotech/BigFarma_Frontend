@@ -15,6 +15,8 @@ function InputOtpForm(props) {
   // Email or phone number the code was sent to
   const identifier = location.state?.identifier || props.email || "";
   const [value, setValue] = useState("");
+  // All six boxes filled (an empty box in the middle is held as a space)
+  const isComplete = /^\d{6}$/.test(value);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -36,7 +38,7 @@ function InputOtpForm(props) {
   }
 
   const handleVerify = async () => {
-    if (value.length !== 6 || loading) return;
+    if (!isComplete || loading) return;
     setLoading(true);
     const result = await verifyOtp({
       identifier,
@@ -120,7 +122,7 @@ function InputOtpForm(props) {
         <Button
           onClick={handleVerify}
           className={primaryButtonClass}
-          disabled={value.length !== 6 || loading}
+          disabled={!isComplete || loading}
         >
           {loading ? "Verifying..." : "Verify Code"}
         </Button>
