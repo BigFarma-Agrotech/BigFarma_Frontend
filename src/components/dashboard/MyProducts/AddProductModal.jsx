@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axiosDefault from "axios";
 import { toast } from "react-toastify";
 import { ImagePlus, X } from "lucide-react";
 import { axios } from "../../../lib/axios";
 import { endpoints } from "../../config/endpoints";
 import Button from "@/components/shared/Button";
+import { parseApiError } from "@/lib/apiError";
+import { useUpdateFarmerProduct } from "../../../hooks/useFarmerProducts";
+import { splitQuantity } from "../../../lib/farmerOrder";
 import formHeader from "../../../assets/images/addProductHeader.webp";
 
 const initialFormData = {
@@ -38,14 +41,45 @@ const units = [
   "bundles",
 ];
 
+// Prefills the form from an existing product (edit) or starts empty (add).
+// Existing images are URLs and are sent back as-is to keep them.
+const toFormState = (product) => {
+  if (!product) return { form: initialFormData, previews: [] };
+  const images = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
+  return {
+    form: {
+      ...initialFormData,
+      name: product.name || "",
+      category: product.category || "",
+      ...splitQuantity(product.quantity),
+      price: product.price ?? "",
+      location: product.location || "",
+      description: product.description || "",
+      images,
+    },
+    previews: images,
+  };
+};
+
 const labelClass = "mb-1.5 block text-sm font-medium text-gray-700";
 const fieldClass =
   "h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary-light focus:outline-none focus:ring-1 focus:ring-primary-light";
 
-const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
+// Pass `product` (the API product) to edit it; leave it out to add a new one
+const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUpdated }) => {
+  const isEditing = Boolean(product);
+  const updateMutation = useUpdateFarmerProduct();
   const [formData, setFormData] = useState(initialFormData);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Start from the product being edited (or a blank form) each time it opens
+  useEffect(() => {
+    if (!isOpen) return;
+    const next = toFormState(product);
+    setFormData(next.form);
+    setImagePreviews(next.previews);
+  }, [isOpen, product]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -87,10 +121,55 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
     setImagePreviews([]);
   };
 
+  const handleUpdate = () => {
+    if (!formData.images.length) {
+      toast.error("Please keep at least one product image.");
+      return;
+    }
+    if (formData.description.trim().length < 20) {
+      toast.error("Description must be at least 20 characters long.");
+      return;
+    }
+
+    setIsLoading(true);
+    updateMutation.mutate(
+      {
+        productId: product.id,
+        productData: {
+          name: formData.name.trim(),
+          category: formData.category,
+          description: formData.description.trim(),
+          quantity: `${formData.quantity} ${formData.unit}`,
+          price: Number(formData.price),
+          location: formData.location.trim(),
+          images: formData.images,
+          // Products used to be created with a 100% discount by mistake, which
+          // priced them at ₦0; clear that, but keep any real discount
+          ...(Number(product.discount_percentage) >= 100 && { discount_percentage: 0 }),
+        },
+      },
+      {
+        onSuccess: (data) => {
+          toast.success("Product updated successfully!");
+          if (onProductUpdated) onProductUpdated(data);
+          else onClose();
+        },
+        onError: (error) => {
+          toast.error(parseApiError(error, "Unable to update product").message);
+        },
+        onSettled: () => setIsLoading(false),
+      }
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (isLoading) return;
+    if (isEditing) {
+      handleUpdate();
+      return;
+    }
     if (formData.name && formData.category && formData.location) {
       setIsLoading(true);
 
@@ -100,7 +179,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
         description: formData.description,
         quantity: `${formData.quantity} ${formData.unit}`,
         price: formData.price,
-        discount_percentage: 100,
+        discount_percentage: 0,
         location: formData.location,
         images: formData.images,
       };
@@ -165,11 +244,12 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
               id="add-product-title"
               className="text-lg font-bold text-gray-900 sm:text-xl"
             >
-              Add Your Produce to the Marketplace
+              {isEditing ? "Edit Product" : "Add Your Produce to the Marketplace"}
             </h2>
             <p className="mt-1 text-sm text-gray-600">
-              Showcase your fresh produce to buyers. Add clear details so they
-              know exactly what you&apos;re offering.
+              {isEditing
+                ? "Update the details buyers see for this product."
+                : "Showcase your fresh produce to buyers. Add clear details so they know exactly what you're offering."}
             </p>
           </div>
           <button
@@ -250,7 +330,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
                 className={fieldClass}
                 required
               >
-                {units.map((unit) => (
+                {(units.includes(formData.unit) ? units : [formData.unit, ...units]).map((unit) => (
                   <option key={unit} value={unit}>
                     {unit}
                   </option>
@@ -272,7 +352,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
                 onChange={handleInputChange}
                 placeholder="Enter minimum quantity"
                 className={fieldClass}
-                required
+                required={!isEditing}
                 min="0"
                 step="0.01"
               />
@@ -329,7 +409,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
           </div>
 
           <div>
-            <span className={labelClass}>Add Image</span>
+            <span className={labelClass}>{isEditing ? "Images" : "Add Image"}</span>
             <label
               htmlFor="images"
               className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 px-4 py-6 text-center transition-colors hover:border-primary-light"
@@ -355,7 +435,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
             {imagePreviews.length > 0 && (
               <div className="mt-4">
                 <p className="mb-2 text-sm font-medium text-gray-700">
-                  Selected Images:
+                  {isEditing ? "Product Images:" : "Selected Images:"}
                 </p>
                 <div className="flex flex-wrap gap-3">
                   {imagePreviews.map((preview, index) => (
@@ -390,7 +470,13 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading} className="h-10 py-0">
-              {isLoading ? "Adding Product..." : "Add Product"}
+              {isEditing
+                ? isLoading
+                  ? "Saving..."
+                  : "Save Changes"
+                : isLoading
+                  ? "Adding Product..."
+                  : "Add Product"}
             </Button>
           </div>
         </form>

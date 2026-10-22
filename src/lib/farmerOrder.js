@@ -190,6 +190,13 @@ export const getFirstImage = (...candidates) => {
 export const getOrderImage = (order) =>
   getFirstImage(order?.product_images, order?.product_image, order?.product?.images);
 
+/** Product quantity is stored as text, e.g. "50 kg" -> { quantity: "50", unit: "kg" }. */
+export const splitQuantity = (value) => {
+  const match = String(value ?? "").match(/^\s*([\d.]+)\s*(.*)$/);
+  if (!match) return { quantity: "", unit: "kg" };
+  return { quantity: match[1], unit: match[2].trim() || "kg" };
+};
+
 export const getProductImage = (product) =>
   getFirstImage(product?.images, product?.image, product?.image_url);
 

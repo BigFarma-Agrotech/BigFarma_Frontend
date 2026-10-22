@@ -48,27 +48,13 @@ export const farmerApi = {
     // FormData to JSON and the image files are dropped.
     return axios.post(endpoints().farmerProducts.create_product, formData);
   },
-  updateProduct: (productId, productData) => {
-    const formData = new FormData();
-
-    Object.keys(productData).forEach((key) => {
-      if (productData[key] !== undefined && productData[key] !== null) {
-        if (key === 'images' && Array.isArray(productData[key])) {
-          productData[key].forEach((image) => {
-            formData.append('images', image);
-          });
-        } else {
-          formData.append(key, productData[key]);
-        }
-      }
-    });
-
-    // Let the browser set multipart/form-data + boundary (see createProduct).
-    return axios.put(
+  // The backend's ProductUpdate is a JSON body with every field optional;
+  // images are URLs (kept) or base64 data URLs (new uploads)
+  updateProduct: (productId, productData) =>
+    axios.put(
       `${endpoints().farmerProducts.update_product}/${productId}`,
-      formData
-    );
-  },
+      productData
+    ),
   deleteProduct: (productId) =>
     axios.delete(`${endpoints().farmerProducts.delete_product}/${productId}`),
 

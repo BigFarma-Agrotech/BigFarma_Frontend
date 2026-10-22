@@ -13,7 +13,11 @@ import DeleteProductModal from "./DeleteProductModal";
 import RestockProductModal from "./RestockProductModal";
 import Button from "@/components/shared/Button";
 import { cn } from "@/lib/utils";
-import { extractProducts, getProductImage } from "../../../lib/farmerOrder";
+import {
+  extractProducts,
+  getProductImage,
+  splitQuantity,
+} from "../../../lib/farmerOrder";
 import filterIcon from "../../../assets/icons/filter.svg";
 
 // Fallback images
@@ -66,6 +70,8 @@ const MyProducts = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  // API product being edited in the product modal; null when adding
+  const [editingProduct, setEditingProduct] = useState(null);
 
   const [filter, setFilter] = useState("all");
   // Search term from the dashboard header (?q=...)
@@ -135,8 +141,11 @@ const MyProducts = () => {
   };
 
   const handleRestockConfirm = (productId, quantity) => {
+    // The backend stores quantity as text with its unit ("20 kg"); keep the
+    // product's existing unit
+    const { unit } = splitQuantity(selectedProduct?.originalData?.quantity);
     restockMutation.mutate(
-      { productId, quantity: parseInt(quantity) },
+      { productId, quantity: `${Number(quantity)} ${unit}` },
       {
         onSuccess: () => {
           toast.success("Product restocked successfully");
@@ -153,8 +162,23 @@ const MyProducts = () => {
     );
   };
 
-  const handleProductAdded = () => {
+  const openAddProduct = () => {
+    setEditingProduct(null);
+    setIsAddProductModalOpen(true);
+  };
+
+  const handleEditClick = (product) => {
+    setEditingProduct(product.originalData);
+    setIsAddProductModalOpen(true);
+  };
+
+  const closeProductModal = () => {
     setIsAddProductModalOpen(false);
+    setEditingProduct(null);
+  };
+
+  const handleProductSaved = () => {
+    closeProductModal();
     refetch();
   };
 
@@ -215,6 +239,13 @@ const MyProducts = () => {
         <div className="flex gap-2">
           <button
             type="button"
+            onClick={() => handleEditClick(item)}
+            className="rounded-lg bg-primary-subtle px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-green-100"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
             onClick={() => handleRestockClick(item)}
             className="rounded-lg bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-200"
           >
@@ -249,7 +280,7 @@ const MyProducts = () => {
       </p>
       {!hasProducts && (
         <Button
-          onClick={() => setIsAddProductModalOpen(true)}
+          onClick={openAddProduct}
           className="h-10 py-0"
         >
           Add New Product
@@ -314,7 +345,7 @@ const MyProducts = () => {
 
           {hasProducts && (
             <Button
-              onClick={() => setIsAddProductModalOpen(true)}
+              onClick={openAddProduct}
               className="h-10 py-0"
             >
               Add Product
@@ -337,8 +368,10 @@ const MyProducts = () => {
 
       <AddProductModal
         isOpen={isAddProductModalOpen}
-        onClose={() => setIsAddProductModalOpen(false)}
-        onProductAdded={handleProductAdded}
+        onClose={closeProductModal}
+        onProductAdded={handleProductSaved}
+        product={editingProduct}
+        onProductUpdated={handleProductSaved}
       />
 
       <DeleteProductModal
