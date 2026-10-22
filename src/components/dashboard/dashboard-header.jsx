@@ -1,18 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search, ShoppingCart, Bell, Menu } from "lucide-react";
 import Input from "../shared/Input";
 import Avatar from "../../assets/images/JohnDoe-avatar.jpg";
 import { useCart } from "../../hooks";
 import Cookies from "js-cookie";
-import { endpoints } from "../config/endpoints";
-import { axios } from "../../lib/axios";
+import {
+  useUserProfile,
+  getFirstName,
+  getProfilePicture,
+} from "@/hooks/useUserProfile";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function DashboardHeader({ onMenuClick }) {
   const role = Cookies.get("BIGFARMA_ROLE");
   const { getCartCount } = useCart();
-  const [profile, setProfile] = useState(null);
-  const token = Cookies.get("BIGFARMA_ACCESS_TOKEN");
+  const { data: user } = useUserProfile();
   const navigate = useNavigate();
   const location = useLocation();
   const searchTarget = role === "farmer" ? "/my-products" : "/marketplace";
@@ -29,37 +31,8 @@ export default function DashboardHeader({ onMenuClick }) {
     navigate(term ? `${searchTarget}?q=${encodeURIComponent(term)}` : searchTarget);
   };
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const url =
-        role === "farmer"
-          ? endpoints().users.get_farmer_profile
-          : role === "consumer"
-            ? endpoints().users.get_consumer_profile
-            : null;
-
-      if (!token || !url) {
-        setProfile(null);
-        return;
-      }
-
-      try {
-        const response = await axios.get(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setProfile(response.data);
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-        setProfile(null);
-      }
-    };
-    fetchProfile();
-  }, [role, token]);
-
-  const firstName =
-    profile?.full_name?.split(" ")[0] || profile?.first_name || "User";
+  // "" until the user has entered their name in profile setup or settings
+  const firstName = getFirstName(user);
   const cartCount = getCartCount();
 
   return (
@@ -77,7 +50,8 @@ export default function DashboardHeader({ onMenuClick }) {
 
           <div className="hidden md:block">
             <h1 className="text-lg font-medium text-gray-900">
-              Hello, {firstName} <span aria-hidden="true">👋</span>
+              {firstName ? `Hello, ${firstName}` : "Hello"}{" "}
+              <span aria-hidden="true">👋</span>
             </h1>
             {role && (
               <p className="text-sm text-gray-600">
@@ -137,14 +111,16 @@ export default function DashboardHeader({ onMenuClick }) {
 
           <div className="flex shrink-0 items-center gap-2">
             <img
-              src={profile?.profile_picture || Avatar}
+              src={getProfilePicture(user) || Avatar}
               alt="Avatar"
               className="h-9 w-9 rounded-full bg-gray-100 object-cover sm:h-10 sm:w-10"
             />
             <div className="hidden lg:block">
-              <span className="block text-sm font-bold text-gray-900">
-                {firstName}
-              </span>
+              {firstName && (
+                <span className="block text-sm font-bold text-gray-900">
+                  {firstName}
+                </span>
+              )}
               {role && (
                 <span className="text-xs capitalize text-gray-500">{role}</span>
               )}

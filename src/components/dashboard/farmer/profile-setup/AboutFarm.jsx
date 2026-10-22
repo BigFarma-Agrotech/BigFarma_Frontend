@@ -18,8 +18,11 @@ import fileIcon from "@/assets/icons/fileIcon.png";
 import { endpoints } from "../../../config/endpoints";
 import { axios } from "../../../../lib/axios";
 import { parseApiError } from "@/lib/apiError";
+import { useQueryClient } from "@tanstack/react-query";
+import { userProfileKey } from "@/hooks/useUserProfile";
 
 const AboutFarm = ({ onNext }) => {
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     farmName: "",
     location: "",
@@ -124,6 +127,8 @@ const AboutFarm = ({ onNext }) => {
       const data = res.data;
       if (res.status === 200 || res.status === 201) {
         toast.success(data?.message || "Saved successfully!");
+        // Settings reads the farm details from this query
+        queryClient.invalidateQueries({ queryKey: userProfileKey });
         onNext(data);
       } else {
         toast.error(data?.message || "Network error. Please try again.");

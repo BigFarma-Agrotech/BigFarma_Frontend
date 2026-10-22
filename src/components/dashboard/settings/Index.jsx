@@ -35,10 +35,12 @@ const AccountSettings = () => {
       </div>
 
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        {/* Stays in view while the form scrolls: under the fixed header
+            (h-16 / sm:h-20) on small screens, beside the form on lg */}
         <nav
           role="tablist"
           aria-label="Settings sections"
-          className="scroll-hide -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6 lg:mx-0 lg:w-72 lg:shrink-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0"
+          className="scroll-hide sticky top-16 z-20 -mx-4 flex gap-3 overflow-x-auto bg-gray-50 px-4 py-2 sm:top-20 sm:-mx-6 sm:px-6 lg:top-28 lg:mx-0 lg:w-72 lg:shrink-0 lg:flex-col lg:overflow-visible lg:bg-transparent lg:px-0 lg:py-0"
         >
           {sidebar.map((item) => {
             const isActive = item.path === path;
