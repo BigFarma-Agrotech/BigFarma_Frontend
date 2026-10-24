@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import RouteSeo from "./components/shared/RouteSeo";
 import Home from "./components/landing-page-sections/Home";
 
 // Everything except the landing page is loaded on demand, so the first visit
@@ -52,6 +53,7 @@ const PageLoader = () => (
 const authRoutes = [
   { path: "/sign-in", element: <SignIn /> },
   { path: "/sign-up", element: <SignUp /> },
+  { path: "/sign-up/:role", element: <SignUp /> },
   { path: "/forgot-password", element: <ForgotPassword /> },
   { path: "/otp", element: <InputOtp /> },
   { path: "/verify-otp", element: <VerifyOtp /> },
@@ -87,6 +89,7 @@ const dashboardRoutes = [
 const App = () => {
   return (
     <>
+      <RouteSeo />
       <ToastContainer position="top-right" autoClose={3000} />
       <ErrorBoundary>
         <Suspense fallback={<PageLoader />}>

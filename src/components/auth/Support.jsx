@@ -25,7 +25,7 @@ const options = [
   {
     label: "Email support",
     icon: <MdOutlineEmail {...iconProps} />,
-    href: "mailto:hello@bigfarma.com",
+    href: "mailto:support@bigfarma.ng",
   },
   {
     label: "Phone hotline",

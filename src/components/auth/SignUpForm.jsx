@@ -1,5 +1,5 @@
-import { useState, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useContext, useEffect } from "react";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
@@ -20,9 +20,19 @@ import {
 } from "./AuthUI";
 import { linkClass, primaryButtonClass } from "./authStyles";
 
+const ROLES = ["farmer", "consumer"];
+
 const SignUpForm = () => {
   const navigate = useNavigate();
-  const { role } = useContext(FocusContext);
+  const { role: roleParam } = useParams();
+  const { role: savedRole, setRole } = useContext(FocusContext);
+  // /sign-up/farmer and /sign-up/consumer set the role from the URL so they
+  // can be linked to (and indexed) directly
+  const role = ROLES.includes(roleParam) ? roleParam : savedRole;
+
+  useEffect(() => {
+    if (ROLES.includes(roleParam) && roleParam !== savedRole) setRole(roleParam);
+  }, [roleParam, savedRole, setRole]);
 
   // --- STATE ---
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -133,11 +143,21 @@ const SignUpForm = () => {
     navigate("/otp", { state: { identifier } });
   };
 
+  if (roleParam && !ROLES.includes(roleParam)) {
+    return <Navigate to="/role" replace />;
+  }
+
   // --- UI ---
   return (
     <AuthSplitLayout imageAlt="Sign up">
       <AuthHeader
-        title="Create an account"
+        title={
+          role === "farmer"
+            ? "Create a farmer account"
+            : role === "consumer"
+              ? "Create a consumer account"
+              : "Create an account"
+        }
         subtitle="Enter your details below to create your account and get started"
       />
 

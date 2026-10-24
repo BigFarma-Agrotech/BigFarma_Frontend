@@ -39,7 +39,7 @@ export function RoleSelectionForm() {
 
   const handleContinue = () => {
     if (role) {
-      navigate("/sign-up");
+      navigate(`/sign-up/${role}`);
     } else {
       toast.error("Please select a role first");
     }

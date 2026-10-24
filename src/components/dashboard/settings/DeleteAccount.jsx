@@ -45,7 +45,7 @@ const DeleteAccount = () => {
         <p className="text-sm text-gray-600">
           You’re about to start the process of deactivating your BigFarma
           account and your public profile will no longer be available on
-          BigFarma.com
+          bigfarma.ng.
         </p>
 
         <div className="space-y-3">

@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import process from "process";
 import { fileURLToPath } from "url";
+import seo from "./vite-plugin-seo.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,7 +28,7 @@ export default defineConfig(({ mode }) => {
   };
 
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), seo()],
     server: { proxy },
     preview: { proxy },
     build: {

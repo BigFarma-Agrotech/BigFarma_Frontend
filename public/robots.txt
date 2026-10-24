@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /orders
+Disallow: /marketplace
+Disallow: /group-buy
+Disallow: /cart
+Disallow: /checkout
+Disallow: /payment
+Disallow: /order-confirmation
+Disallow: /farmer-orders
+Disallow: /investment
+Disallow: /wallet
+Disallow: /transactions
+Disallow: /my-products
+Disallow: /settings
+
+Sitemap: https://bigfarma.ng/sitemap.xml

@@ -5,9 +5,8 @@ import { NavLink } from "react-router-dom";
 import { Link } from "react-scroll";
 import brandLogo from "../../assets/images/brand-logo.webp";
 import faceBook from "../../assets/images/Facebook.svg";
-import instagram from "../../assets/images/Instagram.svg";
-import x from "../../assets/images/X.svg";
-import linkedIn from "../../assets/images/LinkedIn.svg";
+import tikTok from "../../assets/images/TikTok.svg";
+import { SOCIAL_LINKS } from "../../lib/social";
 
 const companyLinks = [
   { id: "home", label: "Home" },
@@ -17,11 +16,16 @@ const companyLinks = [
   { id: "contact-us", label: "Contact Us" },
 ];
 
+const accountLinks = [
+  { to: "/sign-in", label: "Log In" },
+  { to: "/role", label: "Sign Up" },
+  { to: "/sign-up/farmer", label: "Sign Up as a Farmer" },
+  { to: "/sign-up/consumer", label: "Sign Up as a Consumer" },
+];
+
 const socialIcons = [
-  { src: linkedIn, alt: "LinkedIn" },
-  { src: x, alt: "X" },
-  { src: faceBook, alt: "Facebook" },
-  { src: instagram, alt: "Instagram" },
+  { src: tikTok, ...SOCIAL_LINKS.tiktok },
+  { src: faceBook, ...SOCIAL_LINKS.facebook },
 ];
 
 const Footer = () => {
@@ -50,7 +54,7 @@ const Footer = () => {
 
   return (
     <footer className="w-full bg-primary-dark text-white">
-      <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 md:py-16 lg:grid-cols-[1.5fr_1fr_1fr_1.5fr] lg:px-8">
+      <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 md:py-16 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1.5fr] lg:px-8">
         <div className="max-w-sm">
           <img
             src={brandLogo}
@@ -67,8 +71,17 @@ const Footer = () => {
           </p>
 
           <div className="flex flex-wrap gap-2">
-            {socialIcons.map(({ src, alt }) => (
-              <img key={alt} src={src} alt={alt} className="h-10 w-10" />
+            {socialIcons.map(({ src, label, url }) => (
+              <a
+                key={label}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`BigFarma on ${label}`}
+                className="rounded-md transition-opacity hover:opacity-80"
+              >
+                <img src={src} alt="" className="h-10 w-10" />
+              </a>
             ))}
           </div>
         </div>
@@ -87,6 +100,17 @@ const Footer = () => {
               >
                 {label}
               </Link>
+            ))}
+          </nav>
+        </div>
+
+        <div>
+          <h3 className="mb-6 text-lg font-semibold">Get Started</h3>
+          <nav aria-label="Account" className="flex flex-col gap-4">
+            {accountLinks.map(({ to, label }) => (
+              <NavLink key={to} to={to} className="w-fit hover:underline">
+                {label}
+              </NavLink>
             ))}
           </nav>
         </div>

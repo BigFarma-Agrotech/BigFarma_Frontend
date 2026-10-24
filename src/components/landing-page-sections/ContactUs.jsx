@@ -3,9 +3,9 @@ import { toast } from "react-toastify";
 import { submitContactMessage, FeatureUnavailableError } from "../../lib/pendingApi";
 import phoneIcon from "../../assets/icons/phone.svg";
 import mailIcon from "../../assets/icons/mail.svg";
-import instagramIcon from "../../assets/icons/instagram.svg";
-import linkedInIcon from "../../assets/icons/linkedin.svg";
+import tikTokIcon from "../../assets/icons/tiktok.svg";
 import facebookIcon from "../../assets/icons/facebook.svg";
+import { SOCIAL_LINKS } from "../../lib/social";
 
 const contactDetails = [
   {
@@ -17,12 +17,19 @@ const contactDetails = [
   {
     icon: mailIcon,
     label: "Email",
-    value: "hello@bigfarma.com",
-    href: "mailto:hello@bigfarma.com",
+    value: "support@bigfarma.ng",
+    href: "mailto:support@bigfarma.ng",
   },
-  { icon: instagramIcon, label: "Instagram", value: "bigfarma.ng" },
-  { icon: linkedInIcon, label: "LinkedIn", value: "bigfarma" },
-  { icon: facebookIcon, label: "Facebook", value: "bigfarma" },
+  ...[
+    { icon: tikTokIcon, ...SOCIAL_LINKS.tiktok },
+    { icon: facebookIcon, ...SOCIAL_LINKS.facebook },
+  ].map(({ icon, label, handle, url }) => ({
+    icon,
+    label,
+    value: handle,
+    href: url,
+    external: true,
+  })),
 ];
 
 const inputClass =
@@ -69,7 +76,7 @@ const ContactUs = () => {
       setForm(EMPTY_FORM);
     } catch (error) {
       if (error instanceof FeatureUnavailableError) {
-        toast.info(`${error.message} Please email us at hello@bigfarma.com.`);
+        toast.info(`${error.message} Please email us at support@bigfarma.ng.`);
       } else {
         toast.error("Couldn't send your message. Please try again.");
       }
@@ -94,14 +101,18 @@ const ContactUs = () => {
           {/* Contact details */}
           <aside className="order-2 bg-primary p-6 text-white sm:p-8 lg:order-1 lg:col-span-2 lg:p-10">
             <ul className="flex flex-col gap-5 text-base md:text-lg">
-              {contactDetails.map(({ icon, label, value, href }) => (
+              {contactDetails.map(({ icon, label, value, href, external }) => (
                 <li key={label} className="flex min-w-0 items-center gap-3">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white">
                     <img src={icon} alt="" aria-hidden="true" className="h-5 w-5" />
                   </span>
                   <span className="sr-only">{label}:</span>
                   {href ? (
-                    <a href={href} className="break-all hover:underline">
+                    <a
+                      href={href}
+                      {...(external && { target: "_blank", rel: "noopener noreferrer" })}
+                      className="break-all hover:underline"
+                    >
                       {value}
                     </a>
                   ) : (
