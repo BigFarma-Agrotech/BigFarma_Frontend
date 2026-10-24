@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 import { useCart } from "@/hooks";
 import { Button, Input } from "@/components/shared";
+import { createOrderHandler } from "@/services";
+import { parseApiError } from "@/lib/apiError";
+import { farmerOrderKeys } from "@/hooks/useFarmerOrder";
 
 const LABEL = "mb-1.5 block text-sm font-medium text-gray-700";
 const ERROR = "mt-1 text-sm text-red-600";
@@ -13,6 +18,7 @@ const fieldClass = (hasError) =>
 export default function CheckoutPage() {
   const { cartItems, getCartTotal } = useCart();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -84,17 +90,63 @@ export default function CheckoutPage() {
     }
 
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // The backend takes one order per product, so place them together. The
+    // contact details go with the address because the order has no other
+    // field for them and the farmer needs them to deliver.
+    const { firstName, lastName, phoneNumber, address } = formData;
+    const deliveryAddress = `${address.trim()} (Contact: ${firstName.trim()} ${lastName.trim()}, ${phoneNumber.trim()})`;
+    const results = await Promise.allSettled(
+      cartItems.map((item) =>
+        createOrderHandler({
+          product_id: item.id,
+          quantity_ordered: String(item.cartQuantity),
+          delivery_address: deliveryAddress,
+        })
+      )
+    );
+
+    const placed = [];
+    const failed = [];
+    results.forEach((result, i) => {
+      if (result.status === "fulfilled") {
+        placed.push({ item: cartItems[i], order: result.value?.data ?? result.value });
+      } else {
+        failed.push({ item: cartItems[i], error: result.reason });
+      }
+    });
+
+    queryClient.invalidateQueries({ queryKey: ["consumer-orders"] });
+    queryClient.invalidateQueries({ queryKey: farmerOrderKeys.all });
+
+    if (placed.length === 0) {
+      setIsSubmitting(false);
+      toast.error(parseApiError(failed[0].error, "Couldn't place your order. Please try again.").message);
+      return;
+    }
+    if (failed.length > 0) {
+      toast.warn(
+        `${failed.map(({ item }) => item.name).join(", ")} couldn't be ordered and ${
+          failed.length === 1 ? "is" : "are"
+        } still in your cart.`
+      );
+    }
+
+    const items = placed.map(({ item }) => item);
+    const placedSubtotal = items.reduce((sum, item) => sum + item.price * item.cartQuantity, 0);
+    const placedTax = placedSubtotal * taxRate;
 
     const orderData = {
-      orderId: `BF-${Math.floor(Math.random() * 100000)}`,
-      items: cartItems,
+      orderId: placed
+        .map(({ order }, i) => order?.order_number || (order?.id != null ? `#${order.id}` : `item ${i + 1}`))
+        .join(", "),
+      items,
       customerInfo: formData,
       totals: {
-        subtotal,
+        subtotal: placedSubtotal,
         deliveryFee,
-        tax: Math.round(tax),
-        total: Math.round(totalPayment),
+        tax: Math.round(placedTax),
+        total: Math.round(placedSubtotal + deliveryFee + placedTax),
       },
       timestamp: new Date().toISOString(),
     };

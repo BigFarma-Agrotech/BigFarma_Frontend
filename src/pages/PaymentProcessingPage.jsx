@@ -5,15 +5,15 @@ import { useCart } from "@/hooks";
 export default function PaymentProcessingPage() {
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
-  const { clearCart } = useCart();
-  // clearCart is re-created on every cart change; keep the latest in a ref so
-  // the timer effect doesn't restart when the cart is cleared.
-  const clearCartRef = useRef(clearCart);
+  const { removeFromCart } = useCart();
+  // removeFromCart is re-created on every cart change; keep the latest in a ref
+  // so the timer effect doesn't restart when items are removed.
+  const removeFromCartRef = useRef(removeFromCart);
   const finishedRef = useRef(false);
 
   useEffect(() => {
-    clearCartRef.current = clearCart;
-  }, [clearCart]);
+    removeFromCartRef.current = removeFromCart;
+  }, [removeFromCart]);
 
   useEffect(() => {
     if (!localStorage.getItem("bigfarma-order")) {
@@ -31,7 +31,13 @@ export default function PaymentProcessingPage() {
   useEffect(() => {
     if (progress < 100 || finishedRef.current) return;
     finishedRef.current = true;
-    clearCartRef.current();
+    // Items whose order failed stay in the cart so the buyer can retry them
+    try {
+      const { items = [] } = JSON.parse(localStorage.getItem("bigfarma-order")) || {};
+      items.forEach((item) => removeFromCartRef.current(item.id));
+    } catch {
+      // Nothing to remove if the saved order is unreadable
+    }
     navigate("/order-confirmation", { replace: true });
   }, [progress, navigate]);
 

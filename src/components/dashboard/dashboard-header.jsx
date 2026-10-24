@@ -10,6 +10,7 @@ import {
   getProfilePicture,
 } from "@/hooks/useUserProfile";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import NotificationBell from "./notification-bell";
 
 export default function DashboardHeader({ onMenuClick }) {
   const role = Cookies.get("BIGFARMA_ROLE");
@@ -96,18 +97,18 @@ export default function DashboardHeader({ onMenuClick }) {
             </Link>
           )}
 
-          <button
-            type="button"
-            className="relative shrink-0 p-1 focus:outline-none"
-            aria-label="Notifications"
-          >
-            <Bell className="h-5 w-5 text-[#8e8e93]" />
-            <span
-              className={`absolute right-1 top-1 h-2 w-2 rounded-full ${
-                role === "farmer" ? "bg-secondary" : "bg-primary-light"
-              }`}
-            ></span>
-          </button>
+          {role === "farmer" ? (
+            <NotificationBell />
+          ) : (
+            <button
+              type="button"
+              className="relative shrink-0 p-1 focus:outline-none"
+              aria-label="Notifications"
+            >
+              <Bell className="h-5 w-5 text-[#8e8e93]" />
+              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary-light"></span>
+            </button>
+          )}
 
           <div className="flex shrink-0 items-center gap-2">
             <img

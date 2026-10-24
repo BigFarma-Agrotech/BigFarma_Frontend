@@ -10,16 +10,23 @@ export const farmerOrderKeys = {
   detail: (id) => [...farmerOrderKeys.details(), id],
 };
 
-// Main hook for fetching orders
-export const useFarmerOrder = (filters = {}) => {
+// How often open farmer pages check for new orders
+export const FARMER_ORDERS_POLL_MS = 60 * 1000;
+
+// Main hook for fetching orders. Polls so new orders show up on the dashboard
+// (and in the notification bell) without a reload.
+export const useFarmerOrder = (filters = {}, { enabled = true } = {}) => {
   return useQuery({
     queryKey: farmerOrderKeys.list(filters),
     queryFn: async () => {
       const response = await farmerApi.getOrders();
       return response.data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled,
+    staleTime: 30 * 1000,
     gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchInterval: FARMER_ORDERS_POLL_MS,
+    refetchOnWindowFocus: true,
     retry: 2,
   });
 };

@@ -125,7 +125,7 @@ export default function OrderConfirmationPage() {
               {orderData.customerInfo.lastName}
             </p>
             <p>
-              <span className="text-gray-600">Phone:</span> +234{orderData.customerInfo.phoneNumber}
+              <span className="text-gray-600">Phone:</span> {orderData.customerInfo.phoneNumber}
             </p>
             {orderData.customerInfo.email && (
               <p>

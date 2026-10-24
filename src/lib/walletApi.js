@@ -25,6 +25,9 @@ export const walletDashboardQueryKey = ["walletDashboard"];
 export const walletDashboardQuery = {
   queryKey: walletDashboardQueryKey,
   queryFn: walletApi,
+  // Sales are credited on the server, so don't trust a long-cached balance
+  staleTime: 30 * 1000,
+  refetchOnWindowFocus: true,
 };
 
 /** Available balance as a number (0 when missing / unparseable). */
