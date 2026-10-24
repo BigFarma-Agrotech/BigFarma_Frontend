@@ -16,13 +16,18 @@ import {
   AuthDivider,
   AuthHeader,
   AuthSplitLayout,
-  CountryInput,
   FormField,
   PasswordInput,
   SocialButtons,
   SupportButton,
 } from "./AuthUI";
-import { linkClass, primaryButtonClass } from "./authStyles";
+import { cn } from "@/lib/utils";
+import {
+  inputClass,
+  inputErrorClass,
+  linkClass,
+  primaryButtonClass,
+} from "./authStyles";
 
 // Only follow in-app paths, never an absolute or protocol-relative URL
 const safeRedirect = (path) =>
@@ -31,7 +36,6 @@ const safeRedirect = (path) =>
     : null;
 
 const SignInForm = () => {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,7 +46,6 @@ const SignInForm = () => {
     loginData,
     errors,
     updateField,
-    updateCountry,
     validateField,
     validateForm,
     setFieldErrors,
@@ -60,15 +63,6 @@ const SignInForm = () => {
   if (isAuthenticated()) {
     return <Navigate to={redirectTo} replace />;
   }
-
-  const handleSelect = (country) => {
-    setDropdownOpen(false);
-    updateCountry(country);
-  };
-
-  const handleDropdownToggle = () => {
-    setDropdownOpen(!dropdownOpen);
-  };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -115,24 +109,19 @@ const SignInForm = () => {
       )}
 
       <form className="mt-8 space-y-5" onSubmit={handleFormSubmit} noValidate>
-        <FormField
-          label="Phone number or Email"
-          htmlFor="username"
-          error={errors.username}
-        >
-          <CountryInput
+        <FormField label="Email" htmlFor="username" error={errors.username}>
+          <input
             id="username"
             name="username"
+            type="email"
+            inputMode="email"
             autoComplete="username"
             value={loginData.username}
             onChange={(e) => updateField("username", e.target.value)}
             onBlur={() => validateField("username")}
             aria-invalid={Boolean(errors.username)}
-            placeholder="Your phone number or email"
-            dropdownOpen={dropdownOpen}
-            onToggle={handleDropdownToggle}
-            onSelect={handleSelect}
-            hasError={Boolean(errors.username)}
+            placeholder="you@example.com"
+            className={cn(inputClass, errors.username && inputErrorClass)}
           />
         </FormField>
 

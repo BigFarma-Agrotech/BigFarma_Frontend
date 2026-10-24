@@ -12,13 +12,20 @@ import {
   AuthDivider,
   AuthHeader,
   AuthSplitLayout,
-  CountryInput,
   FieldError,
   FormField,
   PasswordInput,
   SocialButtons,
 } from "./AuthUI";
-import { linkClass, primaryButtonClass } from "./authStyles";
+import { cn } from "@/lib/utils";
+import {
+  inputClass,
+  inputErrorClass,
+  linkClass,
+  primaryButtonClass,
+} from "./authStyles";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const ROLES = ["farmer", "consumer"];
 
@@ -35,8 +42,7 @@ const SignUpForm = () => {
   }, [roleParam, savedRole, setRole]);
 
   // --- STATE ---
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agree, setAgree] = useState(false);
@@ -44,23 +50,12 @@ const SignUpForm = () => {
   const [serverErrors, setServerErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // --- HANDLE DROPDOWN ---
-  const updateCountry = (country) => {
-    setDropdownOpen(false);
-    setTouched((prev) => ({ ...prev, country }));
-  };
-
-  const handleDropdownToggle = (e) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-    setDropdownOpen(!dropdownOpen);
-  };
-
   // --- VALIDATION ---
   const validateForm = () => {
     const newErrors = {};
-    if (!phoneNumber || phoneNumber.length < 10)
-      newErrors.phone = "Please enter a valid phone number or email address.";
+    // Email only for now; the phone number is added in profile setup
+    if (!EMAIL_RE.test(email.trim()))
+      newErrors.email = "Please enter a valid email address.";
     if (password.length < 8)
       newErrors.password = "Password must be at least 8 characters!";
     if (password !== confirmPassword)
@@ -90,7 +85,7 @@ const SignUpForm = () => {
 
     setTouched((prev) => ({
       ...prev,
-      phone: true,
+      email: true,
       password: true,
       confirmPassword: true,
       agree: true,
@@ -107,7 +102,7 @@ const SignUpForm = () => {
       return;
     }
 
-    const identifier = phoneNumber.trim();
+    const identifier = email.trim();
     setLoading(true);
     const result = await RegisterMutation({
       identifier,
@@ -118,10 +113,9 @@ const SignUpForm = () => {
     if (!result.isSuccess) {
       setLoading(false);
       // Show the server's validation messages under the matching inputs
-      const { email, phone_number, password: passwordError } =
-        result.fieldErrors;
+      const { email: emailError, password: passwordError } = result.fieldErrors;
       setServerErrors({
-        ...((email || phone_number) && { phone: email || phone_number }),
+        ...(emailError && { email: emailError }),
         ...(passwordError && { password: passwordError }),
       });
       toast.error(result.message);
@@ -162,26 +156,22 @@ const SignUpForm = () => {
       />
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
-        <FormField
-          label="Phone number or Email"
-          htmlFor="signup-username"
-          error={fieldError("phone")}
-        >
-          <CountryInput
+        <FormField label="Email" htmlFor="signup-username" error={fieldError("email")}>
+          <input
             id="signup-username"
             name="username"
+            type="email"
+            inputMode="email"
             autoComplete="username"
-            value={phoneNumber}
+            value={email}
             onChange={(e) => {
-              setPhoneNumber(e.target.value);
-              clearServerError("phone");
+              setEmail(e.target.value);
+              clearServerError("email");
             }}
-            onBlur={() => markTouched("phone")}
-            placeholder="Your phone number or email"
-            dropdownOpen={dropdownOpen}
-            onToggle={handleDropdownToggle}
-            onSelect={updateCountry}
-            hasError={Boolean(fieldError("phone"))}
+            onBlur={() => markTouched("email")}
+            aria-invalid={Boolean(fieldError("email"))}
+            placeholder="you@example.com"
+            className={cn(inputClass, fieldError("email") && inputErrorClass)}
           />
         </FormField>
 

@@ -3,24 +3,18 @@ import { useState } from "react";
 const initialLoginData = {
   username: "",
   password: "",
-  country: null,
   rememberMe: false,
 };
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const phoneRegex = /^\+?\d{7,15}$/;
 
 // Validation rules for each field. Returns an error message or "".
 const fieldValidators = {
   username: (value = "") => {
     const trimmed = value.trim();
-    if (!trimmed) return "Email or phone number is required";
-    const isEmail = emailRegex.test(trimmed);
-    const isPhone = phoneRegex.test(trimmed.replace(/\s/g, ""));
-    if (!isEmail && !isPhone) {
-      return "Please enter a valid email or phone number";
-    }
-    return "";
+    // Sign-in is email only for now; phone numbers are added in profile setup
+    if (!trimmed) return "Email is required";
+    return emailRegex.test(trimmed) ? "" : "Please enter a valid email address";
   },
   password: (value = "") => (value ? "" : "Password is required"),
 };
@@ -43,14 +37,6 @@ const useForm = () => {
         [field]: "",
       }));
     }
-  };
-
-  // Update country specifically
-  const updateCountry = (country) => {
-    setLoginData((prev) => ({
-      ...prev,
-      country: country,
-    }));
   };
 
   // Reset form to initial state
@@ -110,7 +96,6 @@ const useForm = () => {
 
     // Actions
     updateField,
-    updateCountry,
     resetForm,
     validateField,
     validateForm,
