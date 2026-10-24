@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, ShoppingCart, Bell, Menu } from "lucide-react";
+import { Search, ShoppingCart, Menu } from "lucide-react";
 import Input from "../shared/Input";
 import Avatar from "../../assets/images/JohnDoe-avatar.jpg";
 import { useCart } from "../../hooks";
@@ -97,18 +97,7 @@ export default function DashboardHeader({ onMenuClick }) {
             </Link>
           )}
 
-          {role === "farmer" ? (
-            <NotificationBell />
-          ) : (
-            <button
-              type="button"
-              className="relative shrink-0 p-1 focus:outline-none"
-              aria-label="Notifications"
-            >
-              <Bell className="h-5 w-5 text-[#8e8e93]" />
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary-light"></span>
-            </button>
-          )}
+          <NotificationBell role={role} />
 
           <div className="flex shrink-0 items-center gap-2">
             <img

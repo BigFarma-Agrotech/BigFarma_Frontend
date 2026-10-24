@@ -3,10 +3,12 @@ import { endpoints } from '../components/config/endpoints';
 
 // The shared axios instance attaches the Authorization header on every request.
 export const farmerApi = {
-  // Orders. The list route is `/orders/`: without the slash the backend
-  // answers with a redirect to its own host, which bypasses the proxy and is
-  // blocked by CORS.
-  getOrders: () => axios.get(`${endpoints().farmerOrders.orders}/`),
+  // Orders placed for this farmer's products, with the buyer's name and phone:
+  // { items: [...], total, skip, limit }. 100 is the backend's page maximum.
+  getOrders: () =>
+    axios.get(`${endpoints().farmerOrders.orders}/farmer/orders`, {
+      params: { limit: 100 },
+    }),
 
   getProductOrders: (productId) =>
     axios.get(`${endpoints().farmerOrders.orders}/${productId}`),

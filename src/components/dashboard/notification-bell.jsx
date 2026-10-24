@@ -1,25 +1,38 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
-import { useOrderNotifications } from "@/hooks/useOrderNotifications";
+import { useNotifications } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
-import {
-  formatNaira,
-  formatOrderDate,
-  getOrderId,
-  getOrderNumber,
-  getOrderProductName,
-  getOrderQuantity,
-  getOrderTotal,
-  getSingleOrderPath,
-} from "@/lib/farmerOrder";
 
-// Farmer's bell: lists new orders waiting to be confirmed. Opening it marks
-// them as read.
-export default function NotificationBell() {
-  const { newOrders, unreadCount, isUnread, markAllRead } = useOrderNotifications();
+const timeAgo = (iso) => {
+  const seconds = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (!Number.isFinite(seconds)) return "";
+  if (seconds < 60) return "Just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 7 * 86400) return `${Math.floor(seconds / 86400)}d ago`;
+  return new Date(iso).toLocaleDateString();
+};
+
+// Where a notification leads. They're about orders today, so open the
+// role's order list.
+const targetPath = (role) => (role === "farmer" ? "/farmer-orders" : "/orders");
+
+// Header bell for farmers and consumers, backed by /notifications
+export default function NotificationBell({ role }) {
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    isError,
+    refetch,
+    markRead,
+    markAllRead,
+    isMarkingAll,
+  } = useNotifications();
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!open) return;
@@ -35,16 +48,13 @@ export default function NotificationBell() {
     };
   }, [open]);
 
-  // Mark read when the list closes (however it closes), so the unread
-  // highlight stays visible while it's open
-  const markAllReadRef = useRef(markAllRead);
-  useEffect(() => {
-    markAllReadRef.current = markAllRead;
-  }, [markAllRead]);
-  useEffect(() => {
-    if (!open) return;
-    return () => markAllReadRef.current();
-  }, [open]);
+  const openNotification = (notification) => {
+    if (!notification.is_read) markRead(notification.id);
+    setOpen(false);
+    navigate(targetPath(role));
+  };
+
+  const badgeColor = role === "farmer" ? "bg-secondary" : "bg-primary-light";
 
   return (
     <div ref={containerRef} className="relative shrink-0">
@@ -55,14 +65,19 @@ export default function NotificationBell() {
         aria-haspopup="true"
         aria-label={
           unreadCount
-            ? `Notifications, ${unreadCount} new order${unreadCount === 1 ? "" : "s"}`
+            ? `Notifications, ${unreadCount} unread`
             : "Notifications"
         }
         className="relative p-1 focus:outline-none"
       >
         <Bell className="h-5 w-5 text-[#8e8e93]" />
         {unreadCount > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-secondary px-1 text-xs text-white">
+          <span
+            className={cn(
+              "absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs text-white",
+              badgeColor,
+            )}
+          >
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -71,40 +86,70 @@ export default function NotificationBell() {
       {open && (
         <div className="fixed inset-x-4 top-16 z-40 rounded-xl border border-gray-200 bg-white shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96">
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-            <h2 className="font-semibold text-gray-900">New orders</h2>
-            <Link
-              to="/farmer-orders"
-              onClick={() => setOpen(false)}
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              View all
-            </Link>
+            <h2 className="font-semibold text-gray-900">Notifications</h2>
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={() => markAllRead()}
+                disabled={isMarkingAll}
+                className="text-sm font-medium text-primary hover:underline disabled:opacity-50"
+              >
+                Mark all as read
+              </button>
+            )}
           </div>
 
-          {newOrders.length === 0 ? (
+          {isLoading ? (
+            <p className="px-4 py-8 text-center text-sm text-gray-500">Loading...</p>
+          ) : isError ? (
+            <div className="px-4 py-8 text-center text-sm text-red-600">
+              <p>Couldn&apos;t load notifications.</p>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="mt-1 font-medium text-primary underline"
+              >
+                Try again
+              </button>
+            </div>
+          ) : notifications.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-gray-500">
-              No new orders right now.
+              You&apos;re all caught up.
             </p>
           ) : (
             <ul className="max-h-96 divide-y divide-gray-100 overflow-y-auto">
-              {newOrders.map((order) => (
-                <li key={getOrderId(order)}>
-                  <Link
-                    to={getSingleOrderPath(order)}
-                    onClick={() => setOpen(false)}
+              {notifications.map((notification) => (
+                <li key={notification.id}>
+                  <button
+                    type="button"
+                    onClick={() => openNotification(notification)}
                     className={cn(
-                      "block px-4 py-3 hover:bg-gray-50",
-                      isUnread(order) && "bg-primary-subtle/40",
+                      "flex w-full gap-3 px-4 py-3 text-left hover:bg-gray-50",
+                      !notification.is_read && "bg-primary-subtle/40",
                     )}
                   >
-                    <p className="text-sm font-medium capitalize text-gray-900">
-                      {getOrderProductName(order)} &middot; {getOrderQuantity(order)}
-                    </p>
-                    <p className="mt-0.5 text-xs text-gray-500">
-                      {getOrderNumber(order)} &middot; {formatNaira(getOrderTotal(order))} &middot;{" "}
-                      {formatOrderDate(order)}
-                    </p>
-                  </Link>
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+                        notification.is_read ? "bg-transparent" : badgeColor,
+                      )}
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-gray-900">
+                        {notification.title}
+                      </span>
+                      {notification.message && (
+                        <span className="mt-0.5 block text-sm text-gray-600">
+                          {notification.message}
+                        </span>
+                      )}
+                      <span className="mt-1 block text-xs text-gray-400">
+                        {timeAgo(notification.created_at)}
+                        {!notification.is_read && <span className="sr-only"> (unread)</span>}
+                      </span>
+                    </span>
+                  </button>
                 </li>
               ))}
             </ul>
