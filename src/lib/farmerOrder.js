@@ -57,19 +57,26 @@ export const formatNaira = (value) => {
 // ---------------------------------------------------------------------------
 
 // Matches the backend's OrderStatus enum; any other value is rejected with 422.
-// "delivered" and "delivery_issue" are set by the buyer (confirming delivery
-// credits the farmer's wallet), so farmers can't pick them.
+// `color` is the compact pill used in dashboard tables; `badge` is the bordered
+// pill from the farmer order screens' design.
 export const ORDER_STATUSES = [
-  { value: "pending", label: "Pending", color: "bg-yellow-100 text-yellow-700", chart: "#ffa725", farmerCanSet: true },
-  { value: "confirmed", label: "Confirmed", color: "bg-purple-100 text-purple-700", chart: "#ff8400", farmerCanSet: true },
-  { value: "shipping", label: "Shipping In Progress", color: "bg-blue-100 text-blue-700", chart: "#3fdc7e", farmerCanSet: true },
-  { value: "awaiting_confirmation", label: "Awaiting Buyer Confirmation", color: "bg-sky-100 text-sky-700", chart: "#0ea5e9", farmerCanSet: true },
-  { value: "delivered", label: "Delivered", color: "bg-green-100 text-green-700", chart: "#016130" },
-  { value: "delivery_issue", label: "Delivery Issue", color: "bg-orange-100 text-orange-700", chart: "#ea580c" },
-  { value: "cancelled", label: "Cancelled", color: "bg-red-100 text-red-700", chart: "#dc2626", farmerCanSet: true },
+  { value: "pending", label: "Pending", color: "bg-yellow-100 text-yellow-700", badge: "border-[#6b4610] bg-[#ffe4bb] text-[#6b4610]", chart: "#ffa725" },
+  { value: "confirmed", label: "Confirmed", color: "bg-purple-100 text-purple-700", badge: "border-[#6b4610] bg-[#ffe4bb] text-[#6b4610]", chart: "#ff8400" },
+  { value: "shipping", label: "Shipping In Progress", color: "bg-blue-100 text-blue-700", badge: "border-[#2563eb] bg-[#d3dff9] text-[#2563eb]", chart: "#3fdc7e" },
+  { value: "awaiting_confirmation", label: "Awaiting Confirmation", color: "bg-sky-100 text-sky-700", badge: "border-[#5925dc] bg-[#f4f3ff] text-[#5925dc]", chart: "#0ea5e9" },
+  { value: "delivered", label: "Delivered", color: "bg-green-100 text-green-700", badge: "border-primary bg-[#ecfdf3] text-primary", chart: "#016130" },
+  { value: "delivery_issue", label: "Delivery Issue - Pending review", color: "bg-orange-100 text-orange-700", badge: "border-[#e02424] bg-[#fce9e9] text-[#e02424]", chart: "#ea580c" },
+  { value: "cancelled", label: "Cancelled", color: "bg-red-100 text-red-700", badge: "border-[#e02424] bg-[#fce9e9] text-[#e02424]", chart: "#dc2626" },
 ];
 
-export const FARMER_STATUS_OPTIONS = ORDER_STATUSES.filter((s) => s.farmerCanSet);
+// The one action a farmer can take from each status (mirrors the backend's
+// FARMER_STATUS_TRANSITIONS). Delivered and delivery_issue are reached only
+// through the buyer: confirming delivery credits the farmer's wallet.
+export const FARMER_NEXT_STATUS = {
+  pending: { status: "shipping", action: "Marked as Shipped" },
+  confirmed: { status: "shipping", action: "Marked as Shipped" },
+  shipping: { status: "awaiting_confirmation", action: "Delivered to Customer" },
+};
 
 /** "Shipped" / "SHIPPED" / "shipped " -> "shipped" */
 export const normalizeOrderStatus = (status) =>
@@ -88,6 +95,9 @@ export const getOrderStatusLabel = (status) =>
 export const getOrderStatusColor = (status) =>
   findStatus(status)?.color || "bg-gray-100 text-gray-700";
 
+export const getOrderStatusBadge = (status) =>
+  findStatus(status)?.badge || "border-gray-400 bg-gray-100 text-gray-700";
+
 export const getOrderStatusChartColor = (status) =>
   findStatus(status)?.chart || "#6b7280";
 
@@ -102,6 +112,12 @@ export const getOrderId = (order) => (order?.id != null ? String(order.id) : "")
 
 export const getOrderNumber = (order) =>
   order?.order_number || (order?.id != null ? `#${order.id}` : "—");
+
+/** "Order #BF2025…" heading used on the farmer order screens. */
+export const getOrderTitle = (order) => {
+  const number = getOrderNumber(order);
+  return `Order ${number.startsWith("#") ? number : `#${number}`}`;
+};
 
 export const getOrderTotal = (order) =>
   parseAmount(order?.total_price ?? order?.total_amount ?? order?.amount);
@@ -199,6 +215,23 @@ export const splitQuantity = (value) => {
 
 export const getProductImage = (product) =>
   getFirstImage(product?.images, product?.image, product?.image_url);
+
+// Listing state shown on the orders table: unlisted products are drafts.
+export const PRODUCT_STATUSES = [
+  { value: "active", label: "Active", badge: "bg-[#ecfdf3] text-[#027a48]", dot: "bg-[#12b76a]" },
+  { value: "draft", label: "Draft", badge: "bg-[#eee] text-[#6b7280]", dot: "bg-[#6b7280]" },
+  { value: "out_of_stock", label: "Out of stock", badge: "bg-[#fef2f2] text-[#e02424]", dot: "bg-[#e02424]" },
+];
+
+export const getProductStatus = (product) => {
+  const value =
+    product?.is_listed === false
+      ? "draft"
+      : product?.availability === "out_of_stock"
+        ? "out_of_stock"
+        : "active";
+  return PRODUCT_STATUSES.find((s) => s.value === value);
+};
 
 // ---------------------------------------------------------------------------
 // Routes  (FarmerOrderPage -> ProductOrdersPage -> SingleOrderPage)

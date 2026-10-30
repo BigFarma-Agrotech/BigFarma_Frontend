@@ -38,6 +38,7 @@ export const endpoints = () => {
     },
     farmerOrders: {
       orders: `/orders`,
+      farmer_orders: `/orders/farmer/orders`,
       update_order_status: `/orders`,
     },
     wallet: {

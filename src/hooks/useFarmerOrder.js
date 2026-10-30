@@ -14,12 +14,13 @@ export const farmerOrderKeys = {
 export const FARMER_ORDERS_POLL_MS = 60 * 1000;
 
 // Main hook for fetching orders. Polls so new orders show up on the dashboard
-// (and in the notification bell) without a reload.
+// (and in the notification bell) without a reload. `filters` are sent as query
+// params, e.g. { product_id: 42 }.
 export const useFarmerOrder = (filters = {}, { enabled = true } = {}) => {
   return useQuery({
     queryKey: farmerOrderKeys.list(filters),
     queryFn: async () => {
-      const response = await farmerApi.getOrders();
+      const response = await farmerApi.getOrders(filters);
       return response.data;
     },
     enabled,

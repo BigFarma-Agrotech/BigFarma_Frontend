@@ -1,255 +1,387 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, ShoppingBag } from "lucide-react";
-import DataTablePage from "../components/dashboard/farmer/components/farmer-table/dataTable";
-import { useFarmerOrder } from "../hooks/useFarmerOrder";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, ShoppingBag } from "lucide-react";
+import { useFarmerProducts } from "../hooks/useFarmerProducts";
+import Button from "@/components/shared/Button";
 import { cn } from "@/lib/utils";
 import {
-  ORDER_STATUSES,
-  extractOrders,
+  PRODUCT_STATUSES,
+  extractProducts,
   formatNaira,
-  getOrderStatusColor,
-  getOrderStatusLabel,
-  normalizeOrderStatus,
-  getOrderImage,
-  getOrderProductName,
-  getOrderQuantity,
-  getProductOrdersPath,
+  getProductImage,
+  getProductStatus,
+  parseAmount,
+  toProductRouteId,
 } from "../lib/farmerOrder";
-
-// Fallback images
-import eggs from "../assets/ProductImages/categories/Egg image.png";
-import onions from "../assets/ProductImages/onions.png";
 import watermelon from "../assets/ProductImages/watermelon.png";
-import carrot from "../assets/ProductImages/categories/Carrot image.png";
-import rice from "../assets/ProductImages/Rice.png";
-import tomatoes from "../assets/ProductImages/tomatoes.png";
-import vegetable from "../assets/ProductImages/categories/vegetables.png";
-import cassava from "../assets/ProductImages/cassava.png";
-import filterIcon from "../assets/icons/filter.svg";
 
-const productImages = {
-  Eggs: eggs,
-  Onions: onions,
-  Watermelon: watermelon,
-  Carrot: carrot,
-  Rice: rice,
-  Tomatoes: tomatoes,
-  Vegetable: vegetable,
-  Cassava: cassava,
-};
+const PAGE_SIZE = 8;
 
-const orderFilterOptions = [
+const filterOptions = [
   { label: "All", value: "all" },
-  ...ORDER_STATUSES.map(({ value, label }) => ({ value, label })),
+  ...PRODUCT_STATUSES.map(({ value, label }) => ({ value, label })),
 ];
 
+const statusOrder = PRODUCT_STATUSES.map((s) => s.value);
+
+// Sort accessors for the sortable columns (the ones with an arrow in the header)
+const sorters = {
+  id: (p) => p.id,
+  price: (p) => p.price,
+  quantity: (p) => parseAmount(p.quantity) ?? 0,
+  orders: (p) => p.orders,
+  status: (p) => statusOrder.indexOf(p.status.value),
+};
+
+const columns = [
+  { key: "name", label: "Product Name", align: "left" },
+  { key: "id", label: "Product I.D", sortable: true },
+  { key: "price", label: "Price", sortable: true },
+  { key: "quantity", label: "Quantity", sortable: true },
+  { key: "orders", label: "Orders", sortable: true },
+  { key: "status", label: "Status", sortable: true, align: "left" },
+  { key: "action", label: "Action", align: "left" },
+];
+
+/** [1, 2, 3, "…", 8, 9, 10] style page list, like the design's pagination. */
+const getPageNumbers = (page, pageCount) => {
+  if (pageCount <= 7) return Array.from({ length: pageCount }, (_, i) => i + 1);
+  const pages = new Set([1, 2, 3, pageCount - 2, pageCount - 1, pageCount, page - 1, page, page + 1]);
+  const sorted = [...pages].filter((p) => p >= 1 && p <= pageCount).sort((a, b) => a - b);
+  return sorted.flatMap((p, i) => (i > 0 && p - sorted[i - 1] > 1 ? ["…", p] : [p]));
+};
+
+const ProductStatusBadge = ({ status }) => (
+  <span
+    className={cn(
+      "inline-flex items-center gap-1.5 whitespace-nowrap rounded-2xl py-0.5 pl-1.5 pr-2 text-xs font-bold leading-[18px]",
+      status.badge
+    )}
+  >
+    <span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} aria-hidden="true" />
+    {status.label}
+  </span>
+);
+
 const FarmerOrderPage = () => {
-  const { data: apiOrders, isLoading, error, refetch } = useFarmerOrder();
+  const { data: apiProducts, isLoading, error, refetch } = useFarmerProducts();
 
   const [filter, setFilter] = useState("all");
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [sort, setSort] = useState(null); // { key, direction: "asc" | "desc" }
+  const [page, setPage] = useState(1);
 
-  const transformedOrders = useMemo(() => {
-    return extractOrders(apiOrders).map((order, index) => {
-      const productName = getOrderProductName(order);
-      const productImage =
-        getOrderImage(order) || productImages[productName] || watermelon;
-
-      return {
-        id: order.id?.toString() || `order-${index}`,
-        productOrdersPath: getProductOrdersPath(order),
-        images: productImage,
-        product: productName,
-        productID: order.order_number || `#ORDER${order.id || index}`,
-        price: formatNaira(order.total_price),
-        quantity: String(getOrderQuantity(order)),
-        orders: 1,
-        status: normalizeOrderStatus(order.status),
-        originalData: order,
-      };
-    });
-  }, [apiOrders]);
-
-  const filteredOrders = useMemo(() => {
-    if (filter === "all") return transformedOrders;
-    return transformedOrders.filter((order) => order.status === filter);
-  }, [filter, transformedOrders]);
-
-  const currentFilterLabel =
-    orderFilterOptions.find((opt) => opt.value === filter)?.label || "Filter";
-
-  const handleFilterSelect = (value) => {
-    setFilter(value);
-    setIsFilterDropdownOpen(false);
-  };
-
-  const orderColumns = [
-    {
-      key: "product",
-      label: "Product",
-      render: (order) => (
-        <div className="flex items-center gap-3">
-          <img
-            src={order.images}
-            alt={order.product}
-            className="h-10 w-10 shrink-0 rounded-lg object-cover"
-            onError={(e) => {
-              e.target.src = watermelon;
-            }}
-          />
-          <div>
-            <span className="block text-sm font-medium text-gray-900">
-              {order.product}
-            </span>
-            <span className="block text-xs text-gray-500">
-              {order.originalData.farm_name || "Farm"}
-            </span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "productID",
-      label: "Order Number",
-      render: (order) => <span className="text-gray-500">{order.productID}</span>,
-    },
-    {
-      key: "price",
-      label: "Total Price",
-      render: (order) => (
-        <span className="font-medium text-gray-900">{order.price}</span>
-      ),
-    },
-    {
-      key: "quantity",
-      label: "Quantity",
-      render: (order) => <span className="text-gray-500">{order.quantity}</span>,
-    },
-    {
-      key: "orders",
-      label: "Orders",
-      render: (order) => <span className="text-gray-500">{order.orders}</span>,
-    },
-    {
-      key: "status",
-      label: "Status",
-      render: (order) => (
-        <span
-          className={cn(
-            "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
-            getOrderStatusColor(order.status)
-          )}
-        >
-          {getOrderStatusLabel(order.status)}
-        </span>
-      ),
-    },
-    {
-      key: "actions",
-      label: "Action",
-      render: (order) => (
-        <Link
-          to={order.productOrdersPath}
-          state={{ order: order.originalData }}
-          className="inline-flex rounded-lg bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-200"
-        >
-          View
-        </Link>
-      ),
-    },
-  ];
-
-  const hasNoOrders = transformedOrders.length === 0;
-
-  const emptyOrdersState = (
-    <div className="flex flex-col items-center justify-center text-center">
-      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
-        <ShoppingBag className="h-10 w-10 text-gray-400" aria-hidden="true" />
-      </div>
-      <h3 className="mb-2 text-lg font-medium text-gray-900">
-        {hasNoOrders ? "No Orders Yet" : "No Orders Match Filter"}
-      </h3>
-      <p className="mb-4 max-w-md text-sm text-gray-600">
-        {hasNoOrders
-          ? "You don't have any orders at the moment. When customers place orders for your products, they will appear here."
-          : "No orders match your current filter. Try changing the filter to see more orders."}
-      </p>
-      {hasNoOrders && (
-        <Link
-          to="/my-products"
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-base font-medium text-white transition-colors hover:bg-primary-dark"
-        >
-          Go to My Products
-        </Link>
-      )}
-    </div>
+  const products = useMemo(
+    () =>
+      extractProducts(apiProducts).map((product) => ({
+        id: product.id,
+        name: product.name || "Unnamed product",
+        image: getProductImage(product) || watermelon,
+        price: parseAmount(product.price) ?? 0,
+        quantity: product.quantity ?? "—",
+        orders: product.order_count ?? 0,
+        status: getProductStatus(product),
+      })),
+    [apiProducts]
   );
 
+  const totalOrders = products.reduce((sum, p) => sum + p.orders, 0);
+
+  const visibleProducts = useMemo(() => {
+    const filtered =
+      filter === "all" ? products : products.filter((p) => p.status.value === filter);
+    if (!sort) return filtered;
+    const value = sorters[sort.key];
+    const direction = sort.direction === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => (value(a) - value(b)) * direction);
+  }, [products, filter, sort]);
+
+  const pageCount = Math.max(1, Math.ceil(visibleProducts.length / PAGE_SIZE));
+  const pageRows = visibleProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Back to the first page whenever the rows change shape
+  useEffect(() => setPage(1), [filter, sort]);
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
+  const toggleSort = (key) =>
+    setSort((current) =>
+      current?.key === key
+        ? { key, direction: current.direction === "desc" ? "asc" : "desc" }
+        : { key, direction: "desc" }
+    );
+
+  const currentFilterLabel = filterOptions.find((o) => o.value === filter)?.label;
+
+  const renderCell = (product, key) => {
+    switch (key) {
+      case "name":
+        return (
+          <div className="flex items-center gap-3">
+            <img
+              src={product.image}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-full object-cover drop-shadow-[0px_4px_2px_rgba(0,0,0,0.25)]"
+              onError={(e) => {
+                e.currentTarget.src = watermelon;
+              }}
+            />
+            <span className="whitespace-normal font-medium text-[#101828]">{product.name}</span>
+          </div>
+        );
+      case "id":
+        return `#${product.id}`;
+      case "price":
+        return formatNaira(product.price);
+      case "quantity":
+        return product.quantity;
+      case "orders":
+        return product.orders;
+      case "status":
+        return <ProductStatusBadge status={product.status} />;
+      case "action":
+        return (
+          <Link
+            to={`/farmer-orders/${toProductRouteId(product.id)}`}
+            className="inline-flex rounded-2xl bg-[#acd7f8] px-2 py-0.5 font-semibold leading-[18px] text-[#175cd3] transition-colors hover:bg-[#92c8f3] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#175cd3]"
+          >
+            View
+          </Link>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const renderBody = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center gap-3 py-12 text-sm text-gray-600">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <span>Loading orders...</span>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="p-6 text-center">
+          <p className="mb-4 text-sm text-red-600">
+            <strong>Error loading orders:</strong>{" "}
+            {error.response?.data?.detail || error.message}
+          </p>
+          <Button onClick={() => refetch()} className="h-10 py-0">
+            Try Again
+          </Button>
+        </div>
+      );
+    }
+
+    if (visibleProducts.length === 0) {
+      const hasNoProducts = products.length === 0;
+      return (
+        <div className="flex flex-col items-center px-4 py-12 text-center">
+          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
+            <ShoppingBag className="h-10 w-10 text-gray-400" aria-hidden="true" />
+          </div>
+          <h3 className="mb-2 text-lg font-medium text-gray-900">
+            {hasNoProducts ? "No Products Yet" : "No Products Match Filter"}
+          </h3>
+          <p className="mb-4 max-w-md text-sm text-gray-600">
+            {hasNoProducts
+              ? "Orders are grouped by product. Add a product and its orders will appear here."
+              : "Try changing the filter to see more products."}
+          </p>
+          {hasNoProducts && (
+            <Link
+              to="/my-products"
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-base font-medium text-white transition-colors hover:bg-primary-dark"
+            >
+              Go to My Products
+            </Link>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <div className="@container overflow-x-auto px-0 pt-6 lg:px-6">
+          <table className="w-full min-w-[880px]">
+            <thead>
+              <tr>
+                {columns.map((column) => {
+                  const isSorted = sort?.key === column.key;
+                  const SortIcon = isSorted && sort.direction === "asc" ? ArrowUp : ArrowDown;
+                  return (
+                    <th
+                      key={column.key}
+                      scope="col"
+                      aria-sort={
+                        isSorted ? (sort.direction === "asc" ? "ascending" : "descending") : undefined
+                      }
+                      className={cn(
+                        "whitespace-nowrap border-b border-[#eaecf0] px-3 py-3 text-base font-bold @5xl:px-6 @5xl:text-lg text-[#374151]",
+                        column.align === "left" ? "text-left" : "text-center"
+                      )}
+                    >
+                      {column.sortable ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleSort(column.key)}
+                          className="inline-flex items-center gap-1 focus:outline-none focus-visible:underline"
+                        >
+                          {column.label}
+                          <SortIcon
+                            className={cn("h-4 w-4 shrink-0", isSorted ? "text-[#374151]" : "text-[#667085]")}
+                            aria-hidden="true"
+                          />
+                        </button>
+                      ) : (
+                        column.label
+                      )}
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {pageRows.map((product) => (
+                <tr key={product.id} className="h-[72px] hover:bg-gray-50">
+                  {columns.map((column) => (
+                    <td
+                      key={column.key}
+                      className={cn(
+                        "whitespace-nowrap border-b border-[#eaecf0] px-3 py-4 text-base font-medium @5xl:px-6 text-[#374151]",
+                        column.align === "left" ? "text-left" : "text-center"
+                      )}
+                    >
+                      {renderCell(product, column.key)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <nav
+          aria-label="Pagination"
+          className="flex items-center justify-between gap-2 px-4 pb-4 pt-3 sm:px-6"
+        >
+          <button
+            type="button"
+            onClick={() => setPage((p) => p - 1)}
+            disabled={page === 1}
+            className="inline-flex items-center gap-2 rounded-lg border border-[#d0d5dd] bg-white px-3.5 py-2 text-sm font-bold text-[#344054] shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <ArrowLeft className="h-5 w-5 text-primary" aria-hidden="true" />
+            <span className="hidden sm:inline">Previous</span>
+          </button>
+
+          <ol className="flex items-center gap-0.5">
+            {getPageNumbers(page, pageCount).map((p, i) =>
+              p === "…" ? (
+                <li key={`gap-${i}`} className="flex h-10 w-10 items-center justify-center text-sm font-bold text-[#667085]">
+                  …
+                </li>
+              ) : (
+                <li key={p}>
+                  <button
+                    type="button"
+                    onClick={() => setPage(p)}
+                    aria-current={p === page ? "page" : undefined}
+                    className={cn(
+                      "h-10 w-10 rounded-lg text-sm font-bold",
+                      p === page
+                        ? "bg-[#e6efea] text-[#01582c]"
+                        : "text-[#667085] hover:bg-gray-50"
+                    )}
+                  >
+                    {p}
+                  </button>
+                </li>
+              )
+            )}
+          </ol>
+
+          <button
+            type="button"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={page === pageCount}
+            className="inline-flex items-center gap-2 rounded-lg border border-[#d0d5dd] bg-white px-3.5 py-2 text-sm font-bold text-[#344054] shadow-[0px_1px_2px_0px_rgba(16,24,40,0.05)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className="hidden sm:inline">Next</span>
+            <ArrowRight className="h-5 w-5 text-primary" aria-hidden="true" />
+          </button>
+        </nav>
+      </>
+    );
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
-            My Orders
-          </h1>
-          <span className="rounded-full bg-primary-subtle px-2.5 py-0.5 text-xs font-medium text-primary">
-            {filteredOrders.length}{" "}
-            {filteredOrders.length === 1 ? "Order" : "Orders"}
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-[#111827]">Orders</h1>
+          <span className="rounded-2xl bg-[#e6efea] px-2 py-0.5 text-xs font-bold leading-[18px] text-[#014522]">
+            {totalOrders}
           </span>
         </div>
 
-        <div className="relative self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => setIsFilterDropdownOpen((open) => !open)}
-            aria-haspopup="listbox"
-            aria-expanded={isFilterDropdownOpen}
-            className="flex h-10 min-w-[140px] items-center gap-2 rounded-lg border border-primary bg-white px-4 text-sm font-medium text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-light"
-          >
-            <img src={filterIcon} alt="" className="h-4 w-4" />
-            <span className="flex-1 text-left">{currentFilterLabel}</span>
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 transition-transform",
-                isFilterDropdownOpen && "rotate-180"
-              )}
-              aria-hidden="true"
-            />
-          </button>
+        <div className="flex items-center gap-1.5">
+          <span id="orders-filter-label" className="text-sm text-neutral">
+            Filter:
+          </span>
+          <div className="relative w-full sm:w-[329px]">
+            <button
+              type="button"
+              onClick={() => setIsFilterOpen((open) => !open)}
+              aria-haspopup="listbox"
+              aria-expanded={isFilterOpen}
+              aria-labelledby="orders-filter-label"
+              className="flex w-full items-center justify-between rounded-lg border border-[#e6e6e6] bg-white p-3.5 text-base font-medium tracking-[0.16px] text-grey-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-light"
+            >
+              {currentFilterLabel}
+              <ChevronDown
+                className={cn("h-5 w-5 transition-transform", isFilterOpen && "rotate-180")}
+                aria-hidden="true"
+              />
+            </button>
 
-          {isFilterDropdownOpen && (
-            <div className="absolute left-0 z-30 mt-1 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg sm:left-auto sm:right-0">
-              {orderFilterOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleFilterSelect(option.value)}
-                  className={cn(
-                    "flex w-full items-center px-4 py-2 text-left text-sm",
-                    filter === option.value
-                      ? "bg-primary-subtle text-primary"
-                      : "text-gray-700 hover:bg-gray-100"
-                  )}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          )}
+            {isFilterOpen && (
+              <ul
+                role="listbox"
+                aria-labelledby="orders-filter-label"
+                className="absolute right-0 z-30 mt-1 w-full rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+              >
+                {filterOptions.map((option) => (
+                  <li key={option.value} role="option" aria-selected={filter === option.value}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilter(option.value);
+                        setIsFilterOpen(false);
+                      }}
+                      className={cn(
+                        "w-full px-4 py-2 text-left text-sm",
+                        filter === option.value
+                          ? "bg-primary-subtle text-primary"
+                          : "text-gray-700 hover:bg-gray-100"
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
 
-      <DataTablePage
-        title="orders"
-        data={filteredOrders}
-        isLoading={isLoading}
-        error={error}
-        refetch={refetch}
-        columns={orderColumns}
-        emptyState={emptyOrdersState}
-        hideHeader
-      />
+      <div className="bg-white">{renderBody()}</div>
     </div>
   );
 };

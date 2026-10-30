@@ -5,16 +5,15 @@ import { endpoints } from '../components/config/endpoints';
 export const farmerApi = {
   // Orders placed for this farmer's products, with the buyer's name and phone:
   // { items: [...], total, skip, limit }. 100 is the backend's page maximum.
-  getOrders: () =>
-    axios.get(`${endpoints().farmerOrders.orders}/farmer/orders`, {
-      params: { limit: 100 },
+  // Pass { product_id } to get one product's orders.
+  getOrders: (params = {}) =>
+    axios.get(endpoints().farmerOrders.farmer_orders, {
+      params: { limit: 100, ...params },
     }),
 
-  getProductOrders: (productId) =>
-    axios.get(`${endpoints().farmerOrders.orders}/${productId}`),
-
+  // One of this farmer's orders, including the buyer's contact details
   getOrder: (orderId) =>
-    axios.get(`${endpoints().farmerOrders.orders}/${orderId}`),
+    axios.get(`${endpoints().farmerOrders.farmer_orders}/${orderId}`),
 
   updateOrderStatus: (orderId, statusData) =>
     axios.put(

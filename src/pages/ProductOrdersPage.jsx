@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
 import { useFarmerOrder } from "../hooks/useFarmerOrder";
 import { useFarmerProducts } from "../hooks/useFarmerProducts";
+import OrderStatusPill from "../components/dashboard/farmer/components/OrderStatusPill";
 import { cn } from "@/lib/utils";
 import {
   extractOrders,
@@ -13,108 +13,68 @@ import {
   getOrderBuyerName,
   getOrderId,
   getOrderImage,
-  getOrderNumber,
-  getOrderProductId,
   getOrderProductName,
   getOrderQuantity,
-  getOrderStatusColor,
-  getOrderStatusLabel,
+  getOrderTitle,
   getProductImage,
+  getProductStatus,
   getSingleOrderPath,
-  normalizeOrderStatus,
 } from "../lib/farmerOrder";
 import watermelon from "../assets/ProductImages/watermelon.png";
 
-const productStatusClasses = {
-  active: "bg-green-100 text-green-800",
-  draft: "bg-gray-100 text-gray-800",
-};
+const cardClass = "rounded-lg bg-white p-5";
 
-const cardClass = "rounded-xl border border-gray-200 bg-white p-4 sm:p-6";
+const outlineButtonClass =
+  "inline-flex shrink-0 items-center justify-center rounded-lg border border-primary bg-white px-4 py-2 text-sm font-medium leading-none text-primary transition-colors hover:bg-primary-subtle";
 
-const BackToOrders = () => (
-  <Link
-    to="/farmer-orders"
-    className="inline-flex h-10 items-center justify-center rounded-lg border border-primary bg-white px-4 text-base font-medium text-primary transition-colors hover:bg-primary-subtle"
-  >
-    Back to Orders
+const BackToOrders = ({ children = "Back" }) => (
+  <Link to="/farmer-orders" className={outlineButtonClass}>
+    {children}
   </Link>
 );
 
 const StateCard = ({ children }) => (
-  <div
-    className={cn(cardClass, "flex flex-col items-center gap-4 py-12 text-center")}
-  >
+  <div className={cn(cardClass, "flex flex-col items-center gap-4 py-12 text-center")}>
     {children}
   </div>
 );
 
+const TIPS = [
+  "Update order status as soon as items leave your farm.",
+  "Encourage buyers to confirm delivery quickly to avoid delays.",
+  "Use the issue button if there is a delivery dispute.",
+];
+
 const ProductOrdersPage = () => {
-  // Route param is "product-<id>" (built by getProductOrdersPath in lib/farmerOrder)
+  // Route param is "product-<id>" (built by toProductRouteId in lib/farmerOrder)
   const { productId: routeProductId } = useParams();
-  const location = useLocation();
-  const stateOrder = location.state?.order;
   const productId = fromProductRouteId(routeProductId);
 
-  const { data: apiOrders, isLoading: ordersLoading, error } = useFarmerOrder();
-  // Products only enrich the header (stock / price / status); the page still
-  // works from order data alone if this request fails.
+  const {
+    data: apiOrders,
+    isLoading: ordersLoading,
+    error,
+  } = useFarmerOrder({ product_id: productId }, { enabled: !!productId });
+  // The product record fills the header (status / stock / price); the page
+  // still works from order data alone if this request fails.
   const { data: apiProducts, isLoading: productsLoading } = useFarmerProducts();
-  const isLoading = ordersLoading || productsLoading;
+  const isLoading = (!!productId && ordersLoading) || productsLoading;
 
-  const productOrders = useMemo(() => {
-    let orders = extractOrders(apiOrders);
-    if (productId) {
-      orders = orders.filter(
-        (order) => String(getOrderProductId(order)) === productId
-      );
-    } else {
-      // Order without a product_id: we can only show the order we came from.
-      orders = stateOrder ? [stateOrder] : [];
-    }
+  const productOrders = useMemo(() => extractOrders(apiOrders), [apiOrders]);
 
-    return orders.map((order, index) => ({
-      id: getOrderId(order) || `order-${index}`,
-      orderNumber: getOrderNumber(order),
-      buyer: getOrderBuyerName(order),
-      qty: getOrderQuantity(order),
-      date: formatOrderDate(order),
-      status: getOrderStatusLabel(order.status),
-      statusColor: getOrderStatusColor(order.status),
-      path: getSingleOrderPath(order),
-      originalData: order,
-    }));
-  }, [apiOrders, productId, stateOrder]);
-
-  // Prefer the farmer's product record, fall back to fields on the orders.
   const productDetails = useMemo(() => {
-    const product = productId
-      ? extractProducts(apiProducts).find((p) => String(p?.id) === productId)
-      : null;
-    const sampleOrder = productOrders[0]?.originalData || stateOrder;
-
+    const product = extractProducts(apiProducts).find((p) => String(p?.id) === productId);
+    const sampleOrder = productOrders[0];
     if (!product && !sampleOrder) return null;
 
-    if (product) {
-      const quantity = product.quantity ?? product.stock;
-      return {
-        name: product.name || getOrderProductName(sampleOrder),
-        status: product.status || null,
-        stock:
-          quantity != null ? `${quantity} ${product.unit || ""}`.trim() : null,
-        price: product.price != null ? formatNaira(product.price) : null,
-        image: getProductImage(product) || getOrderImage(sampleOrder),
-      };
-    }
-
     return {
-      name: getOrderProductName(sampleOrder),
-      status: null,
-      stock: null,
-      price: null,
-      image: getOrderImage(sampleOrder),
+      name: product?.name || getOrderProductName(sampleOrder),
+      status: product ? getProductStatus(product) : null,
+      stock: product?.quantity ?? null,
+      price: product?.price != null ? formatNaira(product.price) : null,
+      image: getProductImage(product) || getOrderImage(sampleOrder),
     };
-  }, [apiProducts, productId, productOrders, stateOrder]);
+  }, [apiProducts, productId, productOrders]);
 
   if (isLoading) {
     return (
@@ -131,7 +91,7 @@ const ProductOrdersPage = () => {
         <p className="text-sm text-red-500">
           Error loading orders: {error?.response?.data?.detail || error?.message}
         </p>
-        <BackToOrders />
+        <BackToOrders>Back to Orders</BackToOrders>
       </StateCard>
     );
   }
@@ -140,161 +100,105 @@ const ProductOrdersPage = () => {
     return (
       <StateCard>
         <p className="text-sm text-red-500">Product not found.</p>
-        <BackToOrders />
+        <BackToOrders>Back to Orders</BackToOrders>
       </StateCard>
     );
   }
 
-  const pendingCount = productOrders.filter(
-    (o) => normalizeOrderStatus(o.originalData?.status) === "pending"
-  ).length;
-  const deliveredCount = productOrders.filter(
-    (o) => normalizeOrderStatus(o.originalData?.status) === "delivered"
-  ).length;
-
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <div className="min-w-0 space-y-6 lg:col-span-2">
-        <div className={cardClass}>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center gap-4">
+    <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+      <section className={cn(cardClass, "flex min-w-0 flex-col gap-5 xl:max-w-[750px] xl:flex-1")}>
+        <div className="flex flex-col gap-5">
+          <div className="flex items-center justify-between gap-4 rounded-lg p-2.5">
+            <div className="flex min-w-0 items-center gap-5">
               <img
                 src={productDetails.image || watermelon}
-                alt={productDetails.name}
-                className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                alt=""
+                className="h-[50px] w-[50px] shrink-0 object-cover"
                 onError={(e) => {
                   e.currentTarget.src = watermelon;
                 }}
               />
-              <div className="min-w-0">
-                <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
+              <div className="min-w-0 space-y-1">
+                <h1 className="break-words text-xl font-semibold text-black">
                   {productDetails.name}
                 </h1>
-                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <div className="flex flex-wrap items-center gap-2.5 text-base text-grey-300">
                   {productDetails.status && (
                     <span
                       className={cn(
-                        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize",
-                        productStatusClasses[
-                          normalizeOrderStatus(productDetails.status)
-                        ] || "bg-red-100 text-red-800"
+                        "inline-flex items-center gap-1.5 rounded-2xl py-0.5 pl-1.5 pr-2 text-xs font-bold leading-[18px]",
+                        productDetails.status.badge
                       )}
                     >
-                      {String(productDetails.status).replace(/_/g, " ")}
+                      <span
+                        className={cn("h-1.5 w-1.5 rounded-full", productDetails.status.dot)}
+                        aria-hidden="true"
+                      />
+                      {productDetails.status.label}
                     </span>
                   )}
-                  {productDetails.stock && (
-                    <span className="text-sm text-gray-600">
-                      {productDetails.stock} in stock
-                    </span>
-                  )}
-                  {productDetails.stock && productDetails.price && (
-                    <span className="text-sm text-gray-600" aria-hidden="true">
-                      ·
-                    </span>
-                  )}
-                  {productDetails.price && (
-                    <span className="text-sm font-medium text-gray-900">
-                      {productDetails.price}
-                    </span>
-                  )}
+                  <span>
+                    {productDetails.stock != null && `${productDetails.stock} in stock`}
+                    {productDetails.stock != null && productDetails.price && " . "}
+                    {productDetails.price}
+                  </span>
                 </div>
               </div>
             </div>
-            <Link
-              to="/farmer-orders"
-              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-primary bg-white px-4 text-base font-medium text-primary transition-colors hover:bg-primary-subtle sm:self-auto"
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              Back
-            </Link>
+            <BackToOrders />
           </div>
+          <hr className="border-[#b0b0b0]" />
         </div>
 
-        <div className={cardClass}>
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            Orders for this product
-          </h2>
+        <div className="flex flex-col gap-4">
+          <h2 className="text-xl font-medium text-black">Orders for this product</h2>
 
           {productOrders.length > 0 ? (
-            <ul className="space-y-3">
-              {productOrders.map((order) => (
+            <ul className="flex flex-col gap-2.5">
+              {productOrders.map((order, index) => (
                 <li
-                  key={order.id}
-                  className="flex flex-col gap-3 rounded-lg border border-gray-200 p-4 hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between"
+                  key={getOrderId(order) || `order-${index}`}
+                  className="flex flex-col gap-3 rounded-lg bg-white px-2.5 py-5 shadow-[0px_0px_2px_rgba(0,0,0,0.25)] sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-gray-900">
-                      Order {order.orderNumber}
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2 sm:max-w-[561px] sm:justify-between">
+                    <span className="text-lg font-medium text-black">{getOrderTitle(order)}</span>
+                    <OrderStatusPill status={order.status} className="max-w-[160px]" />
+                    <span className="text-sm font-medium text-grey-300">
+                      Buyer: {getOrderBuyerName(order)}
                     </span>
-                    <span
-                      className={cn(
-                        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
-                        order.statusColor
-                      )}
-                    >
-                      {order.status}
+                    <span className="text-sm font-medium text-grey-300">
+                      Qty: {getOrderQuantity(order)}
                     </span>
+                    <span className="text-sm text-[#8a8a8a]">{formatOrderDate(order)}</span>
                   </div>
 
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-600">
-                      <span>Buyer: {order.buyer}</span>
-                      <span>Qty: {order.qty}</span>
-                      <span>{order.date}</span>
-                    </div>
-
-                    <Link
-                      to={order.path}
-                      state={{ order: order.originalData }}
-                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
-                    >
-                      Manage
-                    </Link>
-                  </div>
+                  <Link
+                    to={getSingleOrderPath(order)}
+                    state={{ order }}
+                    className="inline-flex shrink-0 items-center justify-center self-start rounded-lg bg-primary px-4 py-2 text-sm font-medium leading-none text-white transition-colors hover:bg-primary-dark sm:self-auto"
+                  >
+                    Manage
+                  </Link>
                 </li>
               ))}
             </ul>
           ) : (
             <p className="py-8 text-center text-sm text-gray-500">
-              No orders found for this product.
+              No orders yet for this product.
             </p>
           )}
         </div>
-      </div>
+      </section>
 
-      <div className="min-w-0 space-y-6">
-        <div className={cardClass}>
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">Tips</h3>
-          <ul className="list-disc space-y-3 pl-5 text-sm text-gray-600">
-            <li>Update order status as soon as items leave your farm.</li>
-            <li>Encourage buyers to confirm delivery quickly to avoid delays.</li>
-            <li>Use the issue button if there is a delivery dispute.</li>
-          </ul>
-        </div>
-
-        <div className={cardClass}>
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">
-            Order Summary
-          </h3>
-          <dl className="space-y-3 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-gray-600">Total Orders:</dt>
-              <dd className="font-medium text-gray-900">
-                {productOrders.length}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-gray-600">Pending:</dt>
-              <dd className="font-medium text-yellow-600">{pendingCount}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-gray-600">Delivered:</dt>
-              <dd className="font-medium text-green-600">{deliveredCount}</dd>
-            </div>
-          </dl>
-        </div>
-      </div>
+      <aside className={cn(cardClass, "flex flex-col gap-5 text-black xl:w-[307px] xl:shrink-0")}>
+        <h2 className="text-xl font-semibold">Tips</h2>
+        <ul className="flex list-disc flex-col gap-4 pl-6 text-base">
+          {TIPS.map((tip) => (
+            <li key={tip}>{tip}</li>
+          ))}
+        </ul>
+      </aside>
     </div>
   );
 };
