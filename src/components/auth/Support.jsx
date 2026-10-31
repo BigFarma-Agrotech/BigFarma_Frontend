@@ -1,4 +1,3 @@
-import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { toast } from "react-toastify";
 import { FaRegCommentDots } from "react-icons/fa";
@@ -95,34 +94,23 @@ const Support = ({ show, onClose, inline = false }) => {
     );
   }
 
+  if (!show) return null;
+  // CSS enter animations instead of framer-motion, which auth pages then don't download
   return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          key="support-overlay"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
-          onClick={onClose}
-        >
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Support options"
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="relative w-full max-w-sm rounded-xl bg-white p-6 shadow-xl sm:p-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <SupportContent onClose={onClose} />
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div
+      className="animate-fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Support options"
+        className="animate-slide-up relative w-full max-w-sm rounded-xl bg-white p-6 shadow-xl sm:p-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <SupportContent onClose={onClose} />
+      </div>
+    </div>
   );
 };
 

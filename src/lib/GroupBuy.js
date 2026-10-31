@@ -1,11 +1,11 @@
 // Sample groups used when the /groups API is unavailable. Field names differ
 // from the API shape; see normalizeGroup() in ./groupBuyApi.js.
-import Tomatoes from "/productImages/tomatoes.png";
-import Pepper from "/productImages/pepper.png";
-import Plantain from "/productImages/plantain.png";
+import Tomatoes from "/productImages/tomatoes.webp";
+import Pepper from "/productImages/pepper.webp";
+import Plantain from "/productImages/plantain.webp";
 import Onions from "/productImages/onions.png";
-import Egg from '/productImages/Crate of eggs.png';
-import Melon from '/productImages/melon.png';
+import Egg from '/productImages/Crate of eggs.webp';
+import Melon from '/productImages/melon.webp';
 
 
 export const GroupData = [

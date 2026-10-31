@@ -24,13 +24,13 @@ import filterIcon from "../../../assets/icons/filter.svg";
 
 // Fallback images
 import eggs from "../../../assets/ProductImages/categories/Egg image.png";
-import onions from "../../../assets/ProductImages/onions.png";
+import onions from "../../../assets/ProductImages/onions.webp";
 import watermelon from "../../../assets/ProductImages/watermelon.png";
 import carrot from "../../../assets/ProductImages/categories/Carrot image.png";
-import rice from "../../../assets/ProductImages/Rice.png";
-import tomatoes from "../../../assets/ProductImages/tomatoes.png";
+import rice from "../../../assets/ProductImages/Rice.webp";
+import tomatoes from "../../../assets/ProductImages/tomatoes.webp";
 import vegetable from "../../../assets/ProductImages/categories/vegetables.png";
-import cassava from "../../../assets/ProductImages/cassava.png";
+import cassava from "../../../assets/ProductImages/cassava.webp";
 
 const productImages = {
   Eggs: eggs,

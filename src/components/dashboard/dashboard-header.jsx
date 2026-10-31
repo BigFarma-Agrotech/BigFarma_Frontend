@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Search, ShoppingCart, Menu } from "lucide-react";
 import Input from "../shared/Input";
-import Avatar from "../../assets/images/JohnDoe-avatar.jpg";
+import Avatar from "../../assets/images/JohnDoe-avatar.webp";
 import { useCart } from "../../hooks";
 import Cookies from "js-cookie";
 import {

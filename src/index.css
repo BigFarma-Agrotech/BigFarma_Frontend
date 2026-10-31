@@ -88,3 +88,17 @@
     display: none;
   }
 }
+
+/* Small enter animations (replacing framer-motion on the landing and auth pages,
+   so those pages don't download it) */
+@keyframes bf-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bf-slide-up { from { opacity: 0; transform: translateY(100px); } to { opacity: 1; transform: none; } }
+@keyframes bf-drop-in { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: none; } }
+@keyframes bf-spin-in { from { opacity: 0; transform: rotate(90deg); } to { opacity: 1; transform: none; } }
+.animate-fade-in { animation: bf-fade-in 0.2s ease-out both; }
+.animate-slide-up { animation: bf-slide-up 0.3s ease-out both; }
+.animate-drop-in { animation: bf-drop-in 0.2s ease-out both; }
+.animate-spin-in { animation: bf-spin-in 0.2s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in, .animate-slide-up, .animate-drop-in, .animate-spin-in { animation: none; }
+}

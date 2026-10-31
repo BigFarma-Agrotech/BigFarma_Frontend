@@ -2,7 +2,6 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { Link } from "react-scroll";
 import { HiMenu, HiX } from "react-icons/hi";
-import { motion, AnimatePresence } from "framer-motion";
 import brandLogo from "../../assets/images/brand-logo.webp";
 
 const NAV_LINKS = [
@@ -88,37 +87,20 @@ const NavBar = () => {
             aria-controls="mobile-menu"
             className="flex h-10 w-10 items-center justify-center rounded-lg text-neutral-dark transition-colors hover:bg-primary-subtle"
           >
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.span
-                key={isOpen ? "close" : "open"}
-                initial={{ rotate: isOpen ? -90 : 90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: isOpen ? 90 : -90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="flex"
-              >
-                {isOpen ? (
-                  <HiX className="h-7 w-7" />
-                ) : (
-                  <HiMenu className="h-7 w-7" />
-                )}
-              </motion.span>
-            </AnimatePresence>
+            {/* The key swap remounts the icon, replaying its CSS animation */}
+            <span key={isOpen ? "close" : "open"} className="flex animate-spin-in">
+              {isOpen ? <HiX className="h-7 w-7" /> : <HiMenu className="h-7 w-7" />}
+            </span>
           </button>
         </div>
       </div>
 
       {/* Mobile menu dropdown */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.nav
+      {isOpen && (
+          <nav
             id="mobile-menu"
             aria-label="Mobile"
-            initial={{ y: -16, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -16, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="navlink absolute inset-x-0 top-full z-50 flex w-full flex-col items-center gap-5 border-t border-grey-100 bg-white px-4 py-6 shadow-md lg:hidden"
+            className="navlink animate-drop-in absolute inset-x-0 top-full z-50 flex w-full flex-col items-center gap-5 border-t border-grey-100 bg-white px-4 py-6 shadow-md lg:hidden"
           >
             {NAV_LINKS.map(({ id, label }) => (
               <Link
@@ -140,9 +122,8 @@ const NavBar = () => {
             >
               Sign Up
             </NavLink>
-          </motion.nav>
-        )}
-      </AnimatePresence>
+          </nav>
+      )}
     </header>
   );
 };

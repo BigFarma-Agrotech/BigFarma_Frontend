@@ -1,4 +1,5 @@
-import aboutUsImage from "../../assets/svgs/about.svg";
+// Was a 540 KB SVG wrapping photos; this WebP is the same picture at 85 KB
+import aboutUsImage from "../../assets/images/about-us.webp";
 
 export default function AboutUsSection() {
   return (
@@ -7,6 +8,8 @@ export default function AboutUsSection() {
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <img
             src={aboutUsImage}
+            width={1100}
+            height={1072}
             loading="lazy"
             decoding="async"
             alt="Farmers with fresh produce"

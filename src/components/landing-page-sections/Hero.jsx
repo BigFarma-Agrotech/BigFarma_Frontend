@@ -45,12 +45,19 @@ const Hero = () => {
         <div className="relative mx-auto w-full max-w-sm sm:max-w-md lg:max-w-lg lg:self-end">
           <img
             src={bgBack}
+            width={900}
+            height={1103}
+            fetchPriority="high"
             alt=""
             aria-hidden="true"
             className="mx-auto block h-auto w-4/5 drop-shadow-lg"
           />
           <img
             src={bgFront}
+            width={940}
+            height={985}
+            // The page's main image: fetch it first
+            fetchPriority="high"
             alt="Smiling woman holding a basket of fresh fruit"
             className="absolute bottom-0 left-1/2 h-auto w-[92%] -translate-x-1/2 drop-shadow-xl"
           />

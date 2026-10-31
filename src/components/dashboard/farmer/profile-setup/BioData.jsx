@@ -12,7 +12,7 @@ import {
   textareaClass,
   titleClass,
 } from "@/components/auth/authStyles";
-import customerPhoto from "@/assets/images/Customer-photo.png";
+import customerPhoto from "@/assets/images/Customer-photo.webp";
 import { endpoints } from "../../../config/endpoints";
 import { axios } from "../../../../lib/axios";
 import { parseApiError } from "@/lib/apiError";
