@@ -5,6 +5,7 @@ import { useFarmerProducts } from "../hooks/useFarmerProducts";
 import Button from "@/components/shared/Button";
 import { cn } from "@/lib/utils";
 import {
+  ORDER_STATUSES,
   PRODUCT_STATUSES,
   extractProducts,
   formatNaira,
@@ -17,9 +18,20 @@ import watermelon from "../assets/ProductImages/watermelon.png";
 
 const PAGE_SIZE = 8;
 
+const DONE_STATUSES = ["delivered", "cancelled"];
+
+// Filters by order status: a product shows when it has at least one order in
+// one of the option's statuses. Anything not delivered or cancelled (including
+// a delivery issue under review) counts as in progress.
 const filterOptions = [
   { label: "All", value: "all" },
-  ...PRODUCT_STATUSES.map(({ value, label }) => ({ value, label })),
+  {
+    label: "In Progress",
+    value: "in_progress",
+    statuses: ORDER_STATUSES.map((s) => s.value).filter((s) => !DONE_STATUSES.includes(s)),
+  },
+  { label: "Delivered", value: "delivered", statuses: ["delivered"] },
+  { label: "Cancelled", value: "cancelled", statuses: ["cancelled"] },
 ];
 
 const statusOrder = PRODUCT_STATUSES.map((s) => s.value);
@@ -83,6 +95,8 @@ const FarmerOrderPage = () => {
         price: parseAmount(product.price) ?? 0,
         quantity: product.quantity ?? "—",
         orders: product.order_count ?? 0,
+        // { pending: 2, delivered: 1, ... } from the backend
+        orderStatusCounts: product.order_status_counts ?? {},
         status: getProductStatus(product),
       })),
     [apiProducts]
@@ -91,8 +105,17 @@ const FarmerOrderPage = () => {
   const totalOrders = products.reduce((sum, p) => sum + p.orders, 0);
 
   const visibleProducts = useMemo(() => {
+    // When filtered, the Orders column counts only the orders in that status
     const filtered =
-      filter === "all" ? products : products.filter((p) => p.status.value === filter);
+      filter === "all"
+        ? products
+        : products
+            .map((p) => {
+              const { statuses } = filterOptions.find((o) => o.value === filter);
+              const orders = statuses.reduce((sum, s) => sum + (p.orderStatusCounts[s] ?? 0), 0);
+              return { ...p, orders };
+            })
+            .filter((p) => p.orders > 0);
     if (!sort) return filtered;
     const value = sorters[sort.key];
     const direction = sort.direction === "asc" ? 1 : -1;
