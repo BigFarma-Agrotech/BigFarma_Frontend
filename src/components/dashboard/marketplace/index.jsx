@@ -76,7 +76,7 @@ const Marketplace = () => {
   const [showAll, setShowAll] = useState(false);
   const productsRef = useRef(null);
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ["products"],
     queryFn: fetchProducts,
   });
@@ -307,9 +307,11 @@ const Marketplace = () => {
         <ProductsList
           products={visibleProducts}
           hasProducts={products.length > 0}
-          isLoading={isLoading}
+          // isLoading is only true on the first load, so also show the skeleton
+          // while Retry refetches from the error / empty state
+          isLoading={isLoading || (isFetching && (Boolean(error) || products.length === 0))}
           error={error}
-          onRetry={refetch}
+          onRetry={() => refetch({ cancelRefetch: true })}
           emptyMessage={
             query ? `No products found for "${query}"` : "No products match your filters"
           }
