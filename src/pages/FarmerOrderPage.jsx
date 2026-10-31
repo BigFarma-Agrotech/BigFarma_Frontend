@@ -71,9 +71,12 @@ const FarmerOrderPage = () => {
   const [sort, setSort] = useState(null); // { key, direction: "asc" | "desc" }
   const [page, setPage] = useState(1);
 
+  // Only products that have been ordered at least once belong on the orders page
   const products = useMemo(
     () =>
-      extractProducts(apiProducts).map((product) => ({
+      extractProducts(apiProducts)
+        .filter((product) => (product.order_count ?? 0) > 0)
+        .map((product) => ({
         id: product.id,
         name: product.name || "Unnamed product",
         image: getProductImage(product) || watermelon,
@@ -186,11 +189,11 @@ const FarmerOrderPage = () => {
             <ShoppingBag className="h-10 w-10 text-gray-400" aria-hidden="true" />
           </div>
           <h3 className="mb-2 text-lg font-medium text-gray-900">
-            {hasNoProducts ? "No Products Yet" : "No Products Match Filter"}
+            {hasNoProducts ? "No Orders Yet" : "No Products Match Filter"}
           </h3>
           <p className="mb-4 max-w-md text-sm text-gray-600">
             {hasNoProducts
-              ? "Orders are grouped by product. Add a product and its orders will appear here."
+              ? "Orders are grouped by product. A product will appear here once a buyer places an order for it."
               : "Try changing the filter to see more products."}
           </p>
           {hasNoProducts && (
