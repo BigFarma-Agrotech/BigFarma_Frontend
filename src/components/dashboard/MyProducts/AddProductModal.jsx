@@ -134,7 +134,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
     setIsLoading(true);
     updateMutation.mutate(
       {
-        productId: product.id,
+        productId: product.public_id,
         productData: {
           name: formData.name.trim(),
           category: formData.category,

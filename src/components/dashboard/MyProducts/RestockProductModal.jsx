@@ -21,7 +21,7 @@ const RestockProductModal = ({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (quantity && !isNaN(quantity)) {
-      onConfirm(product?.originalData?.id, quantity);
+      onConfirm(product?.originalData?.public_id, quantity);
     }
   };
 

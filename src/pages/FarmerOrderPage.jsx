@@ -90,6 +90,7 @@ const FarmerOrderPage = () => {
         .filter((product) => (product.order_count ?? 0) > 0)
         .map((product) => ({
         id: product.id,
+        publicId: product.public_id,
         name: product.name || "Unnamed product",
         image: getProductImage(product) || watermelon,
         price: parseAmount(product.price) ?? 0,
@@ -157,7 +158,7 @@ const FarmerOrderPage = () => {
           </div>
         );
       case "id":
-        return `#${product.id}`;
+        return `#${product.publicId}`;
       case "price":
         return formatNaira(product.price);
       case "quantity":
@@ -169,7 +170,7 @@ const FarmerOrderPage = () => {
       case "action":
         return (
           <Link
-            to={`/farmer-orders/${toProductRouteId(product.id)}`}
+            to={`/farmer-orders/${toProductRouteId(product.publicId)}`}
             className="inline-flex rounded-2xl bg-[#acd7f8] px-2 py-0.5 font-semibold leading-[18px] text-[#175cd3] transition-colors hover:bg-[#92c8f3] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#175cd3]"
           >
             View

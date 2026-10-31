@@ -138,7 +138,7 @@ export default function CheckoutPage() {
 
     const orderData = {
       orderId: placed
-        .map(({ order }, i) => order?.order_number || (order?.id != null ? `#${order.id}` : `item ${i + 1}`))
+        .map(({ order }, i) => order?.order_number || (order?.public_id != null ? `#${order.public_id}` : `item ${i + 1}`))
         .join(", "),
       items,
       customerInfo: formData,

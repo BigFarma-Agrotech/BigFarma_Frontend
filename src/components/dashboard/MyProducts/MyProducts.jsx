@@ -99,7 +99,7 @@ const MyProducts = () => {
       product: product.name || `Product ${index + 1}`,
       // An <img> takes a single URL (joining two with a comma breaks it)
       image: getProductImage(product) || productImages[product.name] || watermelon,
-      productID: product.code || `#${product.id || index}`,
+      productID: product.code || (product.public_id ? `#${product.public_id}` : "—"),
       price: product.price
         ? `₦${parseFloat(product.price).toLocaleString()}`
         : "₦0",
@@ -184,7 +184,7 @@ const MyProducts = () => {
   const handleToggleListing = (item) => {
     const publish = item.originalData?.is_listed === false;
     listingMutation.mutate(
-      { productId: item.originalData?.id, productData: { is_listed: publish } },
+      { productId: item.originalData?.public_id, productData: { is_listed: publish } },
       {
         onSuccess: () => {
           toast.success(
@@ -283,7 +283,7 @@ const MyProducts = () => {
             const isPublished = item.originalData?.is_listed !== false;
             const isToggling =
               listingMutation.isPending &&
-              listingMutation.variables?.productId === item.originalData?.id;
+              listingMutation.variables?.productId === item.originalData?.public_id;
             return (
               <button
                 type="button"
@@ -440,7 +440,7 @@ const MyProducts = () => {
           setIsDeleteModalOpen(false);
           setSelectedProduct(null);
         }}
-        onConfirm={() => handleDeleteConfirm(selectedProduct?.originalData?.id)}
+        onConfirm={() => handleDeleteConfirm(selectedProduct?.originalData?.public_id)}
         product={selectedProduct}
         isLoading={deleteMutation.isPending}
       />

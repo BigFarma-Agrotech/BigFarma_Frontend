@@ -105,7 +105,7 @@ export function ProductCard({ product, onAddToCart }) {
           Add to cart
         </Button>
         <Link
-          to={`/marketplace/products/${product.id}`}
+          to={`/marketplace/products/${product.public_id}`}
           className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
         >
           View details

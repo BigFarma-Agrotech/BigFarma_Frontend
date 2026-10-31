@@ -48,7 +48,8 @@ export const mapApiOrder = (order) => {
       ORDER_STATUS.PLACED;
 
   return {
-    id: order?.id ?? order?.order_number ?? "",
+    // public_id addresses the order in API paths (confirm delivery, report issue)
+    id: order?.public_id ?? order?.order_number ?? "",
     product: order?.product_name || order?.product?.name || "Product",
     productImage:
       firstImage(order?.product_images) ||

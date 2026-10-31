@@ -94,7 +94,7 @@ const SingleOrderPage = () => {
 
   const advanceStatus = () => {
     updateStatus.mutate(
-      { orderId: order.id ?? orderId, statusData: { status: nextStep.status } },
+      { orderId: order.public_id ?? orderId, statusData: { status: nextStep.status } },
       {
         onSuccess: () => toast.success(`Order marked as ${getOrderStatusLabel(nextStep.status)}`),
         onError: (err) => toast.error(getErrorMessage(err, "Failed to update order status")),

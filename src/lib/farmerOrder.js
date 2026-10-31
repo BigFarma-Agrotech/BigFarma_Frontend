@@ -108,10 +108,12 @@ export const NON_REVENUE_STATUSES = ["cancelled"];
 // Order field accessors
 // ---------------------------------------------------------------------------
 
-export const getOrderId = (order) => (order?.id != null ? String(order.id) : "");
+// Orders, products and group buys are addressed by their random `public_id` in
+// URLs and API paths; the integer `id` is internal to the backend.
+export const getOrderId = (order) => (order?.public_id != null ? String(order.public_id) : "");
 
 export const getOrderNumber = (order) =>
-  order?.order_number || (order?.id != null ? `#${order.id}` : "—");
+  order?.order_number || (order?.public_id != null ? `#${order.public_id}` : "—");
 
 /** "Order #BF2025…" heading used on the farmer order screens. */
 export const getOrderTitle = (order) => {
@@ -165,7 +167,7 @@ export const getOrderBuyerPhone = (order) =>
   null;
 
 export const getOrderProductId = (order) =>
-  order?.product_id ?? order?.product?.id ?? null;
+  order?.product_public_id ?? order?.product?.public_id ?? null;
 
 export const getOrderProductName = (order) =>
   order?.product_name || order?.product?.name || "Unknown Product";
@@ -239,11 +241,11 @@ export const getProductStatus = (product) => {
 
 const PRODUCT_ROUTE_PREFIX = "product-";
 
-/** Route segment for a product's orders page, e.g. "product-42". */
+/** Route segment for a product's orders page, e.g. "product-k3P9xQ2a" (from its public_id). */
 export const toProductRouteId = (productId) =>
   `${PRODUCT_ROUTE_PREFIX}${productId ?? "unknown"}`;
 
-/** "product-42" -> "42" (also accepts a bare id). Returns null for "product-unknown". */
+/** "product-k3P9xQ2a" -> "k3P9xQ2a" (also accepts a bare id). Returns null for "product-unknown". */
 export const fromProductRouteId = (routeId) => {
   if (!routeId) return null;
   const id = String(routeId).startsWith(PRODUCT_ROUTE_PREFIX)

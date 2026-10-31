@@ -390,7 +390,7 @@ const CreateGroupModal = () => {
       </form>
 
       {createdGroup && (
-        <SuccessModal groupId={createdGroup.id} onClose={() => setCreatedGroup(null)} />
+        <SuccessModal groupId={createdGroup.public_id ?? createdGroup.id} onClose={() => setCreatedGroup(null)} />
       )}
     </div>
   );

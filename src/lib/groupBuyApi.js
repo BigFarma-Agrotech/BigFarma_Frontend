@@ -71,7 +71,8 @@ export const normalizeGroup = (group = {}) => {
     "";
 
   return {
-    id: group.id,
+    // public_id is what group URLs use; sample groups only have an id
+    id: group.public_id ?? group.id,
     name: group.group_name || group.name || product?.name || "Untitled group",
     description: group.group_description || group.description || "",
     location: group.group_location || group.location || "",

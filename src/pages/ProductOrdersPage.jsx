@@ -63,7 +63,7 @@ const ProductOrdersPage = () => {
   const productOrders = useMemo(() => extractOrders(apiOrders), [apiOrders]);
 
   const productDetails = useMemo(() => {
-    const product = extractProducts(apiProducts).find((p) => String(p?.id) === productId);
+    const product = extractProducts(apiProducts).find((p) => p?.public_id === productId);
     const sampleOrder = productOrders[0];
     if (!product && !sampleOrder) return null;
 
