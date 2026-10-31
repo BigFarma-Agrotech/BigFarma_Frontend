@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ChevronRight, Package, PackageSearch } from "lucide-react";
 import { toast } from "react-toastify";
 import {
@@ -15,6 +16,20 @@ import OrderFilter from "./Filter";
 const ConsumerOrder = () => {
   const [showReport, setShowReport] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  // ?order=<public id> (e.g. from a notification) opens that order's details
+  const [searchParams, setSearchParams] = useSearchParams();
+  const linkedOrder = searchParams.get("order");
+  useEffect(() => {
+    if (!linkedOrder) return;
+    setSelectedOrder(linkedOrder);
+    setSearchParams(
+      (params) => {
+        params.delete("order");
+        return params;
+      },
+      { replace: true }
+    );
+  }, [linkedOrder, setSearchParams]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");

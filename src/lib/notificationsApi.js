@@ -1,7 +1,8 @@
 import { axios } from "./axios";
 
 // GET /notifications/ -> [{ id, notification_type, title, message,
-// reference_id, is_read, read_at, created_at }], newest first.
+// reference_id, reference_public_id, product_public_id, is_read, read_at,
+// created_at }], newest first. The public ids link to the order (and its product).
 // The list route needs its trailing slash, like /orders/.
 export const notificationsApi = {
   list: async ({ unreadOnly = false, limit = 20 } = {}) =>

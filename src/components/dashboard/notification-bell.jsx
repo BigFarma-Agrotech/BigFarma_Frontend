@@ -1,22 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell } from "lucide-react";
+import { Bell, Check, ChevronDown } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
+import { toProductRouteId } from "@/lib/farmerOrder";
+
+// Times are UTC; one without an offset would otherwise be parsed as local time
+const parseUtc = (iso) =>
+  new Date(/[zZ]|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`);
 
 const timeAgo = (iso) => {
-  const seconds = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  const seconds = Math.max(0, (Date.now() - parseUtc(iso).getTime()) / 1000);
   if (!Number.isFinite(seconds)) return "";
   if (seconds < 60) return "Just now";
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   if (seconds < 7 * 86400) return `${Math.floor(seconds / 86400)}d ago`;
-  return new Date(iso).toLocaleDateString();
+  return parseUtc(iso).toLocaleDateString();
 };
 
-// Where a notification leads. They're about orders today, so open the
-// role's order list.
-const targetPath = (role) => (role === "farmer" ? "/farmer-orders" : "/orders");
+// Where a notification leads: the order it's about, by its public ids.
+// Login alerts (no order) don't navigate.
+const targetPath = (role, notification) => {
+  const orderId = notification.reference_public_id;
+  if (!orderId) return null;
+  if (role === "farmer") {
+    return notification.product_public_id
+      ? `/farmer-orders/${toProductRouteId(notification.product_public_id)}/${encodeURIComponent(orderId)}`
+      : "/farmer-orders";
+  }
+  return `/orders?order=${encodeURIComponent(orderId)}`;
+};
 
 // Header bell for farmers and consumers, backed by /notifications
 export default function NotificationBell({ role }) {
@@ -31,6 +45,8 @@ export default function NotificationBell({ role }) {
     isMarkingAll,
   } = useNotifications();
   const [open, setOpen] = useState(false);
+  // The notification expanded in place to read in full
+  const [expandedId, setExpandedId] = useState(null);
   const containerRef = useRef(null);
   const navigate = useNavigate();
 
@@ -48,10 +64,16 @@ export default function NotificationBell({ role }) {
     };
   }, [open]);
 
-  const openNotification = (notification) => {
+  // Clicking a notification reads it where it is; "View order" is what navigates
+  const toggleNotification = (notification) => {
+    if (!notification.is_read) markRead(notification.id);
+    setExpandedId((current) => (current === notification.id ? null : notification.id));
+  };
+
+  const viewOrder = (notification) => {
     if (!notification.is_read) markRead(notification.id);
     setOpen(false);
-    navigate(targetPath(role));
+    navigate(targetPath(role, notification));
   };
 
   const badgeColor = role === "farmer" ? "bg-secondary" : "bg-primary-light";
@@ -118,40 +140,88 @@ export default function NotificationBell({ role }) {
             </p>
           ) : (
             <ul className="max-h-96 divide-y divide-gray-100 overflow-y-auto">
-              {notifications.map((notification) => (
-                <li key={notification.id}>
-                  <button
-                    type="button"
-                    onClick={() => openNotification(notification)}
-                    className={cn(
-                      "flex w-full gap-3 px-4 py-3 text-left hover:bg-gray-50",
-                      !notification.is_read && "bg-primary-subtle/40",
-                    )}
+              {notifications.map((notification) => {
+                const isExpanded = expandedId === notification.id;
+                const hasOrder = Boolean(targetPath(role, notification));
+                return (
+                  <li
+                    key={notification.id}
+                    className={cn(!notification.is_read && "bg-primary-subtle/40")}
                   >
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        "mt-1.5 h-2 w-2 shrink-0 rounded-full",
-                        notification.is_read ? "bg-transparent" : badgeColor,
-                      )}
-                    />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium text-gray-900">
-                        {notification.title}
-                      </span>
-                      {notification.message && (
-                        <span className="mt-0.5 block text-sm text-gray-600">
-                          {notification.message}
+                    <div className="flex gap-1 pr-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleNotification(notification)}
+                        aria-expanded={isExpanded}
+                        className="flex min-w-0 flex-1 gap-3 py-3 pl-4 text-left hover:bg-gray-50"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+                            notification.is_read ? "bg-transparent" : badgeColor,
+                          )}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-start justify-between gap-2">
+                            <span
+                              className={cn(
+                                "text-sm text-gray-900",
+                                notification.is_read ? "font-normal" : "font-semibold",
+                              )}
+                            >
+                              {notification.title}
+                            </span>
+                            <ChevronDown
+                              aria-hidden="true"
+                              className={cn(
+                                "mt-0.5 h-4 w-4 shrink-0 text-gray-400 transition-transform",
+                                isExpanded && "rotate-180",
+                              )}
+                            />
+                          </span>
+                          {notification.message && (
+                            <span
+                              className={cn(
+                                "mt-0.5 block whitespace-pre-line break-words text-sm text-gray-600",
+                                !isExpanded && "line-clamp-2",
+                              )}
+                            >
+                              {notification.message}
+                            </span>
+                          )}
+                          <span className="mt-1 block text-xs text-gray-400">
+                            {timeAgo(notification.created_at)}
+                            {!notification.is_read && <span className="sr-only"> (unread)</span>}
+                          </span>
                         </span>
+                      </button>
+                      {!notification.is_read && (
+                        <button
+                          type="button"
+                          onClick={() => markRead(notification.id)}
+                          aria-label={`Mark "${notification.title}" as read`}
+                          title="Mark as read"
+                          className="mt-2.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-primary"
+                        >
+                          <Check className="h-4 w-4" aria-hidden="true" />
+                        </button>
                       )}
-                      <span className="mt-1 block text-xs text-gray-400">
-                        {timeAgo(notification.created_at)}
-                        {!notification.is_read && <span className="sr-only"> (unread)</span>}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
+                    </div>
+                    {isExpanded && hasOrder && (
+                      <div className="pb-3 pl-9 pr-4">
+                        <button
+                          type="button"
+                          onClick={() => viewOrder(notification)}
+                          className="text-sm font-medium text-primary hover:underline"
+                        >
+                          View order
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

@@ -29,6 +29,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss(), seo()],
+    // Exposed to the app for the notifications WebSocket, which connects to the
+    // backend directly: Vercel rewrites (and so the /api/v1 proxy) can't carry WebSockets
+    define: {
+      "import.meta.env.VITE_BACKEND_URL": JSON.stringify(serverUrl),
+    },
     server: { proxy },
     preview: { proxy },
     build: {
