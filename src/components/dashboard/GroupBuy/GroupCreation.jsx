@@ -160,6 +160,9 @@ const GroupCard = ({ group }) => (
           {group.slotsRemaining} slot{group.slotsRemaining === 1 ? "" : "s"} remaining
         </p>
       )}
+      {group.deadline && String(group.status).toLowerCase() === "active" && (
+        <p>Closes {new Date(group.deadline).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</p>
+      )}
       <Link
         to={`/group-buy/${group.id}`}
         className="mt-auto inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary font-medium text-white transition-colors hover:bg-primary-dark"

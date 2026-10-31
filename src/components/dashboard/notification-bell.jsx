@@ -24,6 +24,8 @@ const timeAgo = (iso) => {
 const targetPath = (role, notification) => {
   const orderId = notification.reference_public_id;
   if (!orderId) return null;
+  // Group buy notifications point at the group
+  if (notification.notification_type === "group_buy") return `/group-buy/${encodeURIComponent(orderId)}`;
   if (role === "farmer") {
     return notification.product_public_id
       ? `/farmer-orders/${toProductRouteId(notification.product_public_id)}/${encodeURIComponent(orderId)}`

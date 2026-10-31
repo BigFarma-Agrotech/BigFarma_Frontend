@@ -15,14 +15,36 @@ export const groupDetails = async (groupId) => {
   }
 };
 
-export const fetchGroups = async () => {
-  const res = await axios.get(GROUPS_URL);
-  const data = res.data;
+const asList = (data) => {
   if (Array.isArray(data)) return data;
   for (const key of ["groups", "data", "items", "results"]) {
     if (Array.isArray(data?.[key])) return data[key];
   }
   return [];
+};
+
+// Public groups anyone can join, plus the user's own (including private ones
+// and ones they created but haven't paid into yet), without duplicates
+export const fetchGroups = async () => {
+  const [publicGroups, mine] = await Promise.all([
+    axios.get(`${GROUPS_URL}/public`).then((res) => asList(res.data)),
+    axios.get(GROUPS_URL).then((res) => asList(res.data)).catch(() => []),
+  ]);
+  const seen = new Set();
+  return [...mine, ...publicGroups].filter((group) => {
+    const key = group.public_id ?? group.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+// Pay for a share of the group with Paystack: { quantity, contact_name,
+// contact_phone, email?, callback_url } -> { reference, authorization_url, amount, ... }.
+// Paystack sends the buyer back to callback_url, where /payments/verify confirms it.
+export const groupCheckout = async (groupId, payload) => {
+  const res = await axios.post(`${GROUPS_URL}/${encodeURIComponent(groupId)}/checkout`, payload);
+  return res.data;
 };
 
 export const createGroup = async (payload) => {
@@ -79,7 +101,23 @@ export const normalizeGroup = (group = {}) => {
     category: product?.category || group.category || "",
     image,
     status: group.status || "",
-    price: firstNumber(group.individual_contribution, group.price),
+    // Members pay this per unit of the product
+    price: firstNumber(group.unit_price, group.individual_contribution, group.price),
+    unitPrice: firstNumber(group.unit_price, group.individual_contribution, group.price),
+    currentQuantity: firstNumber(group.current_quantity) ?? 0,
+    remainingQuantity: firstNumber(
+      group.remaining_quantity,
+      group.target_quantity_numeric != null
+        ? Math.max(Number(group.target_quantity_numeric) - Number(group.current_quantity || 0), 0)
+        : null
+    ),
+    membersCount: firstNumber(group.members_count, group.current_members),
+    // The least each member buys when joining, and the least a new member can buy now
+    minShare: firstNumber(group.min_member_quantity) ?? 1,
+    joinMinimum: firstNumber(group.join_minimum, group.min_member_quantity) ?? 1,
+    isMember: Boolean(group.is_member),
+    isCreator: Boolean(group.is_creator),
+    productName: product?.name || group.product_name || "",
     quantity: firstNumber(group.target_quantity_numeric, group.total),
     quantityUnit: group.quantity_unit || "",
     escrow: firstNumber(group.group_wallet_balance) ?? 0,

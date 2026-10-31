@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 import { useCart } from "@/hooks";
 import { verifyPaymentHandler } from "@/services";
 import { parseApiError } from "@/lib/apiError";
@@ -61,6 +62,16 @@ export default function PaymentProcessingPage() {
           message: parseApiError(error, "We couldn't confirm your payment. Please try again.").message,
           gatewayResponse: "",
         });
+        return;
+      }
+
+      if (payment.status === "success" && payment.purpose === "group_buy") {
+        // Joined a group: back to the group, now as a member
+        localStorage.removeItem(PENDING_CHECKOUT_KEY);
+        queryClient.invalidateQueries({ queryKey: ["groups"] });
+        queryClient.invalidateQueries({ queryKey: ["groupDetails"] });
+        toast.success("Payment received for your group share.");
+        navigate(payment.group_public_id ? `/group-buy/${payment.group_public_id}` : "/group-buy", { replace: true });
         return;
       }
 
@@ -125,6 +136,13 @@ export default function PaymentProcessingPage() {
       ? { title: "We couldn't confirm your payment", body: state.message }
       : MESSAGES[state.status] || MESSAGES.failed;
   const canRetryCheck = state.status === "error" || state.status === "pending";
+  // Paying for a group share: "Try again" goes back to the group, not checkout
+  const groupId = readPendingCheckout()?.groupId;
+  const retryPath = groupId ? `/group-buy/${groupId}` : "/checkout";
+  const body =
+    groupId && (state.status === "abandoned" || state.status === "failed")
+      ? "Your payment didn't go through, so you haven't joined the group and nothing was charged."
+      : copy.body;
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
@@ -133,7 +151,7 @@ export default function PaymentProcessingPage() {
         className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm sm:p-8"
       >
         <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">{copy.title}</h1>
-        <p className="mt-2 text-sm text-gray-600">{copy.body}</p>
+        <p className="mt-2 text-sm text-gray-600">{body}</p>
         {state.gatewayResponse && state.status !== "abandoned" && (
           <p className="mt-2 text-sm text-gray-500">Paystack: {state.gatewayResponse}</p>
         )}
@@ -149,7 +167,7 @@ export default function PaymentProcessingPage() {
             </button>
           ) : (
             <Link
-              to="/checkout"
+              to={retryPath}
               className="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-5 font-medium text-white hover:bg-primary-dark"
             >
               Try again

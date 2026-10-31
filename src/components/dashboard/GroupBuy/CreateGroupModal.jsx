@@ -7,6 +7,7 @@ import Input from "../../shared/Input";
 import Button from "../../shared/Button";
 import SuccessModal from "./SuccessModal";
 import { createGroup } from "@/lib/groupBuyApi";
+import { formatQuantity, getOrderRules, unitLabel } from "@/lib/units";
 import { fetchProducts } from "@/lib/api";
 
 const LABEL = "mb-1.5 block text-sm font-medium text-gray-700";
@@ -15,15 +16,12 @@ const FIELD =
   "w-full rounded-lg border-2 bg-white px-4 text-base placeholder:text-grey-200 focus:border-primary-light focus:outline-none";
 const fieldBorder = (hasError) => (hasError ? "border-red-500" : "border-gray-300");
 
-const QUANTITY_UNITS = ["kg", "bag", "crate", "basket", "box", "tonne", "piece"];
-
 const INITIAL_FORM = {
   groupName: "",
   groupLocation: "",
   productId: "",
   quantity: "",
-  quantityUnit: "kg",
-  contribution: "",
+  minShare: "1",
   maxMembers: "",
   deadline: "",
   isPublic: true,
@@ -37,20 +35,27 @@ const todayString = () => {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 };
 
-const validate = (form, today) => {
+// The unit, price and quantity limits all come from the chosen product
+const validate = (form, today, product) => {
   const errors = {};
   const quantity = Number(form.quantity);
-  const contribution = Number(form.contribution);
   const maxMembers = Number(form.maxMembers);
+  const rules = product ? getOrderRules(product) : null;
 
   if (!form.groupName.trim()) errors.groupName = "Group name is required";
   if (!form.groupLocation.trim()) errors.groupLocation = "Group location is required";
   if (!form.productId) errors.productId = "Select the item to purchase";
   if (!form.quantity || !Number.isInteger(quantity) || quantity < 1)
     errors.quantity = "Enter a quantity of at least 1";
-  if (!form.quantityUnit) errors.quantityUnit = "Select a unit";
-  if (form.contribution === "" || !Number.isFinite(contribution) || contribution <= 0)
-    errors.contribution = "Enter an amount greater than 0";
+  else if (rules && quantity < rules.min)
+    errors.quantity = `The farmer's minimum order is ${formatQuantity(rules.min, rules.unit)}`;
+  else if (rules && rules.max !== null && quantity > rules.max)
+    errors.quantity = `The farmer only has ${formatQuantity(rules.max, rules.unit)} in stock`;
+  const minShare = Number(form.minShare);
+  if (!(minShare > 0)) errors.minShare = "Enter a minimum of at least 1";
+  else if (rules?.isCount && !Number.isInteger(minShare))
+    errors.minShare = `Use a whole number of ${unitLabel(2, rules.unit)}`;
+  else if (quantity > 0 && minShare > quantity) errors.minShare = "Can't be more than the target";
   if (!form.maxMembers || !Number.isInteger(maxMembers) || maxMembers < 2)
     errors.maxMembers = "A group needs at least 2 members";
   if (!form.deadline) errors.deadline = "Pick a deadline";
@@ -87,6 +92,10 @@ const CreateGroupModal = () => {
     return [];
   }, [productsData]);
 
+  const selectedProduct = products.find((p) => String(p.id) === String(formData.productId)) || null;
+  const selectedRules = selectedProduct ? getOrderRules(selectedProduct) : null;
+  const unitPrice = Number(selectedProduct?.discounted_price || selectedProduct?.price || 0);
+
   const mutation = useMutation({
     mutationFn: createGroup,
     onSuccess: (res) => {
@@ -110,7 +119,7 @@ const CreateGroupModal = () => {
     e.preventDefault();
     if (mutation.isPending) return;
 
-    const nextErrors = validate(formData, today);
+    const nextErrors = validate(formData, today, selectedProduct);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
       toast.error("Please fix the highlighted fields");
@@ -124,10 +133,11 @@ const CreateGroupModal = () => {
       group_description: formData.description.trim(),
       group_location: formData.groupLocation.trim(),
       product_id: Number.isFinite(numericProductId) ? numericProductId : formData.productId,
-      target_quantity: `${quantity} ${formData.quantityUnit}`,
+      target_quantity: formatQuantity(quantity, selectedRules?.unit),
       target_quantity_numeric: quantity,
-      quantity_unit: formData.quantityUnit,
-      individual_contribution: Number(formData.contribution),
+      min_member_quantity: Number(formData.minShare),
+      // Members pay the product's price per unit, so no contribution is sent
+      quantity_unit: selectedRules?.unit || undefined,
       is_public: formData.isPublic,
       max_members: Number(formData.maxMembers),
       // End of the chosen day in the user's timezone
@@ -248,7 +258,7 @@ const CreateGroupModal = () => {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="quantity" className={LABEL}>
-              Target Quantity
+              Target Quantity{selectedRules?.unit ? ` (${unitLabel(2, selectedRules.unit)})` : ""}
             </label>
             <Input
               type="number"
@@ -265,49 +275,50 @@ const CreateGroupModal = () => {
             {fieldError("quantity")}
           </div>
 
-          <div>
-            <label htmlFor="quantityUnit" className={LABEL}>
-              Unit
-            </label>
-            <div className="relative">
-              <select
-                id="quantityUnit"
-                className={`${FIELD} ${fieldBorder(errors.quantityUnit)} h-12 appearance-none pr-10`}
-                value={formData.quantityUnit}
-                onChange={(e) => update("quantityUnit", e.target.value)}
-                {...errorProps("quantityUnit")}
-              >
-                {QUANTITY_UNITS.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                size={18}
-                aria-hidden="true"
-                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-              />
-            </div>
-            {fieldError("quantityUnit")}
+          <div className="rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-700" aria-live="polite">
+            {selectedProduct ? (
+              <>
+                <p>
+                  Sold per <span className="font-medium">{selectedRules.unit || "unit"}</span> at{" "}
+                  <span className="font-medium">₦{unitPrice.toLocaleString()}</span> (set by the farmer)
+                </p>
+                <p>
+                  Minimum order {formatQuantity(selectedRules.min, selectedRules.unit)}
+                  {selectedRules.max !== null && `, ${formatQuantity(selectedRules.max, selectedRules.unit)} in stock`}
+                </p>
+                {Number(formData.quantity) > 0 && (
+                  <p className="mt-1 font-medium text-gray-900">
+                    Group total: ₦{(unitPrice * Number(formData.quantity)).toLocaleString()} for{" "}
+                    {formatQuantity(Number(formData.quantity), selectedRules.unit)}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p>Pick an item to see its price and unit.</p>
+            )}
           </div>
 
           <div>
-            <label htmlFor="contribution" className={LABEL}>
-              Contribution per Member (₦)
+            <label htmlFor="minShare" className={LABEL}>
+              Minimum per Member{selectedRules?.unit ? ` (${unitLabel(2, selectedRules.unit)})` : ""}
             </label>
             <Input
               type="number"
-              id="contribution"
-              placeholder="e.g. 5000"
-              className={`h-12 placeholder:text-grey-200 ${errors.contribution ? "border-red-500" : ""}`}
-              value={formData.contribution}
+              id="minShare"
+              placeholder="e.g. 1"
+              className={`h-12 placeholder:text-grey-200 ${errors.minShare ? "border-red-500" : ""}`}
+              value={formData.minShare}
               inputMode="decimal"
               min="1"
-              onChange={(e) => update("contribution", e.target.value)}
-              {...errorProps("contribution")}
+              step={selectedRules?.isCount === false ? "0.5" : "1"}
+              onChange={(e) => update("minShare", e.target.value)}
+              {...errorProps("minShare")}
             />
-            {fieldError("contribution")}
+            {errors.minShare ? (
+              fieldError("minShare")
+            ) : (
+              <p className="mt-1 text-xs text-gray-500">The least each member buys when joining. Members can top up later.</p>
+            )}
           </div>
 
           <div>

@@ -7,17 +7,19 @@ import {
 } from "@/services";
 import { useQuery } from "@tanstack/react-query";
 
-export const useConsumerOrders = ({ status, search } = {}) =>
+export const useConsumerOrders = ({ status, search } = {}, { enabled = true } = {}) =>
   useQuery({
     queryKey: ["consumer-orders", { status, search }],
+    enabled,
     queryFn: () => getOrdersHandler({ status, search }),
   });
 
 // GET /orders/statistics/summary -> { data: { total_orders, pending_orders,
 // delivered_orders, cancelled_orders, total_spent, ... } }
-export const useConsumerOrderStats = () =>
+export const useConsumerOrderStats = ({ enabled = true } = {}) =>
   useQuery({
     queryKey: ["consumer-orders", "statistics"],
+    enabled,
     queryFn: async () => (await getOrderStatisticsHandler())?.data ?? {},
   });
 

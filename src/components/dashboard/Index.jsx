@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Cookies from "js-cookie";
+import { useQuery } from "@tanstack/react-query";
 import Charts from "./farmer/chart/Index.jsx";
 import DoughnutChart from "./consumer/chart/Index.jsx";
 import { QuickLinks, RecentOrders } from "./consumer/components/";
@@ -10,11 +11,27 @@ import FarmerProfileSetup from "./farmer/profile-setup/Index.jsx";
 import ConsumerProfileSetup from "./consumer/consumerProfile/Index.jsx";
 import LoaderSpinner from "../shared/Loader.jsx";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useFarmerOrder } from "@/hooks/useFarmerOrder";
+import { useFarmerProducts } from "@/hooks/useFarmerProducts";
+import { useConsumerOrders, useConsumerOrderStats } from "@/components/queries/consumer/order";
+import { walletDashboardQuery } from "@/lib/walletApi";
+
+// Start the dashboard's own requests together with the profile request instead
+// of after it (each round trip to the backend takes a second or two). The
+// widgets below read the same cached queries.
+const useDashboardData = (isFarmer) => {
+  useFarmerOrder({}, { enabled: isFarmer });
+  useFarmerProducts({ enabled: isFarmer });
+  useQuery({ ...walletDashboardQuery, enabled: isFarmer });
+  useConsumerOrders({}, { enabled: !isFarmer });
+  useConsumerOrderStats({ enabled: !isFarmer });
+};
 
 const Dashboard = () => {
   const role = Cookies.get("BIGFARMA_ROLE");
   const isFarmer = role === "farmer";
   const { data: user, isLoading } = useUserProfile();
+  useDashboardData(isFarmer);
   // Set when the setup flow finishes, so the dashboard shows straight away
   // instead of waiting for the profile to refetch
   const [setupFinished, setSetupFinished] = useState(false);

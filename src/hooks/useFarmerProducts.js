@@ -3,20 +3,24 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { farmerApi } from '../lib/farmerApi';
 
 // Fetch all farmer products
-export const useFarmerProducts = () => {
+export const useFarmerProducts = ({ enabled = true } = {}) => {
   return useQuery({
     queryKey: ['farmerProducts'],
+    enabled,
     queryFn: async () => {
       try {
         const response = await farmerApi.getProducts();
         return response.data;
       } catch (error) {
         console.error('Error fetching products:', error);
-        throw new Error(
+        const friendly = new Error(
           error.response?.data?.detail ||
             error.response?.data?.message ||
             'Failed to fetch products'
         );
+        // Keep the status so the retry rule can tell a 401 from a server error
+        friendly.response = error.response;
+        throw friendly;
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
