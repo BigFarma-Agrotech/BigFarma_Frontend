@@ -9,10 +9,20 @@ export const getOrdersHandler = async ({ status, search } = {}) => {
   return response.data;
 };
 
-// POST /orders creates one order per product: { product_id, quantity_ordered,
-// delivery_address }. The backend works out the price and notifies the farmer.
-export async function createOrderHandler(payload) {
-  const response = await axios.post(`/orders`, payload);
+// Orders are only placed through Paystack. POST /payments/checkout creates the
+// cart's orders (unpaid) and returns the Paystack page to send the buyer to:
+// { reference, authorization_url, subtotal, delivery_fee, tax, amount, orders }.
+// Payload: { items: [{ product_id, quantity }], delivery_address, contact_name,
+// contact_phone, delivery_option, email?, callback_url }.
+export async function checkoutHandler(payload) {
+  const response = await axios.post(`/payments/checkout`, payload);
+  return response.data;
+}
+
+// After Paystack sends the buyer back: confirms the payment and, if paid, marks
+// the orders paid. { status: "success" | "pending" | "failed" | "abandoned", ... }
+export async function verifyPaymentHandler(reference) {
+  const response = await axios.get(`/payments/verify/${encodeURIComponent(reference)}`);
   return response.data;
 }
 

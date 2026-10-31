@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FaCheckCircle } from "react-icons/fa";
+import { CONFIRMED_ORDER_KEY } from "@/lib/checkout";
+
+const naira = (value) => `₦${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
 export default function OrderConfirmationPage() {
   const [orderData, setOrderData] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const savedOrder = localStorage.getItem("bigfarma-order");
+    // Saved by PaymentProcessingPage once Paystack confirmed the payment
+    const savedOrder = localStorage.getItem(CONFIRMED_ORDER_KEY);
     if (!savedOrder) {
       navigate("/marketplace");
       return;
@@ -15,9 +19,10 @@ export default function OrderConfirmationPage() {
 
     try {
       const order = JSON.parse(savedOrder);
+      if (!order?.payment) throw new Error("No confirmed payment");
       setOrderData(order);
       const timer = setTimeout(() => {
-        localStorage.removeItem("bigfarma-order");
+        localStorage.removeItem(CONFIRMED_ORDER_KEY);
       }, 1000);
 
       return () => clearTimeout(timer);
@@ -38,8 +43,10 @@ export default function OrderConfirmationPage() {
     );
   }
 
-  const deliveryText =
-    orderData.customerInfo.deliveryOption === "door-delivery" ? "Door delivery" : "Pickup";
+  // Amounts and orders come from the server's record of the payment
+  const { payment, customerInfo = {} } = orderData;
+  const orders = payment.orders || [];
+  const deliveryText = customerInfo.deliveryOption === "pickup" ? "Pickup" : "Door delivery";
 
   return (
     <div className="mx-auto w-full max-w-2xl">
@@ -50,27 +57,28 @@ export default function OrderConfirmationPage() {
           </div>
           <h1 className="mb-2 text-xl font-bold text-gray-900 sm:text-2xl">Order Confirmed</h1>
           <p className="text-sm text-gray-600 sm:text-base">
-            Thank you {orderData.customerInfo.firstName}, your produce will be delivered soon.
+            Thank you{customerInfo.firstName ? ` ${customerInfo.firstName}` : ""}, your payment was
+            received and your produce will be {customerInfo.deliveryOption === "pickup" ? "ready for pickup" : "delivered"} soon.
           </p>
         </div>
 
         {/* Order Details */}
         <dl className="mb-6 grid grid-cols-1 gap-4 rounded-lg bg-gray-50 p-4 text-left sm:grid-cols-2 sm:p-6">
           <div>
-            <dt className="text-sm text-gray-600">Order ID</dt>
-            <dd className="font-semibold break-all">{orderData.orderId}</dd>
+            <dt className="text-sm text-gray-600">Order {orders.length > 1 ? "numbers" : "number"}</dt>
+            <dd className="font-semibold break-all">{orders.map((o) => o.order_number).join(", ")}</dd>
           </div>
           <div>
             <dt className="text-sm text-gray-600">Total paid</dt>
-            <dd className="font-semibold">₦{orderData.totals.total.toLocaleString()}</dd>
+            <dd className="font-semibold">{naira(payment.amount)}</dd>
           </div>
           <div>
             <dt className="text-sm text-gray-600">Delivery</dt>
             <dd className="font-semibold">{deliveryText}</dd>
           </div>
           <div>
-            <dt className="text-sm text-gray-600">Payment Method</dt>
-            <dd className="font-semibold capitalize">{orderData.customerInfo.paymentOption}</dd>
+            <dt className="text-sm text-gray-600">Paid with</dt>
+            <dd className="font-semibold">Paystack</dd>
           </div>
         </dl>
 
@@ -78,18 +86,13 @@ export default function OrderConfirmationPage() {
         <div className="mb-6 rounded-lg border border-gray-200 p-4 text-left sm:p-6">
           <h2 className="mb-4 font-semibold text-gray-900">Order Items</h2>
           <div className="space-y-3">
-            {orderData.items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-4">
+            {orders.map((order) => (
+              <div key={order.public_id} className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="break-words font-medium capitalize">{item.name}</p>
-                  <p className="text-sm text-gray-600">
-                    Quantity: {item.cartQuantity}{" "}
-                    {item.quantity?.split(" ").slice(1).join(" ") || "units"}
-                  </p>
+                  <p className="break-words font-medium capitalize">{order.product_name}</p>
+                  <p className="text-sm text-gray-600">Quantity: {order.quantity_ordered}</p>
                 </div>
-                <p className="shrink-0 font-semibold">
-                  ₦{(item.price * item.cartQuantity).toLocaleString()}
-                </p>
+                <p className="shrink-0 font-semibold">{naira(order.total_price)}</p>
               </div>
             ))}
           </div>
@@ -99,19 +102,19 @@ export default function OrderConfirmationPage() {
           <div className="space-y-2 text-sm sm:text-base">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>₦{orderData.totals.subtotal.toLocaleString()}</span>
+              <span>{naira(payment.subtotal)}</span>
             </div>
             <div className="flex justify-between">
               <span>Delivery</span>
-              <span>₦{orderData.totals.deliveryFee.toLocaleString()}</span>
+              <span>{payment.delivery_fee ? naira(payment.delivery_fee) : "Free (pickup)"}</span>
             </div>
             <div className="flex justify-between">
               <span>Tax</span>
-              <span>₦{orderData.totals.tax.toLocaleString()}</span>
+              <span>{naira(payment.tax)}</span>
             </div>
             <div className="flex justify-between border-t border-gray-200 pt-2 text-lg font-semibold text-gray-900">
               <span>Total</span>
-              <span>₦{orderData.totals.total.toLocaleString()}</span>
+              <span>{naira(payment.amount)}</span>
             </div>
           </div>
         </div>
@@ -121,22 +124,25 @@ export default function OrderConfirmationPage() {
           <h2 className="mb-4 font-semibold text-gray-900">Delivery Information</h2>
           <div className="space-y-2 break-words text-sm sm:text-base">
             <p>
-              <span className="text-gray-600">Name:</span> {orderData.customerInfo.firstName}{" "}
-              {orderData.customerInfo.lastName}
+              <span className="text-gray-600">Name:</span> {customerInfo.firstName}{" "}
+              {customerInfo.lastName}
             </p>
             <p>
-              <span className="text-gray-600">Phone:</span> {orderData.customerInfo.phoneNumber}
+              <span className="text-gray-600">Phone:</span> {customerInfo.phoneNumber}
             </p>
-            {orderData.customerInfo.email && (
+            {customerInfo.email && (
               <p>
-                <span className="text-gray-600">Email:</span> {orderData.customerInfo.email}
+                <span className="text-gray-600">Email:</span> {customerInfo.email}
               </p>
             )}
             <p>
-              <span className="text-gray-600">Address:</span> {orderData.customerInfo.address}
+              <span className="text-gray-600">Address:</span> {customerInfo.address}
             </p>
             <p>
               <span className="text-gray-600">Delivery Method:</span> {deliveryText}
+            </p>
+            <p className="break-all">
+              <span className="text-gray-600">Payment reference:</span> {payment.reference}
             </p>
           </div>
         </div>

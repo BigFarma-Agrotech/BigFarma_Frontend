@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { Link, Navigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useCart } from "@/hooks";
 import { Button, Input } from "@/components/shared";
-import { createOrderHandler } from "@/services";
+import { checkoutHandler } from "@/services";
 import { parseApiError } from "@/lib/apiError";
-import { farmerOrderKeys } from "@/hooks/useFarmerOrder";
+import { PENDING_CHECKOUT_KEY } from "@/lib/checkout";
+
+// Shown before checkout; the backend works out the amount Paystack charges
+const DELIVERY_FEE = 1500;
+const TAX_RATE = 0.075;
 
 const LABEL = "mb-1.5 block text-sm font-medium text-gray-700";
 const ERROR = "mt-1 text-sm text-red-600";
@@ -17,8 +20,6 @@ const fieldClass = (hasError) =>
 
 export default function CheckoutPage() {
   const { cartItems, getCartTotal } = useCart();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -27,15 +28,13 @@ export default function CheckoutPage() {
     email: "",
     address: "",
     deliveryOption: "door-delivery",
-    paymentOption: "flutterwave",
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const subtotal = getCartTotal();
-  const deliveryFee = 1500;
-  const taxRate = 0.075;
-  const tax = subtotal * taxRate;
+  const deliveryFee = formData.deliveryOption === "pickup" ? 0 : DELIVERY_FEE;
+  const tax = subtotal * TAX_RATE;
   const totalPayment = subtotal + deliveryFee + tax;
 
   if (cartItems.length === 0) {
@@ -67,8 +66,8 @@ export default function CheckoutPage() {
       newErrors.deliveryOption = "Please select a delivery option";
     }
 
-    if (!formData.paymentOption) {
-      newErrors.paymentOption = "Please select a payment option";
+    if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = "Please enter a valid email address";
     }
 
     setErrors(newErrors);
@@ -90,69 +89,48 @@ export default function CheckoutPage() {
     }
 
     setIsSubmitting(true);
+    const { firstName, lastName, phoneNumber, email, address, deliveryOption } = formData;
 
-    // The backend takes one order per product, so place them together. The
-    // contact details go with the address because the order has no other
-    // field for them and the farmer needs them to deliver.
-    const { firstName, lastName, phoneNumber, address } = formData;
-    const deliveryAddress = `${address.trim()} (Contact: ${firstName.trim()} ${lastName.trim()}, ${phoneNumber.trim()})`;
-    const results = await Promise.allSettled(
-      cartItems.map((item) =>
-        createOrderHandler({
-          product_id: item.id,
-          quantity_ordered: String(item.cartQuantity),
-          delivery_address: deliveryAddress,
-        })
-      )
-    );
-
-    const placed = [];
-    const failed = [];
-    results.forEach((result, i) => {
-      if (result.status === "fulfilled") {
-        placed.push({ item: cartItems[i], order: result.value?.data ?? result.value });
-      } else {
-        failed.push({ item: cartItems[i], error: result.reason });
-      }
-    });
-
-    queryClient.invalidateQueries({ queryKey: ["consumer-orders"] });
-    queryClient.invalidateQueries({ queryKey: farmerOrderKeys.all });
-
-    if (placed.length === 0) {
+    let checkout;
+    try {
+      // Creates the orders (unpaid) and a Paystack transaction for the whole cart
+      checkout = await checkoutHandler({
+        items: cartItems.map((item) => ({ product_id: item.id, quantity: item.cartQuantity })),
+        delivery_address: address.trim(),
+        contact_name: `${firstName.trim()} ${lastName.trim()}`,
+        contact_phone: phoneNumber.trim(),
+        delivery_option: deliveryOption,
+        email: email.trim() || undefined,
+        callback_url: `${window.location.origin}/payment-processing`,
+      });
+    } catch (error) {
       setIsSubmitting(false);
-      toast.error(parseApiError(failed[0].error, "Couldn't place your order. Please try again.").message);
+      toast.error(parseApiError(error, "Couldn't start your payment. Please try again.").message);
       return;
     }
-    if (failed.length > 0) {
-      toast.warn(
-        `${failed.map(({ item }) => item.name).join(", ")} couldn't be ordered and ${
-          failed.length === 1 ? "is" : "are"
-        } still in your cart.`
-      );
+
+    if (!checkout?.authorization_url) {
+      setIsSubmitting(false);
+      toast.error("Couldn't open the payment page. Please try again.");
+      return;
     }
 
-    const items = placed.map(({ item }) => item);
-    const placedSubtotal = items.reduce((sum, item) => sum + item.price * item.cartQuantity, 0);
-    const placedTax = placedSubtotal * taxRate;
+    // Kept for when Paystack sends the buyer back to /payment-processing
+    try {
+      localStorage.setItem(
+        PENDING_CHECKOUT_KEY,
+        JSON.stringify({
+          reference: checkout.reference,
+          productIds: cartItems.map((item) => item.id),
+          items: cartItems,
+          customerInfo: { firstName, lastName, phoneNumber, email, address, deliveryOption },
+        })
+      );
+    } catch {
+      // The payment page still works; the confirmation just shows less detail
+    }
 
-    const orderData = {
-      orderId: placed
-        .map(({ order }, i) => order?.order_number || (order?.public_id != null ? `#${order.public_id}` : `item ${i + 1}`))
-        .join(", "),
-      items,
-      customerInfo: formData,
-      totals: {
-        subtotal: placedSubtotal,
-        deliveryFee,
-        tax: Math.round(placedTax),
-        total: Math.round(placedSubtotal + deliveryFee + placedTax),
-      },
-      timestamp: new Date().toISOString(),
-    };
-
-    localStorage.setItem("bigfarma-order", JSON.stringify(orderData));
-    navigate("/payment-processing");
+    window.location.assign(checkout.authorization_url);
   };
 
   return (
@@ -225,9 +203,15 @@ export default function CheckoutPage() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  className="h-12"
+                  className={`h-12 ${errors.email ? "border-red-500" : ""}`}
+                  aria-invalid={Boolean(errors.email)}
                   placeholder="example@gmail.com"
                 />
+                {errors.email ? (
+                  <p className={ERROR}>{errors.email}</p>
+                ) : (
+                  <p className="mt-1 text-xs text-gray-500">Paystack sends your receipt here</p>
+                )}
               </div>
             </div>
 
@@ -247,9 +231,9 @@ export default function CheckoutPage() {
             </div>
           </section>
 
-          {/* Delivery & Payment Options */}
+          {/* Delivery */}
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Delivery &amp; Payment</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Delivery</h2>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
@@ -269,31 +253,13 @@ export default function CheckoutPage() {
                 </select>
                 {errors.deliveryOption && <p className={ERROR}>{errors.deliveryOption}</p>}
               </div>
-
-              <div>
-                <label htmlFor="paymentOption" className={LABEL}>
-                  Payment Option
-                </label>
-                <select
-                  id="paymentOption"
-                  value={formData.paymentOption}
-                  onChange={(e) => handleInputChange("paymentOption", e.target.value)}
-                  className={fieldClass(errors.paymentOption)}
-                  aria-invalid={Boolean(errors.paymentOption)}
-                >
-                  <option value="">Select payment option</option>
-                  <option value="flutterwave">Flutterwave</option>
-                  <option value="paystack">Paystack</option>
-                  <option value="bank-transfer">Bank Transfer</option>
-                </select>
-                {errors.paymentOption && <p className={ERROR}>{errors.paymentOption}</p>}
-              </div>
             </div>
           </section>
 
           {/* Terms */}
           <p className="text-sm text-gray-600">
-            By placing an order you agree to BigFarma terms and refund policy
+            You&apos;ll pay securely with Paystack. By placing an order you agree to BigFarma terms
+            and refund policy.
           </p>
         </form>
 
@@ -323,7 +289,7 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between">
               <span>Delivery</span>
-              <span>₦{deliveryFee.toLocaleString()}</span>
+              <span>{deliveryFee ? `₦${deliveryFee.toLocaleString()}` : "Free (pickup)"}</span>
             </div>
             <div className="flex justify-between">
               <span>Tax (7.5%)</span>
@@ -346,7 +312,7 @@ export default function CheckoutPage() {
               disabled={isSubmitting}
               className="h-12 w-full py-0"
             >
-              {isSubmitting ? "Processing..." : "Checkout"}
+              {isSubmitting ? "Redirecting to Paystack..." : "Checkout"}
             </Button>
             <Link
               to="/cart"
