@@ -99,7 +99,6 @@ const MyProducts = () => {
       product: product.name || `Product ${index + 1}`,
       // An <img> takes a single URL (joining two with a comma breaks it)
       image: getProductImage(product) || productImages[product.name] || watermelon,
-      productID: product.code || (product.public_id ? `#${product.public_id}` : "—"),
       price: product.price
         ? `₦${parseFloat(product.price).toLocaleString()}`
         : "₦0",
@@ -248,10 +247,6 @@ const MyProducts = () => {
           </button>
         </div>
       ),
-    },
-    {
-      key: "productID",
-      label: "Product Code",
     },
     {
       key: "price",
