@@ -3,15 +3,10 @@ import { IoIosStar } from "react-icons/io";
 import { toast } from "react-toastify";
 import { useCart } from "@/hooks";
 import { Button, Skeleton } from "@/components/shared";
+import { canOrder, formatQuantity, getOrderRules } from "@/lib/units";
 
 const PLACEHOLDER_IMAGE = "https://via.placeholder.com/300";
 const GRID_CLASSES = "grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 2xl:grid-cols-4";
-
-const getUnit = (quantity) => {
-  if (!quantity) return "item";
-  const parts = String(quantity).split(" ");
-  return parts.length > 1 ? parts.slice(1).join(" ") : quantity;
-};
 
 const getProductImage = (product) => {
   if (!product.images) return PLACEHOLDER_IMAGE;
@@ -55,7 +50,9 @@ export function StockBadge({ inStock }) {
 }
 
 export function ProductCard({ product, onAddToCart }) {
-  const inStock = product.availability === "in_stock";
+  const rules = getOrderRules(product);
+  // Stock below the farmer's minimum order can't be bought either
+  const inStock = product.availability === "in_stock" && canOrder(rules);
   const price = product.discounted_price || product.price || 0;
 
   return (
@@ -84,8 +81,9 @@ export function ProductCard({ product, onAddToCart }) {
           {product.discount_percentage > 0 && (
             <p className="text-xs text-gray-500 line-through">₦{product.price}</p>
           )}
-          <p className="text-sm text-gray-600">per {getUnit(product.quantity)}</p>
+          <p className="text-sm text-gray-600">per {rules.unit || "item"}</p>
         </div>
+        <p className="text-sm text-gray-600">Min. order: {formatQuantity(rules.min, rules.unit)}</p>
 
         <div className="flex items-center gap-1 text-sm text-gray-600">
           <IoIosStar className="text-yellow-500" aria-hidden="true" />
@@ -136,8 +134,10 @@ export default function ProductsList({
       toast.error("This product is out of stock");
       return;
     }
+    // Goes in at the farmer's minimum order
     addToCart(product);
-    toast.success(`${product.name} added to cart!`);
+    const { min, unit } = getOrderRules(product);
+    toast.success(`${formatQuantity(min, unit)} of ${product.name} added to cart!`);
   };
 
   if (isLoading) {

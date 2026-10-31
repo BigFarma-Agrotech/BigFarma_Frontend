@@ -18,8 +18,8 @@ import { parseApiError } from "@/lib/apiError";
 import {
   extractProducts,
   getProductImage,
-  splitQuantity,
 } from "../../../lib/farmerOrder";
+import { formatQuantity, getOrderRules } from "@/lib/units";
 import filterIcon from "../../../assets/icons/filter.svg";
 
 // Fallback images
@@ -103,7 +103,11 @@ const MyProducts = () => {
       price: product.price
         ? `₦${parseFloat(product.price).toLocaleString()}`
         : "₦0",
-      quantity: `${product.quantity || "0"} ${product.unit || ""}`.trim(),
+      // quantity already carries its unit ("20 bags"); show the minimum order with it
+      quantity: `${product.quantity || "0"} (min. ${formatQuantity(
+        getOrderRules(product).min,
+        getOrderRules(product).unit
+      )})`,
       status: getProductStatus(product),
       originalData: product,
     }));
@@ -154,11 +158,11 @@ const MyProducts = () => {
   };
 
   const handleRestockConfirm = (productId, quantity) => {
-    // The backend stores quantity as text with its unit ("20 kg"); keep the
-    // product's existing unit
-    const { unit } = splitQuantity(selectedProduct?.originalData?.quantity);
+    // The backend stores quantity as text with its unit ("20 kg", "5 bags");
+    // keep the product's existing unit
+    const { unit } = getOrderRules(selectedProduct?.originalData);
     restockMutation.mutate(
-      { productId, quantity: `${Number(quantity)} ${unit}` },
+      { productId, quantity: formatQuantity(Number(quantity), unit) },
       {
         onSuccess: () => {
           toast.success("Product restocked successfully");

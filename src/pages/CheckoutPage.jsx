@@ -6,6 +6,7 @@ import { Button, Input } from "@/components/shared";
 import { checkoutHandler } from "@/services";
 import { parseApiError } from "@/lib/apiError";
 import { PENDING_CHECKOUT_KEY } from "@/lib/checkout";
+import { formatQuantity, getOrderRules } from "@/lib/units";
 
 // Shown before checkout; the backend works out the amount Paystack charges
 const DELIVERY_FEE = 1500;
@@ -271,7 +272,7 @@ export default function CheckoutPage() {
             {cartItems.map((item) => (
               <div key={item.id} className="flex justify-between gap-4 text-sm">
                 <span className="min-w-0 break-words capitalize">
-                  {item.name} x {item.cartQuantity}
+                  {item.name} x {formatQuantity(item.cartQuantity, getOrderRules(item).unit)}
                 </span>
                 <span className="shrink-0">
                   ₦{(item.price * item.cartQuantity).toLocaleString()}

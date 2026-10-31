@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { FaMinus, FaPlus } from "react-icons/fa6";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/hooks";
+import { canOrder, formatQuantity, getOrderRules, unitLabel } from "@/lib/units";
 
 const PRIMARY_LINK =
   "inline-flex h-12 w-full items-center justify-center rounded-lg bg-primary px-6 font-medium text-white transition-colors hover:bg-primary-dark";
@@ -10,6 +11,8 @@ const OUTLINE_LINK =
 
 export default function CartPage() {
   const { cartItems, updateQuantity, removeFromCart, getCartTotal, clearCart } = useCart();
+  // Stock below the minimum order: can't be checked out until the farmer restocks
+  const blocked = cartItems.filter((item) => !canOrder(getOrderRules(item)));
 
   const subtotal = getCartTotal();
   const deliveryFee = 1500;
@@ -77,10 +80,23 @@ export default function CartPage() {
                   <h2 className="truncate text-base font-semibold capitalize text-gray-900 sm:text-lg">
                     {item.name}
                   </h2>
-                  <p className="font-semibold text-primary">₦{Number(item.price || 0).toLocaleString()}</p>
+                  <p className="font-semibold text-primary">
+                    ₦{Number(item.price || 0).toLocaleString()}
+                    {getOrderRules(item).unit && (
+                      <span className="text-sm font-normal text-gray-600"> per {getOrderRules(item).unit}</span>
+                    )}
+                  </p>
                   <p className="text-sm text-gray-600">
                     Available: {item.quantity || "In stock"}
                   </p>
+                  <p className="text-sm text-gray-600">
+                    Min. order: {formatQuantity(getOrderRules(item).min, getOrderRules(item).unit)}
+                  </p>
+                  {!canOrder(getOrderRules(item)) && (
+                    <p className="text-sm text-red-600">
+                      Not enough stock for the minimum order. Remove it to check out.
+                    </p>
+                  )}
                   <p className="text-xs capitalize text-gray-500">Category: {item.category}</p>
                 </div>
               </div>
@@ -90,21 +106,27 @@ export default function CartPage() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => updateQuantity(item.id, item.cartQuantity - 1)}
+                    onClick={() => updateQuantity(item.id, item.cartQuantity - getOrderRules(item).step)}
                     className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={item.cartQuantity <= 1}
+                    disabled={item.cartQuantity <= getOrderRules(item).min}
                     aria-label={`Decrease quantity of ${item.name}`}
                   >
                     <FaMinus className="h-3 w-3" />
                   </button>
-                  <span className="w-8 text-center font-semibold" aria-live="polite">
-                    {item.cartQuantity}
+                  <span className="min-w-16 text-center font-semibold" aria-live="polite">
+                    {item.cartQuantity}{" "}
+                    <span className="text-sm font-normal text-gray-600">
+                      {unitLabel(item.cartQuantity, getOrderRules(item).unit)}
+                    </span>
                   </span>
                   <button
                     type="button"
-                    onClick={() => updateQuantity(item.id, item.cartQuantity + 1)}
+                    onClick={() => updateQuantity(item.id, item.cartQuantity + getOrderRules(item).step)}
                     className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={item.cartQuantity >= (parseInt(item.quantity?.split(" ")[0]) || 999)}
+                    disabled={
+                      getOrderRules(item).max !== null &&
+                      item.cartQuantity + getOrderRules(item).step > getOrderRules(item).max
+                    }
                     aria-label={`Increase quantity of ${item.name}`}
                   >
                     <FaPlus className="h-3 w-3" />
@@ -136,7 +158,7 @@ export default function CartPage() {
             {cartItems.map((item) => (
               <div key={item.id} className="flex justify-between gap-4 text-sm">
                 <span className="min-w-0 break-words capitalize">
-                  {item.name} x {item.cartQuantity}
+                  {item.name} x {formatQuantity(item.cartQuantity, getOrderRules(item).unit)}
                 </span>
                 <span className="shrink-0">₦{(item.price * item.cartQuantity).toLocaleString()}</span>
               </div>
@@ -168,9 +190,20 @@ export default function CartPage() {
           </div>
 
           <div className="mt-6 space-y-3">
-            <Link to="/checkout" className={PRIMARY_LINK}>
-              Checkout
-            </Link>
+            {blocked.length > 0 ? (
+              <>
+                <p className="text-sm text-red-600" role="alert">
+                  Remove {blocked.map((item) => item.name).join(", ")} to check out.
+                </p>
+                <span aria-disabled="true" className={`${PRIMARY_LINK} cursor-not-allowed opacity-50`}>
+                  Checkout
+                </span>
+              </>
+            ) : (
+              <Link to="/checkout" className={PRIMARY_LINK}>
+                Checkout
+              </Link>
+            )}
             <Link to="/marketplace" className={OUTLINE_LINK}>
               Continue Shopping
             </Link>

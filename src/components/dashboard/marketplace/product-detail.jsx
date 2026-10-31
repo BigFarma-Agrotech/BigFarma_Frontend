@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { IoMdArrowBack } from "react-icons/io";
@@ -8,11 +8,7 @@ import { fetchProductById, fetchProducts } from "@/lib/api";
 import { useCart } from "@/hooks";
 import { Button, Skeleton } from "@/components/shared";
 import { ProductCard, StockBadge } from "./product-list";
-
-const getUnit = (quantity = "") => {
-  const parts = String(quantity ?? "").split(" ");
-  return parts.length > 1 ? parts.slice(1).join(" ") : quantity;
-};
+import { canOrder, clampQuantity, formatQuantity, getOrderRules, unitLabel } from "@/lib/units";
 
 const BackLink = () => (
   <Link
@@ -41,15 +37,22 @@ export default function ProductDetail() {
     queryFn: fetchProducts,
   });
 
+  // What a buyer may order: starts at the farmer's minimum, one unit per step, up to the stock
+  const rules = getOrderRules(data);
+  useEffect(() => {
+    if (data) setQuantity(getOrderRules(data).min);
+  }, [data]);
+
+  const addedMessage = (product, amount) =>
+    `${formatQuantity(amount, getOrderRules(product).unit)} of ${product.name} added to cart!`;
+
   const handleAddToCart = (product) => {
     if (product.availability !== "in_stock") {
       toast.error("This product is out of stock");
       return;
     }
     addToCart(product, quantity);
-    toast.success(
-      `${quantity} ${product.name}${quantity > 1 ? "s" : ""} added to cart!`
-    );
+    toast.success(addedMessage(product, clampQuantity(quantity, getOrderRules(product))));
   };
 
   const handleAddSimilarToCart = (product) => {
@@ -57,8 +60,9 @@ export default function ProductDetail() {
       toast.error("This product is out of stock");
       return;
     }
-    addToCart(product, 1);
-    toast.success(`${product.name} added to cart!`);
+    // Similar products go in at their own minimum order
+    addToCart(product);
+    toast.success(addedMessage(product, getOrderRules(product).min));
   };
 
   const handleBuyNow = (product) => {
@@ -67,24 +71,15 @@ export default function ProductDetail() {
       return;
     }
     addToCart(product, quantity);
-    toast.success(
-      `${quantity} ${product.name}${quantity > 1 ? "s" : ""} added to cart!`
-    );
+    toast.success(addedMessage(product, clampQuantity(quantity, getOrderRules(product))));
     navigate("/checkout");
   };
 
-  const incrementQuantity = () => {
-    const maxStock = parseInt(String(data?.quantity ?? "").split(" ")[0]) || 999;
-    if (quantity < maxStock) {
-      setQuantity((prev) => prev + 1);
-    }
-  };
+  const incrementQuantity = () =>
+    setQuantity((prev) => clampQuantity(prev + rules.step, rules));
 
-  const decrementQuantity = () => {
-    if (quantity > 1) {
-      setQuantity((prev) => prev - 1);
-    }
-  };
+  const decrementQuantity = () =>
+    setQuantity((prev) => clampQuantity(prev - rules.step, rules));
 
   if (isLoading) {
     return (
@@ -119,9 +114,10 @@ export default function ProductDetail() {
     );
   }
 
-  const inStock = data.availability === "in_stock";
-  const unit = getUnit(data.quantity);
-  const stockCount = parseInt(String(data.quantity ?? "").split(" ")[0]) || null;
+  const orderable = canOrder(rules);
+  const inStock = data.availability === "in_stock" && orderable;
+  const unit = rules.unit || "unit";
+  const stockCount = rules.max;
 
   // Find similar products in the same category
   const similar =
@@ -166,26 +162,31 @@ export default function ProductDetail() {
 
           {inStock && (
             <>
-              <p className="mt-1 text-sm text-primary">{stockCount ? `${stockCount} in stock` : "In stock"}</p>
+              <p className="mt-1 text-sm text-primary">
+                {stockCount !== null ? `${formatQuantity(stockCount, rules.unit)} in stock` : "In stock"}
+              </p>
+              <p className="mt-1 text-sm text-gray-600">
+                Minimum order: {formatQuantity(rules.min, rules.unit)}
+              </p>
 
               {/* Quantity selector */}
               <div className="mt-4 inline-flex items-center rounded-lg bg-primary-subtle/60">
                 <button
                   type="button"
                   onClick={decrementQuantity}
-                  disabled={quantity <= 1}
+                  disabled={quantity <= rules.min}
                   aria-label="Decrease quantity"
                   className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-primary-subtle disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <FaMinus className="h-6 w-6 rounded-full border-2 p-1" />
                 </button>
                 <span className="min-w-12 px-6 text-center font-medium" aria-live="polite">
-                  {quantity}
+                  {quantity} <span className="text-sm text-gray-600">{unitLabel(quantity, rules.unit)}</span>
                 </span>
                 <button
                   type="button"
                   onClick={incrementQuantity}
-                  disabled={stockCount !== null && quantity >= stockCount}
+                  disabled={stockCount !== null && quantity + rules.step > stockCount}
                   aria-label="Increase quantity"
                   className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-primary-subtle disabled:cursor-not-allowed disabled:opacity-50"
                 >

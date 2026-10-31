@@ -7,14 +7,14 @@ import { endpoints } from "../../config/endpoints";
 import Button from "@/components/shared/Button";
 import { parseApiError } from "@/lib/apiError";
 import { useUpdateFarmerProduct } from "../../../hooks/useFarmerProducts";
-import { splitQuantity } from "../../../lib/farmerOrder";
+import { UNIT_GROUPS, formatQuantity, isCountUnit, normalizeUnit, parseQuantity, unitLabel } from "@/lib/units";
 import formHeader from "../../../assets/images/addProductHeader.webp";
 
 const initialFormData = {
   name: "",
   category: "",
   quantity: "",
-  min_quantity: "",
+  min_quantity: "1",
   price: "",
   location: "",
   description: "",
@@ -24,34 +24,34 @@ const initialFormData = {
 
 const categories = ["crop", "livestock"];
 
-const units = [
-  "kg",
-  "g",
-  "lb",
-  "oz",
-  "tonnes",
-  "liters",
-  "ml",
-  "gallons",
-  "crates",
-  "bags",
-  "baskets",
-  "dozens",
-  "packs",
-  "bundles",
-];
+const KNOWN_UNITS = UNIT_GROUPS.flatMap(({ units }) => units);
+
+// Why the stock / minimum order can't be saved, or null
+const orderRulesError = ({ quantity, unit, min_quantity }) => {
+  const stock = Number(quantity);
+  const min = Number(min_quantity);
+  if (!(min > 0)) return "Minimum order must be greater than 0.";
+  if (isCountUnit(unit) && (!Number.isInteger(stock) || !Number.isInteger(min))) {
+    return `Quantity and minimum order must be whole numbers of ${unitLabel(2, unit)}.`;
+  }
+  if (stock > 0 && min > stock) return "Minimum order can't be more than the quantity in stock.";
+  return null;
+};
 
 // Prefills the form from an existing product (edit) or starts empty (add).
 // Existing images are URLs and are sent back as-is to keep them.
 const toFormState = (product) => {
   if (!product) return { form: initialFormData, previews: [] };
   const images = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
+  const stock = parseQuantity(product.quantity);
   return {
     form: {
       ...initialFormData,
       name: product.name || "",
       category: product.category || "",
-      ...splitQuantity(product.quantity),
+      quantity: stock.amount ?? "",
+      unit: normalizeUnit(product.unit) || stock.unit || "kg",
+      min_quantity: String(product.min_order_quantity ?? 1),
       price: product.price ?? "",
       location: product.location || "",
       description: product.description || "",
@@ -130,6 +130,11 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
       toast.error("Description must be at least 20 characters long.");
       return;
     }
+    const rulesError = orderRulesError(formData);
+    if (rulesError) {
+      toast.error(rulesError);
+      return;
+    }
 
     setIsLoading(true);
     updateMutation.mutate(
@@ -139,7 +144,9 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
           name: formData.name.trim(),
           category: formData.category,
           description: formData.description.trim(),
-          quantity: `${formData.quantity} ${formData.unit}`,
+          quantity: formatQuantity(formData.quantity, formData.unit),
+          unit: formData.unit,
+          min_order_quantity: Number(formData.min_quantity),
           price: Number(formData.price),
           location: formData.location.trim(),
           images: formData.images,
@@ -170,6 +177,11 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
       handleUpdate();
       return;
     }
+    const rulesError = orderRulesError(formData);
+    if (rulesError) {
+      toast.error(rulesError);
+      return;
+    }
     if (formData.name && formData.category && formData.location) {
       setIsLoading(true);
 
@@ -177,7 +189,9 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
         name: formData.name,
         category: formData.category,
         description: formData.description,
-        quantity: `${formData.quantity} ${formData.unit}`,
+        quantity: formatQuantity(formData.quantity, formData.unit),
+        unit: formData.unit,
+        min_order_quantity: Number(formData.min_quantity),
         price: formData.price,
         discount_percentage: 0,
         location: formData.location,
@@ -302,25 +316,8 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
-              <label htmlFor="quantity" className={labelClass}>
-                Quantity
-              </label>
-              <input
-                type="number"
-                id="quantity"
-                name="quantity"
-                value={formData.quantity}
-                onChange={handleInputChange}
-                placeholder="Enter Quantity"
-                className={fieldClass}
-                required
-                min="0"
-                step="0.01"
-              />
-            </div>
-            <div>
               <label htmlFor="unit" className={labelClass}>
-                Unit
+                Sold per (unit)
               </label>
               <select
                 id="unit"
@@ -330,36 +327,23 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
                 className={fieldClass}
                 required
               >
-                {(units.includes(formData.unit) ? units : [formData.unit, ...units]).map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
+                {!KNOWN_UNITS.includes(formData.unit) && (
+                  <option value={formData.unit}>{formData.unit}</option>
+                )}
+                {UNIT_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.units.map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <label htmlFor="min_quantity" className={labelClass}>
-                Minimum Quantity
-              </label>
-              <input
-                type="number"
-                id="min_quantity"
-                name="min_quantity"
-                value={formData.min_quantity}
-                onChange={handleInputChange}
-                placeholder="Enter minimum quantity"
-                className={fieldClass}
-                required={!isEditing}
-                min="0"
-                step="0.01"
-              />
-            </div>
             <div>
               <label htmlFor="price" className={labelClass}>
-                Price (₦)
+                Price per {formData.unit} (₦)
               </label>
               <input
                 type="number"
@@ -373,6 +357,47 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
                 min="0"
                 step="0.01"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div>
+              <label htmlFor="quantity" className={labelClass}>
+                Quantity in stock ({unitLabel(2, formData.unit)})
+              </label>
+              <input
+                type="number"
+                id="quantity"
+                name="quantity"
+                value={formData.quantity}
+                onChange={handleInputChange}
+                placeholder="Enter Quantity"
+                className={fieldClass}
+                required
+                min="0"
+                step={isCountUnit(formData.unit) ? "1" : "0.01"}
+              />
+            </div>
+            <div>
+              <label htmlFor="min_quantity" className={labelClass}>
+                Minimum order per buyer ({unitLabel(2, formData.unit)})
+              </label>
+              <input
+                type="number"
+                id="min_quantity"
+                name="min_quantity"
+                value={formData.min_quantity}
+                onChange={handleInputChange}
+                placeholder="e.g. 5"
+                aria-describedby="min_quantity_help"
+                className={fieldClass}
+                required
+                min={isCountUnit(formData.unit) ? "1" : "0.01"}
+                step={isCountUnit(formData.unit) ? "1" : "0.01"}
+              />
+              <p id="min_quantity_help" className="mt-1 text-xs text-gray-500">
+                Buyers can&apos;t order less than this. They add more one {formData.unit} at a time.
+              </p>
             </div>
           </div>
 

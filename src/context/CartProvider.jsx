@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CartContext } from "./CartContext";
+import { clampQuantity, getOrderRules } from "@/lib/units";
 
 const STORAGE_KEY = "BIGFARMA_CART";
 
@@ -30,14 +31,18 @@ export const CartProvider = ({ children }) => {
     }
   }, [cartItems]);
 
-  const addToCart = (product, quantity = 1) => {
+  // Quantities always respect the product's minimum order and stock; leaving
+  // `quantity` out adds the minimum
+  const addToCart = (product, quantity) => {
+    const rules = getOrderRules(product);
+    const amount = quantity ?? rules.min;
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.id === product.id);
 
       if (existingItem) {
         return prevItems.map((item) =>
           item.id === product.id
-            ? { ...item, cartQuantity: item.cartQuantity + quantity }
+            ? { ...item, cartQuantity: clampQuantity(item.cartQuantity + amount, rules) }
             : item
         );
       }
@@ -47,7 +52,7 @@ export const CartProvider = ({ children }) => {
           ...product,
           original_price: Number(product.price || 0),
           price: getUnitPrice(product),
-          cartQuantity: quantity,
+          cartQuantity: clampQuantity(amount, rules),
         },
       ];
     });
@@ -65,7 +70,9 @@ export const CartProvider = ({ children }) => {
 
     setCartItems((prevItems) =>
       prevItems.map((item) =>
-        item.id === productId ? { ...item, cartQuantity: quantity } : item
+        item.id === productId
+          ? { ...item, cartQuantity: clampQuantity(quantity, getOrderRules(item)) }
+          : item
       )
     );
   };
@@ -74,9 +81,8 @@ export const CartProvider = ({ children }) => {
     setCartItems([]);
   };
 
-  const getCartCount = () => {
-    return cartItems.reduce((total, item) => total + item.cartQuantity, 0);
-  };
+  // Number of products: quantities in different units (kg, bags) can't be added up
+  const getCartCount = () => cartItems.length;
 
   const getCartTotal = () => {
     return cartItems.reduce(
