@@ -9,7 +9,7 @@ import { GroupData } from "@/lib/GroupBuy";
 import { Button, Input, Skeleton } from "@/components/shared";
 import { parseApiError } from "@/lib/apiError";
 import { PENDING_CHECKOUT_KEY } from "@/lib/checkout";
-import { formatQuantity, isCountUnit, unitLabel } from "@/lib/units";
+import { formatQuantity, isCountUnit, parseQuantity, unitLabel } from "@/lib/units";
 
 const TAX_RATE = 0.075; // matches the backend's CHECKOUT_TAX_RATE
 
@@ -21,8 +21,9 @@ const naira = (value) =>
   })}`;
 
 // Pay for a share of the group through Paystack
-const JoinForm = ({ group, lastSlot, topUp = false, myShare = 0 }) => {
-  const remaining = group.remainingQuantity ?? 0;
+const JoinForm = ({ group, lastSlot, topUp = false, myShare = 0, stock = null }) => {
+  // Limited by what the group still needs and by the farmer's stock
+  const remaining = Math.min(group.remainingQuantity ?? 0, stock ?? Infinity);
   const unit = group.quantityUnit;
   // New members buy at least the group's minimum share; top-ups can be any amount.
   // The last free slot must buy the rest, so the group fills up and closes.
@@ -245,6 +246,7 @@ const GroupDetails = () => {
   const lastSlot = Boolean(group.totalSlots) && memberCount + 1 >= group.totalSlots;
   const timeLeft = group.deadline && status === "active" ? daysLeft(group.deadline) : null;
   const myShare = Number(members.find((m) => m.user_name === "You")?.quantity_committed || 0);
+  const stock = parseQuantity(raw?.product?.quantity).amount;
   const canTopUp = !sampleGroup && status === "active" && (group.remainingQuantity ?? 0) > 0;
 
   return (
@@ -308,6 +310,12 @@ const GroupDetails = () => {
               <p>Paid so far</p>
               <p>{formatQuantity(group.currentQuantity, group.quantityUnit)}</p>
             </div>
+            {stock !== null && (
+              <div className="flex items-center justify-between">
+                <p>Farmer&apos;s stock</p>
+                <p className={stock > 0 ? "" : "text-red-600"}>{formatQuantity(stock, group.quantityUnit)}</p>
+              </div>
+            )}
             {group.minShare > 1 && (
               <div className="flex items-center justify-between">
                 <p>Minimum per member</p>
@@ -359,7 +367,7 @@ const GroupDetails = () => {
                   <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                   You&apos;re in this group{myShare > 0 && ` (${formatQuantity(myShare, group.quantityUnit)})`}
                 </p>
-                {canTopUp && <JoinForm group={group} topUp myShare={myShare} />}
+                {canTopUp && <JoinForm group={group} topUp myShare={myShare} stock={stock} />}
               </>
             ) : status === "completed" ? (
               <p className="mt-2 rounded-lg bg-primary-subtle px-3 py-2 font-medium text-primary">
@@ -370,7 +378,7 @@ const GroupDetails = () => {
                 This group closed at its deadline without filling up. Members&apos; payments were refunded.
               </p>
             ) : isOpen ? (
-              <JoinForm group={group} lastSlot={lastSlot} />
+              <JoinForm group={group} lastSlot={lastSlot} stock={stock} />
             ) : (
               <p className="mt-2 rounded-lg bg-gray-100 px-3 py-2 text-gray-600">
                 {isFull ? "This group is full" : "This group isn't taking members"}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { CartContext } from "./CartContext";
-import { clampQuantity, getOrderRules } from "@/lib/units";
+import { canOrder, clampQuantity, getOrderRules } from "@/lib/units";
 
 const STORAGE_KEY = "BIGFARMA_CART";
 
@@ -58,6 +58,35 @@ export const CartProvider = ({ children }) => {
     });
   };
 
+  // Bring cart items up to date with the latest products (stock, price,
+  // availability), fitting quantities to what's now in stock
+  const refreshProducts = (products) => {
+    const latest = new Map((products || []).map((p) => [p.id, p]));
+    setCartItems((prevItems) => {
+      let changed = false;
+      const next = prevItems.map((item) => {
+        const product = latest.get(item.id);
+        if (!product) return item;
+        const merged = {
+          ...item,
+          quantity: product.quantity,
+          unit: product.unit,
+          min_order_quantity: product.min_order_quantity,
+          availability: product.availability,
+          is_listed: product.is_listed,
+          original_price: Number(product.price || 0),
+          price: getUnitPrice(product),
+        };
+        const rules = getOrderRules(merged);
+        merged.cartQuantity = canOrder(rules) ? clampQuantity(item.cartQuantity, rules) : item.cartQuantity;
+        const keys = ["quantity", "unit", "min_order_quantity", "availability", "is_listed", "price", "cartQuantity"];
+        if (keys.some((key) => merged[key] !== item[key])) changed = true;
+        return merged;
+      });
+      return changed ? next : prevItems;
+    });
+  };
+
   const removeFromCart = (productId) => {
     setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId));
   };
@@ -96,6 +125,7 @@ export const CartProvider = ({ children }) => {
       value={{
         cartItems,
         addToCart,
+        refreshProducts,
         removeFromCart,
         updateQuantity,
         clearCart,

@@ -1,4 +1,7 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { fetchProducts } from "@/lib/api";
 import { FaMinus, FaPlus } from "react-icons/fa6";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/hooks";
@@ -10,9 +13,20 @@ const OUTLINE_LINK =
   "inline-flex h-12 w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-6 font-medium text-gray-700 transition-colors hover:bg-gray-50";
 
 export default function CartPage() {
-  const { cartItems, updateQuantity, removeFromCart, getCartTotal, clearCart } = useCart();
-  // Stock below the minimum order: can't be checked out until the farmer restocks
-  const blocked = cartItems.filter((item) => !canOrder(getOrderRules(item)));
+  const { cartItems, updateQuantity, removeFromCart, getCartTotal, clearCart, refreshProducts } = useCart();
+
+  // Stock changes as others buy: refresh the cart from the latest products
+  const { data: productsData } = useQuery({ queryKey: ["products"], queryFn: fetchProducts, staleTime: 30 * 1000 });
+  useEffect(() => {
+    if (productsData?.products) refreshProducts(productsData.products);
+    // refreshProducts is recreated each render; only new product data matters
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productsData]);
+
+  // Sold out, unlisted, or stock below the minimum order: can't be checked out
+  const unavailable = (item) =>
+    item.availability === "out_of_stock" || item.is_listed === false || !canOrder(getOrderRules(item));
+  const blocked = cartItems.filter(unavailable);
 
   const subtotal = getCartTotal();
   const deliveryFee = 1500;
@@ -92,9 +106,11 @@ export default function CartPage() {
                   <p className="text-sm text-gray-600">
                     Min. order: {formatQuantity(getOrderRules(item).min, getOrderRules(item).unit)}
                   </p>
-                  {!canOrder(getOrderRules(item)) && (
+                  {unavailable(item) && (
                     <p className="text-sm text-red-600">
-                      Not enough stock for the minimum order. Remove it to check out.
+                      {item.availability === "out_of_stock" || item.is_listed === false
+                        ? "Sold out. Remove it to check out."
+                        : "Not enough stock for the minimum order. Remove it to check out."}
                     </p>
                   )}
                   <p className="text-xs capitalize text-gray-500">Category: {item.category}</p>

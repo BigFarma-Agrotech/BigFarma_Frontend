@@ -83,7 +83,14 @@ export function ProductCard({ product, onAddToCart }) {
           )}
           <p className="text-sm text-gray-600">per {rules.unit || "item"}</p>
         </div>
-        <p className="text-sm text-gray-600">Min. order: {formatQuantity(rules.min, rules.unit)}</p>
+        <p className="text-sm text-gray-600">
+          {rules.max !== null && (
+            <span className={rules.max > 0 ? "text-primary" : "text-red-600"}>
+              {formatQuantity(rules.max, rules.unit)} in stock ·{" "}
+            </span>
+          )}
+          Min. order: {formatQuantity(rules.min, rules.unit)}
+        </p>
 
         <div className="flex items-center gap-1 text-sm text-gray-600">
           <IoIosStar className="text-yellow-500" aria-hidden="true" />

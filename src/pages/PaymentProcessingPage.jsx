@@ -70,6 +70,7 @@ export default function PaymentProcessingPage() {
         localStorage.removeItem(PENDING_CHECKOUT_KEY);
         queryClient.invalidateQueries({ queryKey: ["groups"] });
         queryClient.invalidateQueries({ queryKey: ["groupDetails"] });
+        queryClient.invalidateQueries({ queryKey: ["products"] });
         toast.success("Payment received for your group share.");
         navigate(payment.group_public_id ? `/group-buy/${payment.group_public_id}` : "/group-buy", { replace: true });
         return;
@@ -86,6 +87,9 @@ export default function PaymentProcessingPage() {
         (pending.productIds || []).forEach((id) => removeFromCartRef.current(id));
         localStorage.removeItem(PENDING_CHECKOUT_KEY);
         queryClient.invalidateQueries({ queryKey: ["consumer-orders"] });
+        // The purchase lowered stock
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+        queryClient.invalidateQueries({ queryKey: ["product"] });
         queryClient.invalidateQueries({ queryKey: farmerOrderKeys.all });
         localStorage.setItem(
           CONFIRMED_ORDER_KEY,
