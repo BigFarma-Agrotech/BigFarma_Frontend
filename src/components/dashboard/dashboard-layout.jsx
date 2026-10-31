@@ -7,9 +7,11 @@ export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { pathname } = useLocation();
 
-  // Close the mobile drawer on navigation
+  // Close the mobile drawer on navigation, and start each page at the top (the
+  // layout now stays mounted between pages, so nothing else resets the scroll)
   useEffect(() => {
     setSidebarOpen(false);
+    window.scrollTo(0, 0);
   }, [pathname]);
 
   // Lock page scroll while the mobile drawer is open

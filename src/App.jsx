@@ -1,5 +1,5 @@
-import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router-dom";
+import { lazy, Suspense, useEffect } from "react";
+import { Routes, Route, Outlet } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -7,40 +7,66 @@ import RouteSeo from "./components/shared/RouteSeo";
 import Home from "./components/landing-page-sections/Home";
 
 // Everything except the landing page is loaded on demand, so the first visit
-// only downloads the code it needs.
-// Auth pages
-const SignIn = lazy(() => import("./pages/SignIn"));
-const SignUp = lazy(() => import("./pages/Signup"));
-const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
-const InputOtp = lazy(() => import("./pages/InputOtp"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const RoleSelection = lazy(() => import("./pages/RoleSelection"));
-const VerifyOtp = lazy(() => import("./pages/VerifyOtp"));
-const Success = lazy(() => import("./pages/Success"));
-const SupportPage = lazy(() => import("./pages/SupportPage"));
+// only downloads the code it needs. The loaders are kept so pages can also be
+// fetched ahead of time (see preload), making later clicks instant.
+const authPages = {
+  SignIn: () => import("./pages/SignIn"),
+  SignUp: () => import("./pages/Signup"),
+  ForgotPassword: () => import("./pages/ForgotPassword"),
+  InputOtp: () => import("./pages/InputOtp"),
+  ResetPassword: () => import("./pages/ResetPassword"),
+  RoleSelection: () => import("./pages/RoleSelection"),
+  VerifyOtp: () => import("./pages/VerifyOtp"),
+  Success: () => import("./pages/Success"),
+  SupportPage: () => import("./pages/SupportPage"),
+};
 
-// Dashboard pages
-const DashboardLayout = lazy(() => import("./components/dashboard/dashboard-layout"));
-const DashboardPage = lazy(() => import("./pages/DashboardPage"));
-const ConsumerOrderPage = lazy(() => import("./pages/ConsumerOrderPage"));
-const CartPage = lazy(() => import("./pages/CartPage"));
-const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
-const PaymentProcessingPage = lazy(() => import("./pages/PaymentProcessingPage"));
-const OrderConfirmationPage = lazy(() => import("./pages/OrderConfirmationPage"));
-const FarmerOrderPage = lazy(() => import("./pages/FarmerOrderPage"));
-const ProductOrdersPage = lazy(() => import("./pages/ProductOrdersPage"));
-const SingleOrderPage = lazy(() => import("./pages/SingleOrderPage"));
-const PaymentSetup = lazy(() => import("./pages/PaymentSetupModal"));
-const MarketplacePage = lazy(() => import("./components/dashboard/marketplace"));
-const ProductDetail = lazy(() => import("./components/dashboard/marketplace/product-detail"));
-const GroupBuyPage = lazy(() => import("./pages/GroupBuyPage"));
-const CreateGroupModal = lazy(() => import("./components/dashboard/GroupBuy/CreateGroupModal"));
-const GroupDetailsPage = lazy(() => import("./pages/GroupDetailsPage"));
-const InvestmentPage = lazy(() => import("./pages/InvestmentPage"));
-const WalletPage = lazy(() => import("./pages/WalletPage"));
-const TransactionsPage = lazy(() => import("./pages/TransactionsPage"));
-const MyProductsPage = lazy(() => import("./pages/MyProductsPage"));
-const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const dashboardPages = {
+  DashboardLayout: () => import("./components/dashboard/dashboard-layout"),
+  DashboardPage: () => import("./pages/DashboardPage"),
+  ConsumerOrderPage: () => import("./pages/ConsumerOrderPage"),
+  CartPage: () => import("./pages/CartPage"),
+  CheckoutPage: () => import("./pages/CheckoutPage"),
+  PaymentProcessingPage: () => import("./pages/PaymentProcessingPage"),
+  OrderConfirmationPage: () => import("./pages/OrderConfirmationPage"),
+  FarmerOrderPage: () => import("./pages/FarmerOrderPage"),
+  ProductOrdersPage: () => import("./pages/ProductOrdersPage"),
+  SingleOrderPage: () => import("./pages/SingleOrderPage"),
+  PaymentSetup: () => import("./pages/PaymentSetupModal"),
+  MarketplacePage: () => import("./components/dashboard/marketplace"),
+  ProductDetail: () => import("./components/dashboard/marketplace/product-detail"),
+  GroupBuyPage: () => import("./pages/GroupBuyPage"),
+  CreateGroupModal: () => import("./components/dashboard/GroupBuy/CreateGroupModal"),
+  GroupDetailsPage: () => import("./pages/GroupDetailsPage"),
+  InvestmentPage: () => import("./pages/InvestmentPage"),
+  WalletPage: () => import("./pages/WalletPage"),
+  TransactionsPage: () => import("./pages/TransactionsPage"),
+  MyProductsPage: () => import("./pages/MyProductsPage"),
+  SettingsPage: () => import("./pages/SettingsPage"),
+};
+
+const { SignIn, SignUp, ForgotPassword, InputOtp, ResetPassword, RoleSelection, VerifyOtp, Success, SupportPage } =
+  Object.fromEntries(Object.entries(authPages).map(([name, load]) => [name, lazy(load)]));
+const {
+  DashboardLayout, DashboardPage, ConsumerOrderPage, CartPage, CheckoutPage, PaymentProcessingPage,
+  OrderConfirmationPage, FarmerOrderPage, ProductOrdersPage, SingleOrderPage, PaymentSetup, MarketplacePage,
+  ProductDetail, GroupBuyPage, CreateGroupModal, GroupDetailsPage, InvestmentPage, WalletPage, TransactionsPage,
+  MyProductsPage, SettingsPage,
+} = Object.fromEntries(Object.entries(dashboardPages).map(([name, load]) => [name, lazy(load)]));
+
+// Download pages in the background once the browser is idle, a few at a time,
+// so clicking a link later doesn't wait for its code
+const preload = (loaders) => {
+  const queue = Object.values(loaders);
+  const next = () => {
+    const batch = queue.splice(0, 3);
+    if (!batch.length) return;
+    Promise.allSettled(batch.map((load) => load())).then(() => schedule(next));
+  };
+  const schedule = (fn) =>
+    "requestIdleCallback" in window ? window.requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 500);
+  schedule(next);
+};
 
 // Plain CSS spinner so the fallback doesn't pull animation libraries into the
 // initial bundle
@@ -86,7 +112,25 @@ const dashboardRoutes = [
   { path: "/settings", element: <SettingsPage /> },
 ];
 
+// One layout for every dashboard page: it stays mounted when moving between
+// pages (sidebar, header, notifications and their data aren't rebuilt), and its
+// single Suspense boundary lets the current page stay on screen while the next
+// one loads instead of flashing a spinner
+const DashboardShell = () => {
+  useEffect(() => preload(dashboardPages), []);
+  return (
+    <DashboardLayout>
+      <Suspense fallback={<PageLoader />}>
+        <Outlet />
+      </Suspense>
+    </DashboardLayout>
+  );
+};
+
 const App = () => {
+  // Sign-in and sign-up are the likely next pages from the landing page
+  useEffect(() => preload(authPages), []);
+
   return (
     <>
       <RouteSeo />
@@ -102,18 +146,11 @@ const App = () => {
 
           {/* Dashboard: requires a signed-in user */}
           <Route element={<ProtectedRoute />}>
-            {dashboardRoutes.map(({ path, element }) => (
-              <Route
-                key={path}
-                path={path}
-                element={
-                  <DashboardLayout>
-                    {/* Inner boundary keeps the sidebar visible while a page loads */}
-                    <Suspense fallback={<PageLoader />}>{element}</Suspense>
-                  </DashboardLayout>
-                }
-              />
-            ))}
+            <Route element={<DashboardShell />}>
+              {dashboardRoutes.map(({ path, element }) => (
+                <Route key={path} path={path} element={element} />
+              ))}
+            </Route>
           </Route>
         </Routes>
         </Suspense>

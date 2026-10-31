@@ -4,6 +4,8 @@ export const ACCESS_TOKEN_KEY = "BIGFARMA_ACCESS_TOKEN";
 export const REFRESH_TOKEN_KEY = "BIGFARMA_REFRESH_TOKEN";
 export const ROLE_KEY = "BIGFARMA_ROLE";
 export const PROFILE_SETUP_KEY = "BIGFARMA_PROFILE_SETUP";
+// Last-known profile, so the header can show the user's name before /users/profile answers
+export const PROFILE_CACHE_KEY = "BIGFARMA_PROFILE";
 
 const REMEMBER_ME_DAYS = 7;
 
@@ -26,6 +28,16 @@ const getTokenExpiry = (token) => {
 };
 
 export const getAccessToken = () => Cookies.get(ACCESS_TOKEN_KEY) || null;
+
+// The signed-in user's id (the token's `sub`), without verifying the signature
+export const getTokenUserId = (token = getAccessToken()) => {
+  try {
+    const payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(payload)).sub ?? null;
+  } catch {
+    return null;
+  }
+};
 
 export const getRole = () => Cookies.get(ROLE_KEY) || null;
 
@@ -59,4 +71,5 @@ export const clearSession = () => {
   );
   localStorage.removeItem("token");
   localStorage.removeItem("selectedRole");
+  localStorage.removeItem(PROFILE_CACHE_KEY);
 };

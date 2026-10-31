@@ -7,6 +7,8 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useQueryClient } from "@tanstack/react-query";
+import { userProfileKey } from "@/hooks/useUserProfile";
 import { login } from "@/components/queries/auth/login";
 import Button from "@/components/shared/Button";
 import useForm from "@/hooks/useForm";
@@ -38,6 +40,7 @@ const safeRedirect = (path) =>
 const SignInForm = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { setRole } = useContext(FocusContext);
@@ -88,6 +91,8 @@ const SignInForm = () => {
     }
 
     setRole(result.role);
+    // Whoever was signed in before on this tab: don't show their profile
+    queryClient.removeQueries({ queryKey: userProfileKey });
     toast.success(result.message);
     navigate(redirectTo, { replace: true });
   };

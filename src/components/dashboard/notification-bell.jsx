@@ -111,8 +111,8 @@ export default function NotificationBell({ role }) {
       </button>
 
       {open && (
-        <div className="fixed inset-x-4 top-16 z-40 rounded-xl border border-gray-200 bg-white shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96">
-          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+        <div className="fixed inset-x-4 top-16 z-40 rounded-xl border border-gray-200 bg-white shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[26rem]">
+          <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
             <h2 className="font-semibold text-gray-900">Notifications</h2>
             <div className="flex items-center gap-3">
               {unreadCount > 0 && (
@@ -139,9 +139,9 @@ export default function NotificationBell({ role }) {
           </div>
 
           {isLoading ? (
-            <p className="px-4 py-8 text-center text-sm text-gray-500">Loading...</p>
+            <p className="px-6 py-10 text-center text-sm text-gray-500">Loading...</p>
           ) : isError ? (
-            <div className="px-4 py-8 text-center text-sm text-red-600">
+            <div className="px-6 py-10 text-center text-sm text-red-600">
               <p>Couldn&apos;t load notifications.</p>
               <button
                 type="button"
@@ -152,11 +152,11 @@ export default function NotificationBell({ role }) {
               </button>
             </div>
           ) : notifications.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-gray-500">
+            <p className="px-6 py-10 text-center text-sm text-gray-500">
               You&apos;re all caught up.
             </p>
           ) : (
-            <ul className="max-h-96 divide-y divide-gray-100 overflow-y-auto">
+            <ul className="max-h-[28rem] divide-y divide-gray-100 overflow-y-auto py-1">
               {notifications.map((notification) => {
                 const isExpanded = expandedId === notification.id;
                 const hasOrder = Boolean(targetPath(role, notification));
@@ -167,13 +167,13 @@ export default function NotificationBell({ role }) {
                     className={cn(!notification.is_read && "bg-primary-subtle/40")}
                   >
                     {/* Collapsed: just the title. The arrow opens the message and order link. */}
-                    <div className="flex items-center gap-1 pr-2">
+                    <div className="flex items-center gap-1.5 pr-4">
                       <button
                         type="button"
                         onClick={() => toggleNotification(notification)}
                         aria-expanded={isExpanded}
                         aria-controls={detailsId}
-                        className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 text-left hover:bg-gray-50"
+                        className="flex min-w-0 flex-1 items-center gap-3 rounded-lg py-3.5 pl-5 pr-2 text-left hover:bg-gray-50"
                       >
                         <span
                           aria-hidden="true"
@@ -224,7 +224,7 @@ export default function NotificationBell({ role }) {
                       </button>
                     </div>
                     {isExpanded && (
-                      <div id={detailsId} className="pb-3 pl-9 pr-4">
+                      <div id={detailsId} className="pb-4 pl-10 pr-5">
                         {notification.message && (
                           <p className="whitespace-pre-line break-words text-sm text-gray-600">
                             {notification.message}

@@ -20,7 +20,7 @@ const StatCard = ({ title, value, format = "number", caption, isError, refetch }
         </div>
       ) : (
         <>
-          <p className="break-words text-2xl font-bold text-gray-900 xl:text-3xl">
+          <p className="whitespace-nowrap text-2xl font-bold tabular-nums text-gray-900 lg:text-xl xl:text-2xl 2xl:text-3xl">
             {format === "currency"
               ? `₦${formatAmount(Number(value) || 0)}`
               : (Number(value) || 0).toLocaleString()}

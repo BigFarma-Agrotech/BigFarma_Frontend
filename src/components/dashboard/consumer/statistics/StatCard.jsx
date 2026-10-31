@@ -32,7 +32,7 @@ const StatCard = ({ title, total, format = "currency", percentage, caption, isEr
         </div>
       ) : (
         <>
-          <p className="break-words text-2xl font-bold text-gray-900 lg:text-3xl">
+          <p className="whitespace-nowrap text-2xl font-bold tabular-nums text-gray-900 lg:text-xl xl:text-2xl 2xl:text-3xl">
             {display}
           </p>
 
