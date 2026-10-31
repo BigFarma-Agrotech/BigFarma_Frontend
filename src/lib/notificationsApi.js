@@ -3,10 +3,15 @@ import { axios } from "./axios";
 // GET /notifications/ -> [{ id, notification_type, title, message,
 // reference_id, reference_public_id, product_public_id, is_read, read_at,
 // created_at }], newest first. The public ids link to the order (and its product).
-// The list route needs its trailing slash, like /orders/.
+// No trailing slash: Vercel's /api/v1 rewrite doesn't proxy "/notifications/" and
+// serves the app's HTML instead.
 export const notificationsApi = {
-  list: async ({ unreadOnly = false, limit = 20 } = {}) =>
-    (await axios.get("/notifications/", { params: { unread_only: unreadOnly, limit } })).data,
+  list: async ({ unreadOnly = false, limit = 20 } = {}) => {
+    const { data } = await axios.get("/notifications", { params: { unread_only: unreadOnly, limit } });
+    // Anything but a list (e.g. an HTML page) is an error, not "no notifications"
+    if (!Array.isArray(data)) throw new Error("Unexpected notifications response");
+    return data;
+  },
 
   unreadCount: async () =>
     (await axios.get("/notifications/unread-count")).data?.unread_count ?? 0,
