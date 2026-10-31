@@ -230,7 +230,7 @@ const MyProducts = () => {
       label: "Product",
       render: (item) => (
         <div className="flex items-center gap-3">
-          <img
+          <img loading="lazy" decoding="async"
             src={item.image}
             alt={item.product}
             className="h-10 w-10 shrink-0 rounded-lg object-cover"
@@ -375,7 +375,7 @@ const MyProducts = () => {
               aria-expanded={isFilterDropdownOpen}
               className="flex h-10 min-w-[140px] items-center gap-2 rounded-lg border border-primary bg-white px-4 text-sm font-medium text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-light"
             >
-              <img src={filterIcon} alt="" className="h-4 w-4" />
+              <img loading="lazy" decoding="async" src={filterIcon} alt="" className="h-4 w-4" />
               <span className="flex-1 text-left">{currentFilterLabel}</span>
               <ChevronDown
                 className={cn(

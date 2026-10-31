@@ -146,7 +146,7 @@ const FarmerOrderPage = () => {
       case "name":
         return (
           <div className="flex items-center gap-3">
-            <img
+            <img loading="lazy" decoding="async"
               src={product.image}
               alt=""
               className="h-10 w-10 shrink-0 rounded-full object-cover drop-shadow-[0px_4px_2px_rgba(0,0,0,0.25)]"

@@ -111,7 +111,7 @@ const ProductOrdersPage = () => {
         <div className="flex flex-col gap-5">
           <div className="flex items-center justify-between gap-4 rounded-lg p-2.5">
             <div className="flex min-w-0 items-center gap-5">
-              <img
+              <img loading="lazy" decoding="async"
                 src={productDetails.image || watermelon}
                 alt=""
                 className="h-[50px] w-[50px] shrink-0 object-cover"

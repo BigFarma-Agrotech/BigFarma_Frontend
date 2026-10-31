@@ -63,7 +63,7 @@ export default function CartPage() {
                 {/* Product Image */}
                 <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100 sm:h-20 sm:w-20">
                   {item.images?.[0] ? (
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={item.images[0]}
                       alt={item.name}
                       className="h-full w-full object-cover"

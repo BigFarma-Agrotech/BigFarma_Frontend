@@ -61,6 +61,35 @@ const toFormState = (product) => {
   };
 };
 
+const MAX_IMAGE_DIMENSION = 1600; // px; matches the server's resize
+
+const readAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+// A photo as a WebP data URL at most MAX_IMAGE_DIMENSION px wide or tall.
+// Falls back to the original file if the browser can't re-encode it.
+const shrinkImage = async (file) => {
+  const original = await readAsDataUrl(file);
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+    const shrunk = canvas.toDataURL("image/webp", 0.85);
+    return shrunk.startsWith("data:image/webp") && shrunk.length < original.length ? shrunk : original;
+  } catch {
+    return original;
+  }
+};
+
 const labelClass = "mb-1.5 block text-sm font-medium text-gray-700";
 const fieldClass =
   "h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary-light focus:outline-none focus:ring-1 focus:ring-primary-light";
@@ -89,23 +118,17 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
     }));
   };
 
-  // Convert selected images to base64 strings
-  const handleImageChange = (e) => {
+  // Shrink selected photos in the browser before upload (phone photos are often
+  // several MB); the server resizes again and stores them in Supabase Storage
+  const handleImageChange = async (e) => {
     const files = Array.from(e.target.files);
+    e.target.value = ""; // allow picking the same file again after removing it
 
     const previews = files.map((file) => URL.createObjectURL(file));
     setImagePreviews((prev) => [...prev, ...previews]);
 
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({
-          ...prev,
-          images: [...prev.images, reader.result],
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
+    const images = await Promise.all(files.map(shrinkImage));
+    setFormData((prev) => ({ ...prev, images: [...prev.images, ...images] }));
   };
 
   const removeImage = (index) => {

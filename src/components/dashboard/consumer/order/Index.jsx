@@ -148,7 +148,7 @@ const ConsumerOrder = () => {
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100 p-1.5 sm:h-20 sm:w-20">
                   {order.productImage ? (
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={order.productImage}
                       alt={order.product}
                       className="h-full w-full object-contain"

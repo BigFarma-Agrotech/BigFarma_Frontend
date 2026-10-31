@@ -28,7 +28,6 @@ export const useFarmerOrder = (filters = {}, { enabled = true } = {}) => {
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchInterval: FARMER_ORDERS_POLL_MS,
     refetchOnWindowFocus: true,
-    retry: 2,
   });
 };
 

@@ -58,7 +58,7 @@ export function ProductCard({ product, onAddToCart }) {
   return (
     <article className="flex h-full flex-col rounded-xl border border-gray-200 bg-white p-4">
       <div className="aspect-[4/3] w-full overflow-hidden rounded-lg bg-gray-100">
-        <img
+        <img loading="lazy" decoding="async"
           src={getProductImage(product)}
           alt={product.name || "Product"}
           className="h-full w-full object-cover"

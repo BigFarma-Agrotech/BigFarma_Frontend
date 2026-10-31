@@ -29,7 +29,6 @@ const GroupDetails = () => {
     queryKey: ["groupDetails", groupId],
     queryFn: () => groupDetails(groupId),
     enabled: Boolean(groupId),
-    retry: 1,
     refetchOnWindowFocus: false,
   });
 

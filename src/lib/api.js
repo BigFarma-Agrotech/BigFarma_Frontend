@@ -2,6 +2,14 @@
 
 import { API_BASE_URL as baseURL } from "./config";
 
+// An Error that carries the HTTP status like axios errors do, so React Query's
+// retry rule can tell a server hiccup (retry) from a missing product (don't)
+const httpError = (message, res) => {
+    const error = new Error(`${message}: ${res.status} ${res.statusText}`);
+    error.response = { status: res.status };
+    return error;
+};
+
 export async function fetchProducts() {
     
     try {
@@ -16,7 +24,7 @@ export async function fetchProducts() {
         );
         
         if (!res.ok) {
-            throw new Error(`Failed to fetch products: ${res.status} ${res.statusText}`);
+            throw httpError("Failed to fetch products", res);
         }
         
         const data = await res.json();
@@ -50,7 +58,7 @@ export async function fetchProductById(id) {
         );
 
         if (!res.ok) {
-            throw new Error(`Failed to fetch product: ${res.status} ${res.statusText}`);
+            throw httpError("Failed to fetch product", res);
         }
 
         const data = await res.json();

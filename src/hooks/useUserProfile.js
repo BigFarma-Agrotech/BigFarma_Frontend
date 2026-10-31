@@ -15,7 +15,6 @@ export const useUserProfile = () =>
       return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 1,
   });
 
 // First name from whichever profile the user has; "" until they've entered one

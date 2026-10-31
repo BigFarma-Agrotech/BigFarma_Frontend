@@ -119,7 +119,7 @@ const GroupCard = ({ group }) => (
         </span>
       )}
       {group.image ? (
-        <img src={group.image} alt={group.name} className="h-full w-full object-contain" />
+        <img loading="lazy" decoding="async" src={group.image} alt={group.name} className="h-full w-full object-contain" />
       ) : (
         <Users size={40} aria-hidden="true" className="text-gray-300" />
       )}
@@ -179,7 +179,6 @@ const GroupCreation = () => {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["groups"],
     queryFn: fetchGroups,
-    retry: 1,
     refetchOnWindowFocus: false,
   });
 

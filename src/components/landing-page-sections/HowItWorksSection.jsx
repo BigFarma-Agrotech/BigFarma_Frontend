@@ -8,7 +8,7 @@ function WorkCard({ title, description, image, bgColor, textColor }) {
     <div
       className={`${bgColor} ${textColor} flex h-full min-h-44 flex-col justify-center p-6 shadow-sm md:min-h-72 md:p-8`}
     >
-      <img src={image} alt="" aria-hidden="true" className="mb-4 h-12 w-12" />
+      <img loading="lazy" decoding="async" src={image} alt="" aria-hidden="true" className="mb-4 h-12 w-12" />
       <h3 className="mb-2 text-xl font-semibold md:text-2xl">{title}</h3>
       <p className="text-base md:text-lg">{description}</p>
     </div>
