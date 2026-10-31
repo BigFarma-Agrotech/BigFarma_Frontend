@@ -19,6 +19,11 @@ export const notificationsApi = {
   markRead: async (id) => (await axios.patch(`/notifications/${id}/read`)).data,
 
   markAllRead: async () => (await axios.patch("/notifications/read-all")).data,
+
+  remove: async (id) => axios.delete(`/notifications/${id}`),
+
+  // Deletes every notification (again no trailing slash)
+  clear: async () => (await axios.delete("/notifications")).data,
 };
 
 export const notificationKeys = {

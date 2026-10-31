@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Check, ChevronDown } from "lucide-react";
+import { Bell, Check, ChevronDown, Trash2 } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
 import { toProductRouteId } from "@/lib/farmerOrder";
@@ -43,6 +43,9 @@ export default function NotificationBell({ role }) {
     markRead,
     markAllRead,
     isMarkingAll,
+    deleteNotification,
+    clearAll,
+    isClearing,
   } = useNotifications();
   const [open, setOpen] = useState(false);
   // The notification expanded in place to read in full
@@ -109,16 +112,28 @@ export default function NotificationBell({ role }) {
         <div className="fixed inset-x-4 top-16 z-40 rounded-xl border border-gray-200 bg-white shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96">
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <h2 className="font-semibold text-gray-900">Notifications</h2>
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={() => markAllRead()}
-                disabled={isMarkingAll}
-                className="text-sm font-medium text-primary hover:underline disabled:opacity-50"
-              >
-                Mark all as read
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => markAllRead()}
+                  disabled={isMarkingAll}
+                  className="text-sm font-medium text-primary hover:underline disabled:opacity-50"
+                >
+                  Mark all as read
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => clearAll()}
+                  disabled={isClearing}
+                  className="text-sm font-medium text-red-600 hover:underline disabled:opacity-50"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
           </div>
 
           {isLoading ? (
@@ -143,58 +158,44 @@ export default function NotificationBell({ role }) {
               {notifications.map((notification) => {
                 const isExpanded = expandedId === notification.id;
                 const hasOrder = Boolean(targetPath(role, notification));
+                const detailsId = `notification-${notification.id}-details`;
                 return (
                   <li
                     key={notification.id}
                     className={cn(!notification.is_read && "bg-primary-subtle/40")}
                   >
-                    <div className="flex gap-1 pr-2">
+                    {/* Collapsed: just the title. The arrow opens the message and order link. */}
+                    <div className="flex items-center gap-1 pr-2">
                       <button
                         type="button"
                         onClick={() => toggleNotification(notification)}
                         aria-expanded={isExpanded}
-                        className="flex min-w-0 flex-1 gap-3 py-3 pl-4 text-left hover:bg-gray-50"
+                        aria-controls={detailsId}
+                        className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 text-left hover:bg-gray-50"
                       >
                         <span
                           aria-hidden="true"
                           className={cn(
-                            "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+                            "h-2 w-2 shrink-0 rounded-full",
                             notification.is_read ? "bg-transparent" : badgeColor,
                           )}
                         />
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-start justify-between gap-2">
-                            <span
-                              className={cn(
-                                "text-sm text-gray-900",
-                                notification.is_read ? "font-normal" : "font-semibold",
-                              )}
-                            >
-                              {notification.title}
-                            </span>
-                            <ChevronDown
-                              aria-hidden="true"
-                              className={cn(
-                                "mt-0.5 h-4 w-4 shrink-0 text-gray-400 transition-transform",
-                                isExpanded && "rotate-180",
-                              )}
-                            />
-                          </span>
-                          {notification.message && (
-                            <span
-                              className={cn(
-                                "mt-0.5 block whitespace-pre-line break-words text-sm text-gray-600",
-                                !isExpanded && "line-clamp-2",
-                              )}
-                            >
-                              {notification.message}
-                            </span>
+                        <span
+                          className={cn(
+                            "min-w-0 flex-1 truncate text-sm text-gray-900",
+                            notification.is_read ? "font-normal" : "font-semibold",
                           )}
-                          <span className="mt-1 block text-xs text-gray-400">
-                            {timeAgo(notification.created_at)}
-                            {!notification.is_read && <span className="sr-only"> (unread)</span>}
-                          </span>
+                        >
+                          {notification.title}
+                          {!notification.is_read && <span className="sr-only"> (unread)</span>}
                         </span>
+                        <ChevronDown
+                          aria-hidden="true"
+                          className={cn(
+                            "h-4 w-4 shrink-0 text-gray-400 transition-transform",
+                            isExpanded && "rotate-180",
+                          )}
+                        />
                       </button>
                       {!notification.is_read && (
                         <button
@@ -202,21 +203,41 @@ export default function NotificationBell({ role }) {
                           onClick={() => markRead(notification.id)}
                           aria-label={`Mark "${notification.title}" as read`}
                           title="Mark as read"
-                          className="mt-2.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-primary"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-primary"
                         >
                           <Check className="h-4 w-4" aria-hidden="true" />
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isExpanded) setExpandedId(null);
+                          deleteNotification(notification.id);
+                        }}
+                        aria-label={`Delete "${notification.title}"`}
+                        title="Delete"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      </button>
                     </div>
-                    {isExpanded && hasOrder && (
-                      <div className="pb-3 pl-9 pr-4">
-                        <button
-                          type="button"
-                          onClick={() => viewOrder(notification)}
-                          className="text-sm font-medium text-primary hover:underline"
-                        >
-                          View order
-                        </button>
+                    {isExpanded && (
+                      <div id={detailsId} className="pb-3 pl-9 pr-4">
+                        {notification.message && (
+                          <p className="whitespace-pre-line break-words text-sm text-gray-600">
+                            {notification.message}
+                          </p>
+                        )}
+                        <p className="mt-1 text-xs text-gray-400">{timeAgo(notification.created_at)}</p>
+                        {hasOrder && (
+                          <button
+                            type="button"
+                            onClick={() => viewOrder(notification)}
+                            className="mt-2 text-sm font-medium text-primary hover:underline"
+                          >
+                            View order
+                          </button>
+                        )}
                       </div>
                     )}
                   </li>

@@ -172,6 +172,40 @@ export const useNotifications = () => {
     onSettled: invalidate,
   });
 
+  // Deleting removes it from the dropdown at once (and from the badge if unread)
+  const optimisticRemove = (isTarget) => async () => {
+    await queryClient.cancelQueries({ queryKey: notificationKeys.all });
+    const previousList = queryClient.getQueryData(notificationKeys.list());
+    const previousCount = queryClient.getQueryData(notificationKeys.unreadCount());
+    const list = Array.isArray(previousList) ? previousList : [];
+    const removedUnread = list.filter((n) => !n.is_read && isTarget(n)).length;
+    queryClient.setQueryData(notificationKeys.list(), (current) =>
+      Array.isArray(current) ? current.filter((n) => !isTarget(n)) : current
+    );
+    queryClient.setQueryData(notificationKeys.unreadCount(), (count) =>
+      typeof count === "number" ? Math.max(0, count - removedUnread) : count
+    );
+    return { previousList, previousCount };
+  };
+
+  const deleteNotification = useMutation({
+    mutationFn: notificationsApi.remove,
+    onMutate: (id) => optimisticRemove((n) => n.id === id)(),
+    onError: rollback,
+    onSettled: invalidate,
+  });
+
+  const clearAll = useMutation({
+    mutationFn: notificationsApi.clear,
+    onMutate: async () => {
+      const context = await optimisticRemove(() => true)();
+      queryClient.setQueryData(notificationKeys.unreadCount(), 0);
+      return context;
+    },
+    onError: rollback,
+    onSettled: invalidate,
+  });
+
   return {
     notifications,
     unreadCount: countQuery.data ?? notifications.filter((n) => !n.is_read).length,
@@ -181,5 +215,8 @@ export const useNotifications = () => {
     markRead: markRead.mutate,
     markAllRead: () => markAllRead.mutate(),
     isMarkingAll: markAllRead.isPending,
+    deleteNotification: deleteNotification.mutate,
+    clearAll: () => clearAll.mutate(),
+    isClearing: clearAll.isPending,
   };
 };
