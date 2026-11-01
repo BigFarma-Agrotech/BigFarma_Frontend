@@ -9,6 +9,7 @@ import { useCart } from "@/hooks";
 import { Button, Skeleton } from "@/components/shared";
 import { ProductCard, StockBadge } from "./product-list";
 import { canOrder, clampQuantity, formatQuantity, getOrderRules, unitLabel } from "@/lib/units";
+import { categoryLabel } from "@/lib/categories";
 
 const BackLink = () => (
   <Link
@@ -225,7 +226,7 @@ export default function ProductDetail() {
               <p className="flex flex-wrap gap-x-2 gap-y-1">
                 <span>
                   <span className="font-medium">Category:</span>{" "}
-                  <span className="capitalize">{data.category}</span>
+                  <span>{categoryLabel(data.category)}</span>
                 </span>
                 <span aria-hidden="true">|</span>
                 <span>

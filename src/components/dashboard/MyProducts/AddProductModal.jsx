@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import axiosDefault from "axios";
 import { toast } from "react-toastify";
 import { ImagePlus, X } from "lucide-react";
 import { axios } from "../../../lib/axios";
@@ -8,6 +7,7 @@ import Button from "@/components/shared/Button";
 import { parseApiError } from "@/lib/apiError";
 import { useUpdateFarmerProduct } from "../../../hooks/useFarmerProducts";
 import { UNIT_GROUPS, formatQuantity, isCountUnit, normalizeUnit, parseQuantity, unitLabel } from "@/lib/units";
+import { PRODUCT_CATEGORIES } from "@/lib/categories";
 import formHeader from "../../../assets/images/addProductHeader.webp";
 
 const initialFormData = {
@@ -21,8 +21,6 @@ const initialFormData = {
   images: [], // base64 strings
   unit: "kg",
 };
-
-const categories = ["crop", "livestock"];
 
 const KNOWN_UNITS = UNIT_GROUPS.flatMap(({ units }) => units);
 
@@ -101,6 +99,8 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
   const [formData, setFormData] = useState(initialFormData);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  // Photos still being shrunk; submitting before they're ready would send none
+  const [processingImages, setProcessingImages] = useState(0);
 
   // Start from the product being edited (or a blank form) each time it opens
   useEffect(() => {
@@ -127,8 +127,13 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
     const previews = files.map((file) => URL.createObjectURL(file));
     setImagePreviews((prev) => [...prev, ...previews]);
 
-    const images = await Promise.all(files.map(shrinkImage));
-    setFormData((prev) => ({ ...prev, images: [...prev.images, ...images] }));
+    setProcessingImages((n) => n + files.length);
+    try {
+      const images = await Promise.all(files.map(shrinkImage));
+      setFormData((prev) => ({ ...prev, images: [...prev.images, ...images] }));
+    } finally {
+      setProcessingImages((n) => n - files.length);
+    }
   };
 
   const removeImage = (index) => {
@@ -196,6 +201,10 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
     e.preventDefault();
 
     if (isLoading) return;
+    if (processingImages) {
+      toast.info("Your photos are still being prepared. Try again in a moment.");
+      return;
+    }
     if (isEditing) {
       handleUpdate();
       return;
@@ -203,6 +212,14 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
     const rulesError = orderRulesError(formData);
     if (rulesError) {
       toast.error(rulesError);
+      return;
+    }
+    if (!formData.images.length) {
+      toast.error("Please add at least one product image.");
+      return;
+    }
+    if (formData.description.trim().length < 20) {
+      toast.error("Description must be at least 20 characters long.");
       return;
     }
     if (formData.name && formData.category && formData.location) {
@@ -215,7 +232,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
         quantity: formatQuantity(formData.quantity, formData.unit),
         unit: formData.unit,
         min_order_quantity: Number(formData.min_quantity),
-        price: formData.price,
+        price: Number(formData.price),
         discount_percentage: 0,
         location: formData.location,
         images: formData.images,
@@ -239,15 +256,8 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
           toast.error(data?.message || "Network error. Please try again.");
         }
       } catch (error) {
-        if (axiosDefault.isAxiosError(error) && error.response) {
-          toast.error(
-            error.response.data?.detail ||
-              error.response.data?.message ||
-              "Unable to add product"
-          );
-        } else {
-          toast.error("Unable to connect to the server");
-        }
+        // Validation errors come back as a list; show them as readable text
+        toast.error(parseApiError(error, "Unable to add product").message);
       } finally {
         setIsLoading(false);
       }
@@ -325,13 +335,13 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
               name="category"
               value={formData.category}
               onChange={handleInputChange}
-              className={`${fieldClass} capitalize`}
+              className={fieldClass}
               required
             >
               <option value="">Select Category</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
+              {PRODUCT_CATEGORIES.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
                 </option>
               ))}
             </select>
@@ -517,8 +527,10 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded, product, onProductUp
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading} className="h-10 py-0">
-              {isEditing
+            <Button type="submit" disabled={isLoading || processingImages > 0} className="h-10 py-0">
+              {processingImages > 0
+                ? "Preparing photos..."
+                : isEditing
                 ? isLoading
                   ? "Saving..."
                   : "Save Changes"

@@ -10,23 +10,29 @@ export const EMPTY_FILTERS = {
   maxPrice: "",
 };
 
-export const CATEGORY_OPTIONS = ["Vegetables", "Fruits", "Grains", "Protein"];
+import { ANIMAL_CATEGORIES, PRODUCT_CATEGORIES, categoryValue } from "@/lib/categories";
+
+export const CATEGORY_OPTIONS = PRODUCT_CATEGORIES.map(({ label }) => label);
 
 export const AVAILABILITY_OPTIONS = [
   { value: "in_stock", label: "In stock" },
   { value: "out_of_stock", label: "Out of stock" },
 ];
 
-// UI category -> product.category / farmer.farm_type values it covers.
+// UI category -> product.category / farmer.farm_type values it covers
+// (categories not listed match only themselves). "Protein" is a marketplace tile.
 const CATEGORY_ALIASES = {
   vegetables: ["vegetable", "vegetables"],
   fruits: ["fruit", "fruits"],
-  grains: ["grain", "grains", "legume", "legumes", "cereal", "cereals"],
-  protein: ["livestock", "protein", "poultry", "fish", "meat", "dairy"],
-  livestock: ["livestock", "poultry"],
+  grains: ["grain", "grains", "cereal", "cereals"],
+  legumes: ["legume", "legumes"],
+  protein: [...ANIMAL_CATEGORIES, "protein", "meat", "dairy"],
 };
 
-const CROP_CATEGORIES = ["vegetables", "fruits", "grains"];
+// Grown categories an older "crop" product may belong to
+const CROP_CATEGORIES = PRODUCT_CATEGORIES.map(({ value }) => value).filter(
+  (value) => value !== "crop" && !ANIMAL_CATEGORIES.includes(value)
+);
 
 const lower = (value) => String(value ?? "").trim().toLowerCase();
 
@@ -51,7 +57,7 @@ export const getLocationOptions = (products) =>
   );
 
 export const matchesCategory = (product, uiCategory) => {
-  const key = lower(uiCategory);
+  const key = categoryValue(uiCategory) || lower(uiCategory);
   const aliases = CATEGORY_ALIASES[key] || [key];
   const category = lower(product?.category);
   const farmType = lower(product?.farmer?.farm_type);

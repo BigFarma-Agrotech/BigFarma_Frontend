@@ -7,8 +7,9 @@ import { GroupData } from "@/lib/GroupBuy";
 import { fetchGroups, normalizeGroup } from "@/lib/groupBuyApi";
 import { getStatusText, getStatusClasses } from "@/utils/GroupBuyStatus";
 import { Skeleton } from "@/components/shared";
+import { PRODUCT_CATEGORIES } from "@/lib/categories";
 
-const CATEGORIES = ["Vegetable", "Fruits", "Grains", "Livestock", "Root", "Oil", "Nuts"];
+const CATEGORIES = PRODUCT_CATEGORIES.map(({ label }) => label);
 const LOCATIONS = ["Kano", "Lagos", "Jos", "Edo", "Delta", "Enugu", "Cross River"];
 
 // "Vegetables" / "vegetable" / " Vegetable " all compare equal
