@@ -1,29 +1,27 @@
 import { useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 import Button from "@/components/shared/Button";
 import FiltersComponent from "@/lib/filterOptions";
-import { fetchProducts } from "@/lib/api";
+import { MARKETPLACE_PAGE_SIZE, fetchProductLocations, fetchProducts } from "@/lib/api";
+import { categoryValue } from "@/lib/categories";
 import filterIcon from "@/assets/icons/filter.svg";
 import vegetablesCategory from "@/assets/ProductImages/categories/vegetables.png";
 import fruitsCategory from "@/assets/ProductImages/categories/fruits.png";
 import grainsCategory from "@/assets/ProductImages/categories/grains.png";
 import proteinCategory from "@/assets/ProductImages/categories/protein.png";
 import ProductsList from "./product-list";
+import ProductsPagination from "./ProductsPagination";
 import {
   EMPTY_FILTERS,
   AVAILABILITY_OPTIONS,
   countActiveFilters,
-  filterProducts,
-  getLocationOptions,
   normalizeProducts,
 } from "./filters";
-
-const TOP_PRODUCTS_LIMIT = 8;
 
 const categories = [
   { id: 1, name: "Vegetables", image: vegetablesCategory },
@@ -73,28 +71,52 @@ const Marketplace = () => {
   const query = (searchParams.get("q") || "").trim();
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [showAll, setShowAll] = useState(false);
+  // The page belongs to one search + filter combination; changing either
+  // starts again from page 1 (in the same render, so no stale request is sent)
+  const filterKey = JSON.stringify({ query, filters });
+  const [pageState, setPageState] = useState({ key: filterKey, page: 1 });
+  const page = pageState.key === filterKey ? pageState.page : 1;
   const productsRef = useRef(null);
 
-  const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ["products"],
-    queryFn: fetchProducts,
+  // Search and filters run on the server, which returns 10 products a page
+  const apiParams = useMemo(
+    () => ({
+      page,
+      pageSize: MARKETPLACE_PAGE_SIZE,
+      q: query,
+      // UI labels -> API values; the "Protein" tile is sent as "protein"
+      categories: filters.categories.map((name) => categoryValue(name) || name.toLowerCase()),
+      availability: filters.availability,
+      locations: filters.locations,
+      maxPrice: filters.maxPrice,
+    }),
+    [page, query, filters]
+  );
+
+  const { data, isLoading, isFetching, isPlaceholderData, error, refetch } = useQuery({
+    queryKey: ["products", "marketplace", apiParams],
+    queryFn: () => fetchProducts(apiParams),
+    // Keep the current page on screen while the next one loads
+    placeholderData: keepPreviousData,
+  });
+
+  const { data: locationOptions = [] } = useQuery({
+    queryKey: ["products", "locations"],
+    queryFn: fetchProductLocations,
+    staleTime: 5 * 60 * 1000,
   });
 
   const products = useMemo(() => normalizeProducts(data), [data]);
-  const locationOptions = useMemo(() => getLocationOptions(products), [products]);
-  const filteredProducts = useMemo(
-    () => filterProducts(products, { filters, query }),
-    [products, filters, query]
-  );
+  const totalCount = data?.total_count ?? 0;
+  const pageCount = data?.total_pages ?? 1;
 
   const activeFilterCount = countActiveFilters(filters);
   const isFiltering = activeFilterCount > 0 || Boolean(query);
-  // Unfiltered, this section is "Top Products": show a preview until "View all".
-  const isLimited = !showAll && !isFiltering;
-  const visibleProducts = isLimited
-    ? filteredProducts.slice(0, TOP_PRODUCTS_LIMIT)
-    : filteredProducts;
+
+  const goToPage = (next) => {
+    setPageState({ key: filterKey, page: next });
+    productsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   // Clicking a tile filters to that category; clicking it again clears it.
   const selectCategory = (name) => {
@@ -126,10 +148,9 @@ const Marketplace = () => {
     ...(filters.maxPrice !== "" ? [`Up to ₦${Number(filters.maxPrice).toLocaleString()}`] : []),
   ];
 
-  let sectionTitle = "Top Products";
+  let sectionTitle = "All Products";
   if (query) sectionTitle = `Results for "${query}"`;
   else if (activeFilterCount > 0) sectionTitle = "Filtered Products";
-  else if (showAll) sectionTitle = "All Products";
 
   return (
     <div className="space-y-6">
@@ -257,21 +278,17 @@ const Marketplace = () => {
           <h2 className="min-w-0 break-words text-lg font-semibold text-gray-900 sm:text-xl">
             {sectionTitle}
           </h2>
-          {!isFiltering && filteredProducts.length > TOP_PRODUCTS_LIMIT && (
-            <Button
-              variant="ghost"
-              onClick={() => setShowAll((prev) => !prev)}
-              className="h-auto shrink-0 p-0 text-sm font-medium text-primary hover:text-primary-dark sm:text-base"
-            >
-              {showAll ? "Show less" : `View all (${filteredProducts.length})`}
-            </Button>
+          {!isLoading && !error && totalCount > 0 && (
+            <p className="shrink-0 text-sm text-gray-600">
+              {totalCount} product{totalCount === 1 ? "" : "s"}
+            </p>
           )}
         </div>
 
-        {isFiltering && !isLoading && !error && products.length > 0 && (
+        {isFiltering && !isLoading && !error && (
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <p className="text-gray-600">
-              {filteredProducts.length} result{filteredProducts.length === 1 ? "" : "s"}
+              {totalCount} result{totalCount === 1 ? "" : "s"}
             </p>
             {query && (
               <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-gray-800">
@@ -304,9 +321,11 @@ const Marketplace = () => {
           </div>
         )}
 
+        <div className={isPlaceholderData ? "opacity-60 transition-opacity" : undefined}>
         <ProductsList
-          products={visibleProducts}
-          hasProducts={products.length > 0}
+          products={products}
+          // An empty filtered page means "no matches", not an empty marketplace
+          hasProducts={products.length > 0 || isFiltering}
           // isLoading is only true on the first load, so also show the skeleton
           // while Retry refetches from the error / empty state
           isLoading={isLoading || (isFetching && (Boolean(error) || products.length === 0))}
@@ -316,6 +335,11 @@ const Marketplace = () => {
             query ? `No products found for "${query}"` : "No products match your filters"
           }
         />
+        </div>
+
+        {!error && pageCount > 1 && (
+          <ProductsPagination page={page} pageCount={pageCount} onChange={goToPage} />
+        )}
       </section>
     </div>
   );

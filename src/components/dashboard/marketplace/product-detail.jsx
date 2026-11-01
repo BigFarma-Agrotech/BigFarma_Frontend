@@ -32,10 +32,11 @@ export default function ProductDetail() {
     queryFn: () => fetchProductById(id),
   });
 
-  // Fetch all products to find similar ones
+  // Similar products: others listed in the same category
   const { data: productsData } = useQuery({
-    queryKey: ["products"],
-    queryFn: fetchProducts,
+    queryKey: ["products", "similar", data?.category],
+    queryFn: () => fetchProducts({ categories: [data.category], pageSize: 9 }),
+    enabled: Boolean(data?.category),
   });
 
   // What a buyer may order: starts at the farmer's minimum, one unit per step, up to the stock
@@ -122,9 +123,9 @@ export default function ProductDetail() {
 
   // Find similar products in the same category
   const similar =
-    productsData?.products?.filter(
-      (item) => item.category === data.category && item.id !== data.id
-    ) ?? [];
+    productsData?.products
+      ?.filter((item) => item.category === data.category && item.id !== data.id)
+      .slice(0, 8) ?? [];
 
   return (
     <div className="space-y-6">

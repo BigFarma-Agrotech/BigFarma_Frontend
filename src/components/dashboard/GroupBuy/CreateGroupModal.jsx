@@ -84,7 +84,10 @@ const CreateGroupModal = () => {
     isLoading: productsLoading,
     isError: productsError,
     refetch: refetchProducts,
-  } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
+  } = useQuery({
+    queryKey: ["products", "group-buy-picker"],
+    queryFn: () => fetchProducts({ pageSize: 100 }),
+  });
 
   const products = useMemo(() => {
     if (Array.isArray(productsData?.products)) return productsData.products;
