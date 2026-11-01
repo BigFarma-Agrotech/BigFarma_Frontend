@@ -6,6 +6,7 @@ import { FaMinus, FaPlus } from "react-icons/fa6";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/hooks";
 import { canOrder, formatQuantity, getOrderRules, unitLabel } from "@/lib/units";
+import { categoryLabel } from "@/lib/categories";
 
 const PRIMARY_LINK =
   "inline-flex h-12 w-full items-center justify-center rounded-lg bg-primary px-6 font-medium text-white transition-colors hover:bg-primary-dark";
@@ -113,7 +114,7 @@ export default function CartPage() {
                         : "Not enough stock for the minimum order. Remove it to check out."}
                     </p>
                   )}
-                  <p className="text-xs capitalize text-gray-500">Category: {item.category}</p>
+                  <p className="text-xs text-gray-500">Category: {categoryLabel(item.category)}</p>
                 </div>
               </div>
 
