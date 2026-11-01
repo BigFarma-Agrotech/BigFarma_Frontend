@@ -1,18 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronDown, ShoppingBag } from "lucide-react";
-import { useFarmerProducts } from "../hooks/useFarmerProducts";
+import { useFarmerOrder } from "../hooks/useFarmerOrder";
+import OrderStatusPill from "../components/dashboard/farmer/components/OrderStatusPill";
 import Button from "@/components/shared/Button";
 import { cn } from "@/lib/utils";
 import {
   ORDER_STATUSES,
-  PRODUCT_STATUSES,
-  extractProducts,
+  extractOrders,
   formatNaira,
-  getProductImage,
-  getProductStatus,
-  parseAmount,
-  toProductRouteId,
+  formatOrderDate,
+  getOrderBuyerName,
+  getOrderDate,
+  getOrderId,
+  getOrderImage,
+  getOrderNumber,
+  getOrderProductName,
+  getOrderQuantity,
+  getOrderTotal,
+  getSingleOrderPath,
+  normalizeOrderStatus,
 } from "../lib/farmerOrder";
 import watermelon from "../assets/ProductImages/watermelon.png";
 
@@ -20,9 +27,8 @@ const PAGE_SIZE = 8;
 
 const DONE_STATUSES = ["delivered", "cancelled"];
 
-// Filters by order status: a product shows when it has at least one order in
-// one of the option's statuses. Anything not delivered or cancelled (including
-// a delivery issue under review) counts as in progress.
+// Filters by order status. Anything not delivered or cancelled (including a
+// delivery issue under review) counts as in progress.
 const filterOptions = [
   { label: "All", value: "all" },
   {
@@ -34,23 +40,23 @@ const filterOptions = [
   { label: "Cancelled", value: "cancelled", statuses: ["cancelled"] },
 ];
 
-const statusOrder = PRODUCT_STATUSES.map((s) => s.value);
+const statusOrder = ORDER_STATUSES.map((s) => s.value);
 
 // Sort accessors for the sortable columns (the ones with an arrow in the header)
 const sorters = {
-  id: (p) => p.id,
-  price: (p) => p.price,
-  quantity: (p) => parseAmount(p.quantity) ?? 0,
-  orders: (p) => p.orders,
-  status: (p) => statusOrder.indexOf(p.status.value),
+  quantity: (o) => Number.parseFloat(o.quantity) || 0,
+  total: (o) => o.total ?? 0,
+  date: (o) => o.date?.getTime() ?? 0,
+  status: (o) => statusOrder.indexOf(o.status),
 };
 
 const columns = [
   { key: "name", label: "Product Name", align: "left" },
-  { key: "id", label: "Product I.D", sortable: true },
-  { key: "price", label: "Price", sortable: true },
+  { key: "id", label: "Order I.D" },
+  { key: "buyer", label: "Buyer", align: "left" },
   { key: "quantity", label: "Quantity", sortable: true },
-  { key: "orders", label: "Orders", sortable: true },
+  { key: "total", label: "Total", sortable: true },
+  { key: "date", label: "Date", sortable: true },
   { key: "status", label: "Status", sortable: true, align: "left" },
   { key: "action", label: "Action", align: "left" },
 ];
@@ -63,68 +69,49 @@ const getPageNumbers = (page, pageCount) => {
   return sorted.flatMap((p, i) => (i > 0 && p - sorted[i - 1] > 1 ? ["…", p] : [p]));
 };
 
-const ProductStatusBadge = ({ status }) => (
-  <span
-    className={cn(
-      "inline-flex items-center gap-1.5 whitespace-nowrap rounded-2xl py-0.5 pl-1.5 pr-2 text-xs font-bold leading-[18px]",
-      status.badge
-    )}
-  >
-    <span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} aria-hidden="true" />
-    {status.label}
-  </span>
-);
-
 const FarmerOrderPage = () => {
-  const { data: apiProducts, isLoading, error, refetch } = useFarmerProducts();
+  // Every order is its own row, newest first
+  const { data: apiOrders, isLoading, error, refetch } = useFarmerOrder();
 
   const [filter, setFilter] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [sort, setSort] = useState(null); // { key, direction: "asc" | "desc" }
   const [page, setPage] = useState(1);
 
-  // Only products that have been ordered at least once belong on the orders page
-  const products = useMemo(
+  const orders = useMemo(
     () =>
-      extractProducts(apiProducts)
-        .filter((product) => (product.order_count ?? 0) > 0)
-        .map((product) => ({
-        id: product.id,
-        publicId: product.public_id,
-        name: product.name || "Unnamed product",
-        image: getProductImage(product) || watermelon,
-        price: parseAmount(product.price) ?? 0,
-        quantity: product.quantity ?? "—",
-        orders: product.order_count ?? 0,
-        // { pending: 2, delivered: 1, ... } from the backend
-        orderStatusCounts: product.order_status_counts ?? {},
-        status: getProductStatus(product),
-      })),
-    [apiProducts]
+      extractOrders(apiOrders)
+        .map((order, index) => ({
+          key: getOrderId(order) || `order-${index}`,
+          raw: order,
+          number: getOrderNumber(order),
+          productName: getOrderProductName(order),
+          image: getOrderImage(order) || watermelon,
+          buyer: getOrderBuyerName(order),
+          quantity: getOrderQuantity(order),
+          total: getOrderTotal(order),
+          date: getOrderDate(order),
+          status: normalizeOrderStatus(order?.status),
+        }))
+        .sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0)),
+    [apiOrders]
   );
 
-  const totalOrders = products.reduce((sum, p) => sum + p.orders, 0);
+  const totalOrders = orders.length;
 
-  const visibleProducts = useMemo(() => {
-    // When filtered, the Orders column counts only the orders in that status
-    const filtered =
-      filter === "all"
-        ? products
-        : products
-            .map((p) => {
-              const { statuses } = filterOptions.find((o) => o.value === filter);
-              const orders = statuses.reduce((sum, s) => sum + (p.orderStatusCounts[s] ?? 0), 0);
-              return { ...p, orders };
-            })
-            .filter((p) => p.orders > 0);
+  const visibleOrders = useMemo(() => {
+    const option = filterOptions.find((o) => o.value === filter);
+    const filtered = option?.statuses
+      ? orders.filter((o) => option.statuses.includes(o.status))
+      : orders;
     if (!sort) return filtered;
     const value = sorters[sort.key];
     const direction = sort.direction === "asc" ? 1 : -1;
     return [...filtered].sort((a, b) => (value(a) - value(b)) * direction);
-  }, [products, filter, sort]);
+  }, [orders, filter, sort]);
 
-  const pageCount = Math.max(1, Math.ceil(visibleProducts.length / PAGE_SIZE));
-  const pageRows = visibleProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pageCount = Math.max(1, Math.ceil(visibleOrders.length / PAGE_SIZE));
+  const pageRows = visibleOrders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Back to the first page whenever the rows change shape
   useEffect(() => setPage(1), [filter, sort]);
@@ -141,39 +128,42 @@ const FarmerOrderPage = () => {
 
   const currentFilterLabel = filterOptions.find((o) => o.value === filter)?.label;
 
-  const renderCell = (product, key) => {
+  const renderCell = (order, key) => {
     switch (key) {
       case "name":
         return (
           <div className="flex items-center gap-3">
             <img loading="lazy" decoding="async"
-              src={product.image}
+              src={order.image}
               alt=""
               className="h-10 w-10 shrink-0 rounded-full object-cover drop-shadow-[0px_4px_2px_rgba(0,0,0,0.25)]"
               onError={(e) => {
                 e.currentTarget.src = watermelon;
               }}
             />
-            <span className="whitespace-normal font-medium text-[#101828]">{product.name}</span>
+            <span className="whitespace-normal font-medium text-[#101828]">{order.productName}</span>
           </div>
         );
       case "id":
-        return `#${product.publicId}`;
-      case "price":
-        return formatNaira(product.price);
+        return order.number.startsWith("#") ? order.number : `#${order.number}`;
+      case "buyer":
+        return <span className="whitespace-normal">{order.buyer}</span>;
       case "quantity":
-        return product.quantity;
-      case "orders":
-        return product.orders;
+        return order.quantity;
+      case "total":
+        return order.total != null ? formatNaira(order.total) : "—";
+      case "date":
+        return formatOrderDate(order.raw);
       case "status":
-        return <ProductStatusBadge status={product.status} />;
+        return <OrderStatusPill status={order.status} className="max-w-[180px]" />;
       case "action":
         return (
           <Link
-            to={`/farmer-orders/${toProductRouteId(product.publicId)}`}
+            to={getSingleOrderPath(order.raw)}
+            state={{ order: order.raw }}
             className="inline-flex rounded-2xl bg-[#acd7f8] px-2 py-0.5 font-semibold leading-[18px] text-[#175cd3] transition-colors hover:bg-[#92c8f3] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#175cd3]"
           >
-            View
+            Manage
           </Link>
         );
       default:
@@ -205,22 +195,22 @@ const FarmerOrderPage = () => {
       );
     }
 
-    if (visibleProducts.length === 0) {
-      const hasNoProducts = products.length === 0;
+    if (visibleOrders.length === 0) {
+      const hasNoOrders = orders.length === 0;
       return (
         <div className="flex flex-col items-center px-4 py-12 text-center">
           <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
             <ShoppingBag className="h-10 w-10 text-gray-400" aria-hidden="true" />
           </div>
           <h3 className="mb-2 text-lg font-medium text-gray-900">
-            {hasNoProducts ? "No Orders Yet" : "No Products Match Filter"}
+            {hasNoOrders ? "No Orders Yet" : "No Orders Match Filter"}
           </h3>
           <p className="mb-4 max-w-md text-sm text-gray-600">
-            {hasNoProducts
-              ? "Orders are grouped by product. A product will appear here once a buyer places an order for it."
-              : "Try changing the filter to see more products."}
+            {hasNoOrders
+              ? "Orders will appear here once a buyer places an order for one of your products."
+              : "Try changing the filter to see more orders."}
           </p>
-          {hasNoProducts && (
+          {hasNoOrders && (
             <Link
               to="/my-products"
               className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-base font-medium text-white transition-colors hover:bg-primary-dark"
@@ -235,7 +225,7 @@ const FarmerOrderPage = () => {
     return (
       <>
         <div className="@container overflow-x-auto px-0 pt-6 lg:px-6">
-          <table className="w-full min-w-[880px]">
+          <table className="w-full min-w-[1000px]">
             <thead>
               <tr>
                 {columns.map((column) => {
@@ -274,8 +264,8 @@ const FarmerOrderPage = () => {
               </tr>
             </thead>
             <tbody>
-              {pageRows.map((product) => (
-                <tr key={product.id} className="h-[72px] hover:bg-gray-50">
+              {pageRows.map((order) => (
+                <tr key={order.key} className="h-[72px] hover:bg-gray-50">
                   {columns.map((column) => (
                     <td
                       key={column.key}
@@ -284,7 +274,7 @@ const FarmerOrderPage = () => {
                         column.align === "left" ? "text-left" : "text-center"
                       )}
                     >
-                      {renderCell(product, column.key)}
+                      {renderCell(order, column.key)}
                     </td>
                   ))}
                 </tr>
