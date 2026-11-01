@@ -1,5 +1,6 @@
 import { axios } from "../lib/axios";
 import { endpoints } from "../components/config/endpoints";
+import { categoryLabel } from "./categories";
 
 // The axios instance already attaches the bearer token and base URL.
 const GROUPS_URL = endpoints().groupBuy.list;
@@ -98,7 +99,7 @@ export const normalizeGroup = (group = {}) => {
     name: group.group_name || group.name || product?.name || "Untitled group",
     description: group.group_description || group.description || "",
     location: group.group_location || group.location || "",
-    category: product?.category || group.category || "",
+    category: categoryLabel(product?.category || group.category),
     image,
     status: group.status || "",
     // Members pay this per unit of the product
